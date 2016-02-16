@@ -63,8 +63,6 @@ set(ChronoEngine_core_HEADERS
     core/ChPlatform.h
     core/ChQuaternion.h
     core/ChRunTimeType.h
-    core/ChShared.h
-    core/ChSmartpointers.h
     core/ChFileutils.h
     core/ChRealtimeStep.h
     core/ChStream.h
@@ -289,6 +287,9 @@ set(ChronoEngine_physics_HEADERS
 	physics/ChLoaderUV.h
 	physics/ChLoaderUVW.h
 	physics/ChLoad.h
+	physics/ChLoadsXYZnode.h
+	physics/ChLoadsBody.h
+	physics/ChLoadBodyMesh.h
 	physics/ChLoadContainer.h
     )
 

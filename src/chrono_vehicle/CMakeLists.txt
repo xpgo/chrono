@@ -8,10 +8,17 @@ option(ENABLE_MODULE_VEHICLE "Enable the Chrono Vehicle module" OFF)
 
 # Return now if this module is not enabled
 if(NOT ENABLE_MODULE_VEHICLE)
-  return()
+   mark_as_advanced(FORCE ENABLE_IRRKLANG)
+   mark_as_advanced(FORCE CH_IRRKLANG_SDKDIR)
+   mark_as_advanced(FORCE CH_IRRKLANGLIB)
+   return()
 endif()
 
 message(STATUS "==== Chrono Vehicle module ====")
+
+mark_as_advanced(CLEAR ENABLE_IRRKLANG)
+mark_as_advanced(CLEAR CH_IRRKLANG_SDKDIR)
+mark_as_advanced(CLEAR CH_IRRKLANGLIB)
 
 # If Irrlicht support was enabled, provide option to add Irrklang support.
 cmake_dependent_option(ENABLE_IRRKLANG "Enable Irrklang library for sound" OFF
@@ -124,6 +131,8 @@ set(CV_TERRAIN_FILES
     terrain/FlatTerrain.cpp
     terrain/RigidTerrain.h
     terrain/RigidTerrain.cpp
+	terrain/DeformableTerrain.h
+    terrain/DeformableTerrain.cpp
 )
 source_group("terrain" FILES ${CV_TERRAIN_FILES})
 

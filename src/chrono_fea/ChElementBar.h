@@ -13,11 +13,14 @@
 #ifndef CHELEMENTBAR_H
 #define CHELEMENTBAR_H
 
-#include "ChElementGeneric.h"
-#include "ChNodeFEAxyz.h"
+#include "chrono_fea/ChElementGeneric.h"
+#include "chrono_fea/ChNodeFEAxyz.h"
 
 namespace chrono {
 namespace fea {
+
+/// @addtogroup fea_elements
+/// @{
 
 /// Simple finite element with two nodes and a bar that
 /// connect them, without bending and torsion stiffness,
@@ -26,10 +29,9 @@ namespace fea {
 /// class ChElementSpring, but also adds mass along the
 /// element, hence point-like mass in the two nodes is not
 /// needed.
-
 class ChApiFea ChElementBar : public ChElementGeneric {
   protected:
-    std::vector<ChSharedPtr<ChNodeFEAxyz> > nodes;
+    std::vector<std::shared_ptr<ChNodeFEAxyz> > nodes;
     double area;
     double density;
     double E;
@@ -45,9 +47,9 @@ class ChApiFea ChElementBar : public ChElementGeneric {
     virtual int GetNcoords() { return 2 * 3; }
     virtual int GetNdofs() { return 2 * 3; }
 
-    virtual ChSharedPtr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
+    virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
 
-    virtual void SetNodes(ChSharedPtr<ChNodeFEAxyz> nodeA, ChSharedPtr<ChNodeFEAxyz> nodeB) {
+    virtual void SetNodes(std::shared_ptr<ChNodeFEAxyz> nodeA, std::shared_ptr<ChNodeFEAxyz> nodeB) {
         nodes[0] = nodeA;
         nodes[1] = nodeB;
         std::vector<ChLcpVariables*> mvars;
@@ -175,6 +177,8 @@ class ChApiFea ChElementBar : public ChElementGeneric {
     // Functions for interfacing to the LCP solver
     //            (***not needed, thank to bookkeeping in parent class ChElementGeneric)
 };
+
+/// @} fea_elements
 
 }  // END_OF_NAMESPACE____
 }  // END_OF_NAMESPACE____

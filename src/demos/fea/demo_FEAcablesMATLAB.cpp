@@ -42,16 +42,12 @@ int main(int argc, char* argv[]) {
 
     // Create a mesh, that is a container for groups of elements and
     // their referenced nodes.
-    ChSharedPtr<ChMesh> my_mesh(new ChMesh);
+    auto my_mesh = std::make_shared<ChMesh>();
 
     // Create one of the available models (defined in FEAcables.h)
     // model1(my_system, my_mesh);
     // model2(my_system, my_mesh);
     model3(my_system, my_mesh);
-
-    // This is necessary in order to precompute the stiffness matrices for all
-    // inserted elements in mesh
-    my_mesh->SetupInitial();
 
     // Remember to add the mesh to the system!
     my_system.Add(my_mesh);
@@ -64,14 +60,14 @@ int main(int argc, char* argv[]) {
     // postprocessor that can handle a coloured ChTriangleMeshShape).
     // Do not forget AddAsset() at the end!
 
-    ChSharedPtr<ChVisualizationFEAmesh> mvisualizebeamA(new ChVisualizationFEAmesh(*(my_mesh.get_ptr())));
+    auto mvisualizebeamA = std::make_shared<ChVisualizationFEAmesh>(*(my_mesh.get()));
     mvisualizebeamA->SetFEMdataType(ChVisualizationFEAmesh::E_PLOT_ELEM_BEAM_MZ);
     mvisualizebeamA->SetColorscaleMinMax(-0.4, 0.4);
     mvisualizebeamA->SetSmoothFaces(true);
     mvisualizebeamA->SetWireframe(false);
     my_mesh->AddAsset(mvisualizebeamA);
 
-    ChSharedPtr<ChVisualizationFEAmesh> mvisualizebeamC(new ChVisualizationFEAmesh(*(my_mesh.get_ptr())));
+    auto mvisualizebeamC = std::make_shared<ChVisualizationFEAmesh>(*(my_mesh.get()));
     mvisualizebeamC->SetFEMglyphType(ChVisualizationFEAmesh::E_GLYPH_NODE_CSYS);
     mvisualizebeamC->SetFEMdataType(ChVisualizationFEAmesh::E_PLOT_NONE);
     mvisualizebeamC->SetSymbolsThickness(0.006);
@@ -89,6 +85,9 @@ int main(int argc, char* argv[]) {
     // that you added to the bodies into 3D shapes, they can be visualized by Irrlicht!
     application.AssetUpdateAll();
 
+    // Mark completion of system construction
+    my_system.SetupInitial();
+
     // Change solver to Matlab external linear solver, for max precision in benchmarks
     ChMatlabEngine matlab_engine;
     ChLcpMatlabSolver* matlab_solver_stab = new ChLcpMatlabSolver(matlab_engine);
@@ -102,10 +101,10 @@ int main(int argc, char* argv[]) {
     // my_system.SetIntegrationType(chrono::ChSystem::INT_HHT);  // precise,slower, might iterate each step
 
     // if later you want to change integrator settings:
-    if (ChSharedPtr<ChTimestepperHHT> mystepper = my_system.GetTimestepper().DynamicCastTo<ChTimestepperHHT>()) {
+    if (auto mystepper = std::dynamic_pointer_cast<ChTimestepperHHT>(my_system.GetTimestepper())) {
         mystepper->SetAlpha(-0.2);
         mystepper->SetMaxiters(2);
-        mystepper->SetTolerance(1e-6);
+        mystepper->SetAbsTolerances(1e-6);
     }
 
     //

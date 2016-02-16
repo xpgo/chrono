@@ -13,20 +13,21 @@
 #ifndef CHELEMENTBASE_H
 #define CHELEMENTBASE_H
 
-#include "physics/ChContinuumMaterial.h"
-#include "physics/ChLoadable.h"
-#include "core/ChMath.h"
-#include "core/ChShared.h"
-#include "lcp/ChLcpSystemDescriptor.h"
-#include "ChNodeFEAbase.h"
+#include "chrono/physics/ChContinuumMaterial.h"
+#include "chrono/physics/ChLoadable.h"
+#include "chrono/core/ChMath.h"
+#include "chrono/lcp/ChLcpSystemDescriptor.h"
+#include "chrono_fea/ChNodeFEAbase.h"
 
 namespace chrono {
 namespace fea {
 
+/// @addtogroup fea_elements
+/// @{
+
 /// Base class for all finite elements, that can be
 /// used in the ChMesh physics item.
-
-class ChApiFea ChElementBase : public virtual ChShared {
+class ChApiFea ChElementBase {
   protected:
   public:
     ChElementBase(){};
@@ -44,7 +45,7 @@ class ChApiFea ChElementBase : public virtual ChShared {
     virtual int GetNdofs() = 0;
 
     /// Access the nth node
-    virtual ChSharedPtr<ChNodeFEAbase> GetNodeN(int n) = 0;
+    virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) = 0;
 
     //
     // FEM functions
@@ -124,6 +125,8 @@ class ChApiFea ChElementBase : public virtual ChShared {
     /// WILL BE DEPRECATED
     virtual void VariablesFbIncrementMq() {}
 };
+
+/// @} fea_elements
 
 }  // END_OF_NAMESPACE____
 }  // END_OF_NAMESPACE____
