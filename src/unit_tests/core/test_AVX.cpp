@@ -62,6 +62,7 @@ int main(int argc, char* argv[]) {
     for (int j = 0; j < ITERATION; j++)
         AmulB_ref.MatrMultiply(A, B);
     timer.stop();
+
     double tempTime = timer();
     GetLog() << "The MatrMultiply results in " << timer() << " (s) \n";
     timer.reset();
@@ -90,6 +91,7 @@ int main(int argc, char* argv[]) {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     GetLog() << "--------------------------------------- \n";
+    timer.reset();
     timer.start();
     for (int j = 0; j < ITERATION; j++)
         AAddC_ref.MatrAdd(A, C);
@@ -120,6 +122,7 @@ int main(int argc, char* argv[]) {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     GetLog() << "--------------------------------------- \n";
+    timer.reset();
     timer.start();
     for (int j = 0; j < ITERATION; j++)
         AmulB_ref.MatrScale(0.021);
@@ -152,6 +155,7 @@ int main(int argc, char* argv[]) {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     GetLog() << "--------------------------------------- \n";
+    timer.reset();
     timer.start();
     for (int j = 0; j < ITERATION; j++)
         AAddC_ref.MatrScale(C);
