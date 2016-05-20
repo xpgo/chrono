@@ -39,8 +39,6 @@ ChShaftsClutch::ChShaftsClutch() {
     this->modulation = 1.0;
 
     this->torque_react = 0;
-    this->cache_li_speed = 0.f;
-    this->cache_li_pos = 0.f;
 
     SetIdentifier(GetUniqueIntID());  // mark with unique ID
 
@@ -60,8 +58,6 @@ void ChShaftsClutch::Copy(ChShaftsClutch* source) {
     modulation = source->modulation;
 
     torque_react = source->torque_react;
-    cache_li_speed = source->cache_li_speed;
-    cache_li_pos = source->cache_li_pos;
 }
 
 bool ChShaftsClutch::Initialize(std::shared_ptr<ChShaft> mshaft1, std::shared_ptr<ChShaft> mshaft2) {
@@ -136,28 +132,27 @@ void ChShaftsClutch::IntLoadResidual_F(const unsigned int off, ChVectorDynamic<>
                                     dt * this->maxT * this->modulation);
 }
 
-
-void ChShaftsClutch::IntToLCP(const unsigned int off_v,  ///< offset in v, R
-                              const ChStateDelta& v,
-                              const ChVectorDynamic<>& R,
-                              const unsigned int off_L,  ///< offset in L, Qc
-                              const ChVectorDynamic<>& L,
-                              const ChVectorDynamic<>& Qc) {
+void ChShaftsClutch::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                                     const ChStateDelta& v,
+                                     const ChVectorDynamic<>& R,
+                                     const unsigned int off_L,  ///< offset in L, Qc
+                                     const ChVectorDynamic<>& L,
+                                     const ChVectorDynamic<>& Qc) {
     constraint.Set_l_i(L(off_L));
 
     constraint.Set_b_i(Qc(off_L));
 }
 
-void ChShaftsClutch::IntFromLCP(const unsigned int off_v,  ///< offset in v
-                                ChStateDelta& v,
-                                const unsigned int off_L,  ///< offset in L
-                                ChVectorDynamic<>& L) {
+void ChShaftsClutch::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                                       ChStateDelta& v,
+                                       const unsigned int off_L,  ///< offset in L
+                                       ChVectorDynamic<>& L) {
     L(off_L) = constraint.Get_l_i();
 }
 
-////////// LCP INTERFACES ////
+// SOLVER INTERFACES
 
-void ChShaftsClutch::InjectConstraints(ChLcpSystemDescriptor& mdescriptor) {
+void ChShaftsClutch::InjectConstraints(ChSystemDescriptor& mdescriptor) {
     // if (!this->IsActive())
     //	return;
 
@@ -203,27 +198,7 @@ void ChShaftsClutch::ConstraintsFetch_react(double factor) {
     this->torque_react = constraint.Get_l_i() * factor;
 }
 
-// Following functions are for exploiting the contact persistence
-
-void ChShaftsClutch::ConstraintsLiLoadSuggestedSpeedSolution() {
-    constraint.Set_l_i(this->cache_li_speed);
-}
-
-void ChShaftsClutch::ConstraintsLiLoadSuggestedPositionSolution() {
-    constraint.Set_l_i(this->cache_li_pos);
-}
-
-void ChShaftsClutch::ConstraintsLiFetchSuggestedSpeedSolution() {
-    this->cache_li_speed = (float)constraint.Get_l_i();
-}
-
-void ChShaftsClutch::ConstraintsLiFetchSuggestedPositionSolution() {
-    this->cache_li_pos = (float)constraint.Get_l_i();
-}
-
 //////// FILE I/O
-
-
 
 void ChShaftsClutch::ArchiveOUT(ChArchiveOut& marchive)
 {

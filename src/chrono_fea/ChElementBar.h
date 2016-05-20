@@ -22,13 +22,11 @@ namespace fea {
 /// @addtogroup fea_elements
 /// @{
 
-/// Simple finite element with two nodes and a bar that
-/// connect them, without bending and torsion stiffness,
-/// just like a bar with two spherical joints.
-/// In practical terms, it works a bit like the
-/// class ChElementSpring, but also adds mass along the
-/// element, hence point-like mass in the two nodes is not
-/// needed.
+/// Simple finite element with two nodes and a bar that connects them.
+/// No bending and torsion stiffness, just like a bar with two spherical joints.
+/// In practical terms, this element works a bit like the class ChElementSpring,
+/// but also adds mass along the element, hence point-like mass in the two nodes
+/// is not needed.
 class ChApiFea ChElementBar : public ChElementGeneric {
   protected:
     std::vector<std::shared_ptr<ChNodeFEAxyz> > nodes;
@@ -43,16 +41,16 @@ class ChApiFea ChElementBar : public ChElementGeneric {
     ChElementBar();
     virtual ~ChElementBar();
 
-    virtual int GetNnodes() { return 2; }
-    virtual int GetNcoords() { return 2 * 3; }
-    virtual int GetNdofs() { return 2 * 3; }
+    virtual int GetNnodes() override { return 2; }
+    virtual int GetNdofs() override { return 2 * 3; }
+    virtual int GetNodeNdofs(int n) override { return 3; }
 
-    virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
+    virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) override { return nodes[n]; }
 
     virtual void SetNodes(std::shared_ptr<ChNodeFEAxyz> nodeA, std::shared_ptr<ChNodeFEAxyz> nodeB) {
         nodes[0] = nodeA;
         nodes[1] = nodeB;
-        std::vector<ChLcpVariables*> mvars;
+        std::vector<ChVariables*> mvars;
         mvars.push_back(&nodes[0]->Variables());
         mvars.push_back(&nodes[1]->Variables());
         Kmatr.SetVariables(mvars);
@@ -174,7 +172,7 @@ class ChApiFea ChElementBar : public ChElementGeneric {
     double GetStress() { return GetBarYoungModulus() * GetStrain(); }
 
     //
-    // Functions for interfacing to the LCP solver
+    // Functions for interfacing to the solver
     //            (***not needed, thank to bookkeeping in parent class ChElementGeneric)
 };
 

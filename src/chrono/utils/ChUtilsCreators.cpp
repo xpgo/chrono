@@ -9,7 +9,7 @@
 // http://projectchrono.org/license-chrono.txt.
 //
 // =============================================================================
-// Authors: Radu Serban, Hammad Mazhar
+// Authors: Radu Serban, Hammad Mazhar, Arman Pazouki
 // =============================================================================
 //
 // =============================================================================
@@ -78,6 +78,26 @@ void AddBoxGeometry(ChBody* body,
 
 // -----------------------------------------------------------------------------
 
+void AddBiSphereGeometry(ChBody* body,
+                         double radius,
+                         double cDist,
+                         const ChVector<>& pos,
+                         const ChQuaternion<>& rot,
+                         bool visualization) {
+    ChFrame<> frame;
+    frame = ChFrame<>(pos, rot);
+    if (ChBodyAuxRef* body_ar = dynamic_cast<ChBodyAuxRef*>(body)) {
+        frame = frame >> body_ar->GetFrame_REF_to_COG();
+    }
+    const ChVector<>& position = frame.GetPos();
+    const ChQuaternion<>& rotation = frame.GetRot();
+
+    AddSphereGeometry(body, radius, position + ChVector<>(0, 0.5 * cDist, 0), rot, visualization);
+    AddSphereGeometry(body, radius, position - ChVector<>(0, 0.5 * cDist, 0), rot, visualization);
+}
+
+// -----------------------------------------------------------------------------
+
 void AddCapsuleGeometry(ChBody* body,
                         double radius,
                         double hlen,
@@ -125,12 +145,22 @@ void AddConeGeometry(ChBody* body,
                      const ChVector<>& pos,
                      const ChQuaternion<>& rot,
                      bool visualization) {
-    body->GetCollisionModel()->AddCone(radius, radius, height, pos, rot);
+    ChFrame<> frame;
+    frame = ChFrame<>(pos, rot);
+    if (ChBodyAuxRef* body_ar = dynamic_cast<ChBodyAuxRef*>(body)) {
+        frame = frame >> body_ar->GetFrame_REF_to_COG();
+    }
+    const ChVector<>& position = frame.GetPos();
+    const ChQuaternion<>& rotation = frame.GetRot();
+
+    ChVector<> posCollisionModel = position + ChVector<>(0, 0.25 * height, 0);
+
+    body->GetCollisionModel()->AddCone(radius, radius, height, posCollisionModel, rot);
 
     if (visualization) {
         auto cone = std::make_shared<ChConeShape>();
         cone->GetConeGeometry().rad = ChVector<>(radius, height, radius);
-        cone->Pos = pos;
+        cone->Pos = posCollisionModel;
         cone->Rot = rot;
         body->GetAssets().push_back(cone);
     }
@@ -169,7 +199,7 @@ void AddTriangleMeshConvexDecomposition(ChBody* body,
                                         const std::string& name,
                                         const ChVector<>& pos,
                                         const ChQuaternion<>& rot,
-                                        double skin_thickness,
+                                        float skin_thickness,
                                         bool use_original_asset) {
     int decompdepth = 100;
     int maxhullvert = 50;
@@ -567,14 +597,13 @@ std::shared_ptr<ChBody> CreateCylindricalContainerFromBoxes(ChSystem* system,
                                                             const ChVector<>& hdim,
                                                             double hthick,
                                                             int numBoxes,
-                                                            double rho,
-                                                            double collisionEnvelope,
                                                             const ChVector<>& pos,
                                                             const ChQuaternion<>& rot,
                                                             bool collide,
                                                             bool overlap,
                                                             bool closed,
-                                                            bool isBoxBase) {
+                                                            bool isBoxBase,
+                                                            bool partialVisualization) {
     // Verify consistency of input arguments.
     assert(mat->GetContactMethod() == system->GetContactMethod());
 
@@ -589,7 +618,7 @@ std::shared_ptr<ChBody> CreateCylindricalContainerFromBoxes(ChSystem* system,
     body->SetPos(pos);
     body->SetRot(rot);
     body->SetCollide(collide);
-    body->SetBodyFixed(false);
+    body->SetBodyFixed(true);
 
     double box_side = hdim.x * 2.0 * tan(CH_C_PI / numBoxes);  // side length of cyl
     double o_lap = 0;
@@ -608,16 +637,12 @@ std::shared_ptr<ChBody> CreateCylindricalContainerFromBoxes(ChSystem* system,
         p_quat = Angle_to_Quat(ANGLESET_RXYZ, ChVector<>(0, 0, ang * i));
 
         // this is here to make half the cylinder invisible.
-        bool m_visualization = false;
-        if (ang * i < CH_C_PI || ang * i > 3.0 * CH_C_PI / 2.0) {
-            m_visualization = true;
+        bool m_visualization = true;
+        if ((ang * i > CH_C_PI && ang * i < 3.0 * CH_C_PI / 2.0) && partialVisualization) {
+            m_visualization = false;
         }
         utils::AddBoxGeometry(body.get(), p_boxSize, p_pos, p_quat, m_visualization);
     }
-
-    double cyl_volume = CH_C_PI * (2 * p_boxSize.z - 2 * hthick) * (2 * p_boxSize.z - 2 * hthick) *
-                            ((2 * hdim.x + 2 * hthick) * (2 * hdim.x + 2 * hthick) - hdim.x * hdim.x) +
-                        (CH_C_PI) * (hdim.x + 2 * hthick) * (hdim.x + 2 * hthick) * 2 * hthick;
 
     // Add ground piece
     if (isBoxBase) {
@@ -638,10 +663,7 @@ std::shared_ptr<ChBody> CreateCylindricalContainerFromBoxes(ChSystem* system,
         }
     }
 
-    // add up volume of bucket and multiply by rho to get mass;
-    body->SetMass(rho * cyl_volume);
-
-    body->GetCollisionModel()->SetDefaultSuggestedEnvelope(collisionEnvelope);
+    body->GetCollisionModel()->SetEnvelope(0.2 * hthick);
     body->GetCollisionModel()->BuildModel();
 
     system->AddBody(body);
@@ -688,9 +710,9 @@ void LoadConvexMesh(const std::string& file_name,
                     int hacd_maxhullcount,
                     int hacd_maxhullmerge,
                     int hacd_maxhullvertexes,
-                    double hacd_concavity,
-                    double hacd_smallclusterthreshold,
-                    double hacd_fusetolerance) {
+                    float hacd_concavity,
+                    float hacd_smallclusterthreshold,
+                    float hacd_fusetolerance) {
     convex_mesh.LoadWavefrontMesh(file_name, true, false);
 
     for (int i = 0; i < convex_mesh.m_vertices.size(); i++) {

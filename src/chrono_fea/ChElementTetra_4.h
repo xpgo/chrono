@@ -15,11 +15,11 @@
 
 #include <cmath>
 
+#include "chrono/physics/ChTensors.h"
 #include "chrono_fea/ChElementTetrahedron.h"
 #include "chrono_fea/ChNodeFEAxyz.h"
 #include "chrono_fea/ChNodeFEAxyzP.h"
 #include "chrono_fea/ChContinuumPoisson3D.h"
-#include "chrono/physics/ChTensors.h"
 
 namespace chrono {
 namespace fea {
@@ -28,11 +28,9 @@ namespace fea {
 /// @{
 
 /// Tetahedron FEA element with 4 nodes.
-/// This is a classical element with linear displacement, hence
-/// with constant stress, constant strain.
-/// It can be easily used for 3D FEA problems.
-class ChApiFea ChElementTetra_4 : public ChElementTetrahedron, 
-                                  public ChLoadableUVW {
+/// This is a classical element with linear displacement, hence with constant stress
+/// and constant strain. It can be easily used for 3D FEA problems.
+class ChApiFea ChElementTetra_4 : public ChElementTetrahedron, public ChLoadableUVW {
   protected:
     std::vector<std::shared_ptr<ChNodeFEAxyz> > nodes;
     std::shared_ptr<ChContinuumElastic> Material;
@@ -45,9 +43,9 @@ class ChApiFea ChElementTetra_4 : public ChElementTetrahedron,
     ChElementTetra_4();
     virtual ~ChElementTetra_4();
 
-    virtual int GetNnodes() { return 4; }
-    virtual int GetNcoords() { return 4 * 3; }
-    virtual int GetNdofs() { return 4 * 3; }
+    virtual int GetNnodes() override { return 4; }
+    virtual int GetNdofs() override { return 4 * 3; }
+    virtual int GetNodeNdofs(int n) override { return 3; }
 
     virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
 
@@ -59,7 +57,7 @@ class ChApiFea ChElementTetra_4 : public ChElementTetrahedron,
         nodes[1] = nodeB;
         nodes[2] = nodeC;
         nodes[3] = nodeD;
-        std::vector<ChLcpVariables*> mvars;
+        std::vector<ChVariables*> mvars;
         mvars.push_back(&nodes[0]->Variables());
         mvars.push_back(&nodes[1]->Variables());
         mvars.push_back(&nodes[2]->Variables());
@@ -404,9 +402,15 @@ class ChApiFea ChElementTetra_4 : public ChElementTetrahedron,
         mstress.MatrMultiply(this->Material->Get_StressStrainMatrix(), this->GetStrain());
         return mstress;
     }
-
+    /// This class computes and adds corresponding masses to ElementBase member m_TotalMass
+    void ComputeNodalMass() {
+        nodes[0]->m_TotalMass += this->GetVolume() * this->Material->Get_density() / 4.0;
+        nodes[1]->m_TotalMass += this->GetVolume() * this->Material->Get_density() / 4.0;
+        nodes[2]->m_TotalMass += this->GetVolume() * this->Material->Get_density() / 4.0;
+        nodes[3]->m_TotalMass += this->GetVolume() * this->Material->Get_density() / 4.0;
+    }
     //
-    // Functions for interfacing to the LCP solver
+    // Functions for interfacing to the solver
     //            (***not needed, thank to bookkeeping in parent class ChElementGeneric)
 
     //
@@ -447,8 +451,8 @@ class ChApiFea ChElementTetra_4 : public ChElementTetrahedron,
         /// Get the size of the i-th sub-block of DOFs in global vector
     virtual unsigned int GetSubBlockSize(int nblock) { return 3;}
 
-    /// Get the pointers to the contained ChLcpVariables, appending to the mvars vector.
-    virtual void LoadableGetVariables(std::vector<ChLcpVariables*>& mvars) {
+    /// Get the pointers to the contained ChVariables, appending to the mvars vector.
+    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) {
         for (int i=0; i<nodes.size(); ++i)
             mvars.push_back(&this->nodes[i]->Variables());
     };
@@ -495,16 +499,10 @@ class ChApiFea ChElementTetra_4 : public ChElementTetrahedron,
 };
 
 
-
-
-
-
 /// Tetahedron FEM element with 4 nodes for scalar fields (for Poisson-like problems).
 /// This is a classical element with linear displacement.
 /// ***EXPERIMENTAL***
-
-class ChApiFea ChElementTetra_4_P : public ChElementTetrahedron, 
-                                   public ChLoadableUVW {
+class ChApiFea ChElementTetra_4_P : public ChElementTetrahedron, public ChLoadableUVW {
   protected:
     std::vector<std::shared_ptr<ChNodeFEAxyzP> > nodes;
     std::shared_ptr<ChContinuumPoisson3D> Material;
@@ -522,9 +520,9 @@ class ChApiFea ChElementTetra_4_P : public ChElementTetrahedron,
 
     virtual ~ChElementTetra_4_P(){};
 
-    virtual int GetNnodes() { return 4; }
-    virtual int GetNcoords() { return 4 * 3; }
-    virtual int GetNdofs() { return 4 * 1; }
+    virtual int GetNnodes() override { return 4; }
+    virtual int GetNdofs() override { return 4 * 1; }
+    virtual int GetNodeNdofs(int n) override { return 1; }
 
     virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
 
@@ -536,7 +534,7 @@ class ChApiFea ChElementTetra_4_P : public ChElementTetrahedron,
         nodes[1] = nodeB;
         nodes[2] = nodeC;
         nodes[3] = nodeD;
-        std::vector<ChLcpVariables*> mvars;
+        std::vector<ChVariables*> mvars;
         mvars.push_back(&nodes[0]->Variables());
         mvars.push_back(&nodes[1]->Variables());
         mvars.push_back(&nodes[2]->Variables());
@@ -738,7 +736,7 @@ class ChApiFea ChElementTetra_4_P : public ChElementTetrahedron,
     }
 
     //
-    // Functions for interfacing to the LCP solver
+    // Functions for interfacing to the solver
     //            (***not needed, thank to bookkeeping in parent class ChElementGeneric)
 
     //
@@ -779,8 +777,8 @@ class ChApiFea ChElementTetra_4_P : public ChElementTetrahedron,
         /// Get the size of the i-th sub-block of DOFs in global vector
     virtual unsigned int GetSubBlockSize(int nblock) { return 1;}
 
-    /// Get the pointers to the contained ChLcpVariables, appending to the mvars vector.
-    virtual void LoadableGetVariables(std::vector<ChLcpVariables*>& mvars) {
+    /// Get the pointers to the contained ChVariables, appending to the mvars vector.
+    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) {
         for (int i=0; i<nodes.size(); ++i)
             mvars.push_back(&this->nodes[i]->Variables());
     };

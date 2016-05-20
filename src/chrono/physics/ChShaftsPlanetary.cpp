@@ -40,8 +40,6 @@ ChShaftsPlanetary::ChShaftsPlanetary() {
     this->r3 = 1;
 
     this->torque_react = 0;
-    this->cache_li_speed = 0.f;
-    this->cache_li_pos = 0.f;
 
     this->shaft1 = 0;
     this->shaft2 = 0;
@@ -65,8 +63,6 @@ void ChShaftsPlanetary::Copy(ChShaftsPlanetary* source) {
     r3 = source->r3;
 
     torque_react = source->torque_react;
-    cache_li_speed = source->cache_li_speed;
-    cache_li_pos = source->cache_li_pos;
     this->shaft1 = 0;
     this->shaft2 = 0;
     this->shaft3 = 0;
@@ -129,25 +125,25 @@ void ChShaftsPlanetary::IntLoadConstraint_C(const unsigned int off_L,  ///< offs
     Qc(off_L) += cnstr_violation;
 }
 
-void ChShaftsPlanetary::IntToLCP(const unsigned int off_v,  ///< offset in v, R
-                                 const ChStateDelta& v,
-                                 const ChVectorDynamic<>& R,
-                                 const unsigned int off_L,  ///< offset in L, Qc
-                                 const ChVectorDynamic<>& L,
-                                 const ChVectorDynamic<>& Qc) {
+void ChShaftsPlanetary::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                                        const ChStateDelta& v,
+                                        const ChVectorDynamic<>& R,
+                                        const unsigned int off_L,  ///< offset in L, Qc
+                                        const ChVectorDynamic<>& L,
+                                        const ChVectorDynamic<>& Qc) {
     constraint.Set_l_i(L(off_L));
 
     constraint.Set_b_i(Qc(off_L));
 }
 
-void ChShaftsPlanetary::IntFromLCP(const unsigned int off_v,  ///< offset in v
-                                   ChStateDelta& v,
-                                   const unsigned int off_L,  ///< offset in L
-                                   ChVectorDynamic<>& L) {
+void ChShaftsPlanetary::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                                          ChStateDelta& v,
+                                          const unsigned int off_L,  ///< offset in L
+                                          ChVectorDynamic<>& L) {
     L(off_L) = constraint.Get_l_i();
 }
 
-////////// LCP INTERFACES ////
+// SOLVER INTERFACES
 
 void ChShaftsPlanetary::IntStateGatherReactions(const unsigned int off_L, ChVectorDynamic<>& L) {
     L(off_L) = this->torque_react;
@@ -157,7 +153,7 @@ void ChShaftsPlanetary::IntStateScatterReactions(const unsigned int off_L, const
     this->torque_react = L(off_L);
 }
 
-void ChShaftsPlanetary::InjectConstraints(ChLcpSystemDescriptor& mdescriptor) {
+void ChShaftsPlanetary::InjectConstraints(ChSystemDescriptor& mdescriptor) {
     // if (!this->IsActive())
     //	return;
 
@@ -201,24 +197,6 @@ void ChShaftsPlanetary::ConstraintsLoadJacobians() {
 void ChShaftsPlanetary::ConstraintsFetch_react(double factor) {
     // From constraints to react vector:
     this->torque_react = constraint.Get_l_i() * factor;
-}
-
-// Following functions are for exploiting the contact persistence
-
-void ChShaftsPlanetary::ConstraintsLiLoadSuggestedSpeedSolution() {
-    constraint.Set_l_i(this->cache_li_speed);
-}
-
-void ChShaftsPlanetary::ConstraintsLiLoadSuggestedPositionSolution() {
-    constraint.Set_l_i(this->cache_li_pos);
-}
-
-void ChShaftsPlanetary::ConstraintsLiFetchSuggestedSpeedSolution() {
-    this->cache_li_speed = (float)constraint.Get_l_i();
-}
-
-void ChShaftsPlanetary::ConstraintsLiFetchSuggestedPositionSolution() {
-    this->cache_li_pos = (float)constraint.Get_l_i();
 }
 
 //////// FILE I/O

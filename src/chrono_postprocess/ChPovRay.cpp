@@ -10,30 +10,21 @@
 // and at http://projectchrono.org/license-chrono.txt.
 //
 
-//////////////////////////////////////////////////
-//
-//   ChPovRay.cpp
-//
-// ------------------------------------------------
-//             www.deltaknowledge.com
-// ------------------------------------------------
-///////////////////////////////////////////////////
-
+#include "chrono/assets/ChAssetLevel.h"
+#include "chrono/assets/ChBoxShape.h"
+#include "chrono/assets/ChCamera.h"
+#include "chrono/assets/ChColorAsset.h"
+#include "chrono/assets/ChCylinderShape.h"
+#include "chrono/assets/ChObjShapeFile.h"
+#include "chrono/assets/ChSphereShape.h"
+#include "chrono/assets/ChTexture.h"
+#include "chrono/assets/ChTriangleMeshShape.h"
+#include "chrono/geometry/ChTriangleMeshConnected.h"
+#include "chrono/physics/ChLinkMate.h"
+#include "chrono/physics/ChParticlesClones.h"
 #include "chrono_postprocess/ChPovRay.h"
 #include "chrono_postprocess/ChPovRayAsset.h"
-#include "geometry/ChCTriangleMeshConnected.h"
-#include "assets/ChObjShapeFile.h"
-#include "assets/ChTriangleMeshShape.h"
-#include "assets/ChSphereShape.h"
-#include "assets/ChCylinderShape.h"
-#include "assets/ChBoxShape.h"
-#include "assets/ChTexture.h"
-#include "assets/ChAssetLevel.h"
-#include "assets/ChCamera.h"
-#include "assets/ChColorAsset.h"
 #include "chrono_postprocess/ChPovRayAssetCustom.h"
-#include "physics/ChParticlesClones.h"
-#include "physics/ChLinkMate.h"
 
 using namespace chrono;
 using namespace postprocess;
@@ -903,8 +894,8 @@ void ChPovRay::ExportData(const std::string& filename) {
                                                    const float& mfriction,
                                                    const ChVector<>& react_forces,
                                                    const ChVector<>& react_torques,
-                                                   collision::ChCollisionModel* modA,
-                                                   collision::ChCollisionModel* modB) {
+                                                   ChContactable* contactobjA,
+                                                   ChContactable* contactobjB) {
                     if (fabs(react_forces.x) > 1e-8 || fabs(react_forces.y) > 1e-8 || fabs(react_forces.z) > 1e-8) {
                         ChMatrix33<> localmatr(plane_coord);
                         ChVector<> n1 = localmatr.Get_A_Xaxis();

@@ -9,7 +9,7 @@
 // http://projectchrono.org/license-chrono.txt.
 //
 // =============================================================================
-// Authors: Radu Serban
+// Authors: Radu Serban, Arman Pazouki
 // =============================================================================
 //
 // Utility functions to facilitate adding contact and visualization geometry to
@@ -85,6 +85,13 @@ ChApi void AddBoxGeometry(ChBody* body,
                           const ChQuaternion<>& rot = ChQuaternion<>(1, 0, 0, 0),
                           bool visualization = true);
 
+ChApi void AddBiSphereGeometry(ChBody* body,
+                               double radius,
+                               double cDist,
+                               const ChVector<>& pos = ChVector<>(0, 0, 0),
+                               const ChQuaternion<>& rot = ChQuaternion<>(1, 0, 0, 0),
+                               bool visualization = true);
+
 ChApi void AddCapsuleGeometry(ChBody* body,
                               double radius,
                               double hlen,
@@ -118,7 +125,7 @@ ChApi void AddTriangleMeshConvexDecomposition(ChBody* body,
                                               const std::string& name,
                                               const ChVector<>& pos = ChVector<>(0, 0, 0),
                                               const ChQuaternion<>& rot = ChQuaternion<>(1, 0, 0, 0),
-                                              double skin_thickness = 0,
+                                              float skin_thickness = 0.0f,
                                               bool use_original_asset = true);
 
 ChApi void AddTriangleMeshConvexDecompositionV2(ChBody* body,
@@ -191,7 +198,7 @@ ChApi std::shared_ptr<ChBody> CreateBoxContainer(ChSystem* system,
                                                  const ChQuaternion<>& rot = ChQuaternion<>(1, 0, 0, 0),
                                                  bool collide = true,
                                                  bool y_up = false,
-                                                 bool overlap = false,
+                                                 bool overlap = true,
                                                  bool closed = false);
 
 // -----------------------------------------------------------------------------
@@ -215,14 +222,13 @@ ChApi std::shared_ptr<ChBody> CreateCylindricalContainerFromBoxes(
     const ChVector<>& hdim,
     double hthick,
     int numBoxes,
-    double rho,
-    double collisionEnvelope,
     const ChVector<>& pos = ChVector<>(0, 0, 0),
     const ChQuaternion<>& rot = ChQuaternion<>(1, 0, 0, 0),
     bool collide = true,
-    bool overlap = false,
+    bool overlap = true,
     bool closed = false,
-    bool isBoxBase = true);
+    bool isBoxBase = true,
+    bool partialVisualization = true);
 
 ChApi void InitializeObject(std::shared_ptr<ChBody> body,
                             double mass,
@@ -246,9 +252,9 @@ ChApi void LoadConvexMesh(const std::string& file_name,
                           int hacd_maxhullcount = 1024,
                           int hacd_maxhullmerge = 256,
                           int hacd_maxhullvertexes = 64,
-                          double hacd_concavity = 0.01,
-                          double hacd_smallclusterthreshold = 0.0,
-                          double hacd_fusetolerance = 1e-6);
+                          float hacd_concavity = 0.01f,
+                          float hacd_smallclusterthreshold = 0.0f,
+                          float hacd_fusetolerance = 1e-6f);
 
 // Given a convex mesh and it's decomposition add it to a ChBody
 // use_original_asset can be used to specify if the mesh or the convex decomp

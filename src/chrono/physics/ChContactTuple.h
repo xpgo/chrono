@@ -12,13 +12,13 @@
 #ifndef CHCONTACTTUPLE_H
 #define CHCONTACTTUPLE_H
 
-#include "core/ChFrame.h"
-#include "core/ChVectorDynamic.h"
-#include "lcp/ChLcpConstraintTwoTuplesContactN.h"
-#include "lcp/ChLcpSystemDescriptor.h"
-#include "collision/ChCCollisionModel.h"
-#include "collision/ChCCollisionInfo.h"
-#include "physics/ChMaterialCouple.h"
+#include "chrono/core/ChFrame.h"
+#include "chrono/core/ChVectorDynamic.h"
+#include "chrono/solver/ChConstraintTwoTuplesContactN.h"
+#include "chrono/solver/ChSystemDescriptor.h"
+#include "chrono/collision/ChCCollisionModel.h"
+#include "chrono/collision/ChCCollisionInfo.h"
+#include "chrono/physics/ChMaterialCouple.h"
 
 namespace chrono {
 
@@ -158,30 +158,28 @@ class ChContactTuple {
 
     virtual void ContIntLoadResidual_F(ChVectorDynamic<>& R, const double c) {}
 
-    virtual void ContIntToLCP(const unsigned int off_L,    ///< offset in L, Qc
-                              const ChVectorDynamic<>& L,  ///<
-                              const ChVectorDynamic<>& Qc  ///<
-                              ) {}
+    virtual void ContInjectKRMmatrices(ChSystemDescriptor& mdescriptor) {}
 
-    virtual void ContIntFromLCP(const unsigned int off_L,  ///< offset in L
-                                ChVectorDynamic<>& L       ///<
-                                ) {}
+    virtual void ContKRMmatricesLoad(double Kfactor, double Rfactor) {}
 
-    virtual void InjectConstraints(ChLcpSystemDescriptor& mdescriptor) {}
+    virtual void ContIntToDescriptor(const unsigned int off_L,    ///< offset in L, Qc
+                                     const ChVectorDynamic<>& L,  ///<
+                                     const ChVectorDynamic<>& Qc  ///<
+                                     ) {}
+
+    virtual void ContIntFromDescriptor(const unsigned int off_L,  ///< offset in L
+                                       ChVectorDynamic<>& L       ///<
+                                       ) {}
+
+    virtual void InjectConstraints(ChSystemDescriptor& mdescriptor) {}
 
     virtual void ConstraintsBiReset() {}
 
     virtual void ConstraintsBiLoad_C(double factor = 1., double recovery_clamp = 0.1, bool do_clamp = false) {}
 
     virtual void ConstraintsFetch_react(double factor) {}
-
-    virtual void ConstraintsLiLoadSuggestedSpeedSolution() {}
-    virtual void ConstraintsLiLoadSuggestedPositionSolution() {}
-
-    virtual void ConstraintsLiFetchSuggestedSpeedSolution() {}
-    virtual void ConstraintsLiFetchSuggestedPositionSolution() {}
 };
 
-}  // END_OF_NAMESPACE____
+}  // end namespace chrono
 
 #endif

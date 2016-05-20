@@ -26,8 +26,6 @@ ChClassRegister<ChLinkPointFrame> a_registration_ChLinkPointFrame;
 
 ChLinkPointFrame::ChLinkPointFrame() {
 	this->react= VNULL;
-	this->cache_li_speed = VNULL;
-	this->cache_li_pos = VNULL;
 	this->attach_reference = CSYSNORM;
 
 	SetIdentifier(GetUniqueIntID()); // mark with unique ID
@@ -43,8 +41,6 @@ void ChLinkPointFrame::Copy(ChLinkPointFrame* source) {
 		// copy class data
 	attach_reference = source->attach_reference;
 	react = source->react;
-	cache_li_speed = source->cache_li_speed;
-	cache_li_pos = source->cache_li_pos;
 }
 
 ChCoordsys<> ChLinkPointFrame::GetLinkAbsoluteCoords() {
@@ -167,16 +163,16 @@ void ChLinkPointFrame::IntLoadConstraint_C(const unsigned int off_L,  ///< offse
 	Qc(off_L+2) += cres.z;
 }
 
-void ChLinkPointFrame::IntToLCP(const unsigned int off_v,  ///< offset in v, R
-					const ChStateDelta& v,
-					const ChVectorDynamic<>& R,
-					const unsigned int off_L,			///< offset in L, Qc
-					const ChVectorDynamic<>& L,
-                                const ChVectorDynamic<>& Qc) {
-	if (!IsActive())
-    return;
+void ChLinkPointFrame::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                                       const ChStateDelta& v,
+                                       const ChVectorDynamic<>& R,
+                                       const unsigned int off_L,  ///< offset in L, Qc
+                                       const ChVectorDynamic<>& L,
+                                       const ChVectorDynamic<>& Qc) {
+    if (!IsActive())
+        return;
 
-	constraint1.Set_l_i(L(off_L+0));
+    constraint1.Set_l_i(L(off_L+0));
 	constraint2.Set_l_i(L(off_L+1));
 	constraint3.Set_l_i(L(off_L+2));
 
@@ -185,21 +181,21 @@ void ChLinkPointFrame::IntToLCP(const unsigned int off_v,  ///< offset in v, R
 	constraint3.Set_b_i(Qc(off_L+2));
 }
 
-void ChLinkPointFrame::IntFromLCP(const unsigned int off_v,  ///< offset in v
-					ChStateDelta& v,
-					const unsigned int off_L,			///< offset in L
-                                  ChVectorDynamic<>& L) {
-	if (!IsActive())
-    return;
+void ChLinkPointFrame::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                                         ChStateDelta& v,
+                                         const unsigned int off_L,  ///< offset in L
+                                         ChVectorDynamic<>& L) {
+    if (!IsActive())
+        return;
 
-	L(off_L+0)=constraint1.Get_l_i();
-	L(off_L+1)=constraint2.Get_l_i();
+    L(off_L + 0) = constraint1.Get_l_i();
+    L(off_L+1)=constraint2.Get_l_i();
 	L(off_L+2)=constraint3.Get_l_i();
 }
 
-////////// LCP INTERFACES ////
+////////// SOLVER INTERFACES ////
 
-void ChLinkPointFrame::InjectConstraints(ChLcpSystemDescriptor& mdescriptor) {
+void ChLinkPointFrame::InjectConstraints(ChSystemDescriptor& mdescriptor) {
 	//if (!this->IsActive())
 	//	return;
 
@@ -272,32 +268,6 @@ void ChLinkPointFrame::ConstraintsFetch_react(double factor) {
 	this->react.x = constraint1.Get_l_i() * factor; 
 	this->react.y = constraint2.Get_l_i() * factor; 
 	this->react.z = constraint3.Get_l_i() * factor; 
-}
-
-// Following functions are for exploiting the contact persistence
-
-void ChLinkPointFrame::ConstraintsLiLoadSuggestedSpeedSolution() {
-	constraint1.Set_l_i(this->cache_li_speed.x);
-	constraint2.Set_l_i(this->cache_li_speed.y);
-	constraint3.Set_l_i(this->cache_li_speed.z);
-}
-
-void ChLinkPointFrame::ConstraintsLiLoadSuggestedPositionSolution() {
-	constraint1.Set_l_i(this->cache_li_pos.x);
-	constraint2.Set_l_i(this->cache_li_pos.y);
-	constraint3.Set_l_i(this->cache_li_pos.z);
-}
-
-void ChLinkPointFrame::ConstraintsLiFetchSuggestedSpeedSolution() {
-	this->cache_li_speed.x = (float)constraint1.Get_l_i();
-	this->cache_li_speed.y = (float)constraint2.Get_l_i();
-	this->cache_li_speed.z = (float)constraint3.Get_l_i();
-}
-
-void ChLinkPointFrame::ConstraintsLiFetchSuggestedPositionSolution() {
-	this->cache_li_pos.x =  (float)constraint1.Get_l_i();
-	this->cache_li_pos.y =  (float)constraint2.Get_l_i();
-	this->cache_li_pos.z =  (float)constraint3.Get_l_i();
 }
 
 //////// FILE I/O

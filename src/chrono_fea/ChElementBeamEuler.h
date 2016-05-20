@@ -26,10 +26,16 @@ namespace fea {
 /// @addtogroup fea_elements
 /// @{
 
-/// Simple beam element with two nodes and Euler-Bernoulli
-/// formulation.
-/// For this 'basic' implementation, constant section and
-/// constant material are assumed.
+/// Simple beam element with two nodes and Euler-Bernoulli formulation.
+/// For this 'basic' implementation, constant section and constant
+/// material are assumed.
+///
+/// Further information in the 
+/// [white paper PDF](http://www.projectchrono.org/assets/white_papers/euler_beams.pdf)
+///
+/// Note that there are also ChElementBeamANCF if no torsional effects
+/// are needed, as in cables. 
+
 class ChApiFea ChElementBeamEuler : public ChElementBeam,
                                     public ChLoadableU,
                                     public ChLoadableUVW,
@@ -68,9 +74,9 @@ class ChApiFea ChElementBeamEuler : public ChElementBeam,
 
     virtual ~ChElementBeamEuler() {}
 
-    virtual int GetNnodes() { return 2; }
-    virtual int GetNcoords() { return 2 * 6; }
-    virtual int GetNdofs() { return 2 * 6; }
+    virtual int GetNnodes() override { return 2; }
+    virtual int GetNdofs() override { return 2 * 6; }
+    virtual int GetNodeNdofs(int n) override { return 6; }
 
     virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
 
@@ -80,7 +86,7 @@ class ChApiFea ChElementBeamEuler : public ChElementBeam,
 
         nodes[0] = nodeA;
         nodes[1] = nodeB;
-        std::vector<ChLcpVariables*> mvars;
+        std::vector<ChVariables*> mvars;
         mvars.push_back(&nodes[0]->Variables());
         mvars.push_back(&nodes[1]->Variables());
         Kmatr.SetVariables(mvars);
@@ -1024,7 +1030,7 @@ class ChApiFea ChElementBeamEuler : public ChElementBeam,
         ChVector<>& StrainV) { /* To be completed: Created to be consistent with base class implementation*/
     }
     //
-    // Functions for interfacing to the LCP solver
+    // Functions for interfacing to the solver
     //            (***not needed, thank to bookkeeping in parent class ChElementGeneric)
 
     //
@@ -1066,8 +1072,8 @@ class ChApiFea ChElementBeamEuler : public ChElementBeam,
     /// Get the size of the i-th sub-block of DOFs in global vector
     virtual unsigned int GetSubBlockSize(int nblock) { return 6; }
 
-    /// Get the pointers to the contained ChLcpVariables, appending to the mvars vector.
-    virtual void LoadableGetVariables(std::vector<ChLcpVariables*>& mvars) { 
+    /// Get the pointers to the contained ChVariables, appending to the mvars vector.
+    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) { 
         mvars.push_back(&this->nodes[0]->Variables());
         mvars.push_back(&this->nodes[1]->Variables());
     };

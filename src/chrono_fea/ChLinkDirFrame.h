@@ -13,22 +13,7 @@
 #ifndef CHLINKDIRFRAME_H
 #define CHLINKDIRFRAME_H
 
-//////////////////////////////////////////////////
-//
-//   ChLinkPointFrame.h
-//
-//   Class for creating a constraint between the direction
-//   of a ChNodeFEAxyzD and a ChBody object.
-//
-//   HEADER file for CHRONO,
-//	 Multibody dynamics engine
-//
-// ------------------------------------------------
-//             www.deltaknowledge.com
-// ------------------------------------------------
-///////////////////////////////////////////////////
-
-#include "chrono/lcp/ChLcpConstraintTwoGeneric.h"
+#include "chrono/solver/ChConstraintTwoGeneric.h"
 #include "chrono/physics/ChBodyFrame.h"
 #include "chrono/physics/ChLinkBase.h"
 #include "chrono_fea/ChNodeFEAxyzD.h"
@@ -58,12 +43,9 @@ private:
 
 	ChVector<> react;					
 	
-						// used as an interface to the LCP solver.
-	ChLcpConstraintTwoGeneric constraint1;
-	ChLcpConstraintTwoGeneric constraint2;
-
-	ChVector<> cache_li_speed;	// used to cache the last computed value of multiplier (solver warm starting)
-	ChVector<> cache_li_pos;	// used to cache the last computed value of multiplier (solver warm starting)	
+						// used as an interface to the solver.
+	ChConstraintTwoGeneric constraint1;
+	ChConstraintTwoGeneric constraint2;
 
     std::shared_ptr<fea::ChNodeFEAxyzD> mnode;
     std::shared_ptr<ChBodyFrame>  body;
@@ -111,26 +93,36 @@ public:
 			//
 
 				// (override/implement interfaces for global state vectors, see ChPhysicsItem for comments.)
-	virtual void IntStateGatherReactions(const unsigned int off_L,	ChVectorDynamic<>& L);	
-	virtual void IntStateScatterReactions(const unsigned int off_L,	const ChVectorDynamic<>& L);
-	virtual void IntLoadResidual_CqL(const unsigned int off_L, ChVectorDynamic<>& R, const ChVectorDynamic<>& L, const double c);
-	virtual void IntLoadConstraint_C(const unsigned int off, ChVectorDynamic<>& Qc,	const double c, bool do_clamp,	double recovery_clamp);
-	virtual void IntToLCP(const unsigned int off_v,	const ChStateDelta& v, const ChVectorDynamic<>& R, const unsigned int off_L, const ChVectorDynamic<>& L, const ChVectorDynamic<>& Qc);
-	virtual void IntFromLCP(const unsigned int off_v, ChStateDelta& v, const unsigned int off_L, ChVectorDynamic<>& L);
+    virtual void IntStateGatherReactions(const unsigned int off_L, ChVectorDynamic<>& L);
+    virtual void IntStateScatterReactions(const unsigned int off_L, const ChVectorDynamic<>& L);
+    virtual void IntLoadResidual_CqL(const unsigned int off_L,
+                                     ChVectorDynamic<>& R,
+                                     const ChVectorDynamic<>& L,
+                                     const double c);
+    virtual void IntLoadConstraint_C(const unsigned int off,
+                                     ChVectorDynamic<>& Qc,
+                                     const double c,
+                                     bool do_clamp,
+                                     double recovery_clamp);
+    virtual void IntToDescriptor(const unsigned int off_v,
+                                 const ChStateDelta& v,
+                                 const ChVectorDynamic<>& R,
+                                 const unsigned int off_L,
+                                 const ChVectorDynamic<>& L,
+                                 const ChVectorDynamic<>& Qc) override;
+    virtual void IntFromDescriptor(const unsigned int off_v,
+                                   ChStateDelta& v,
+                                   const unsigned int off_L,
+                                   ChVectorDynamic<>& L) override;
 
+    // Override/implement system functions of ChPhysicsItem
+    // (to assemble/manage data for system solver)
 
-			// Override/implement LCP system functions of ChPhysicsItem
-			// (to assembly/manage data for LCP system solver
-
-	virtual void InjectConstraints(ChLcpSystemDescriptor& mdescriptor);
+	virtual void InjectConstraints(ChSystemDescriptor& mdescriptor);
 	virtual void ConstraintsBiReset();
 	virtual void ConstraintsBiLoad_C(double factor=1., double recovery_clamp=0.1, bool do_clamp=false);
 	virtual void ConstraintsBiLoad_Ct(double factor=1.);
 	virtual void ConstraintsLoadJacobians();
-	virtual void ConstraintsLiLoadSuggestedSpeedSolution();
-	virtual void ConstraintsLiLoadSuggestedPositionSolution();
-	virtual void ConstraintsLiFetchSuggestedSpeedSolution();
-	virtual void ConstraintsLiFetchSuggestedPositionSolution();
 	virtual void ConstraintsFetch_react(double factor=1.);
 
 
@@ -194,8 +186,7 @@ public:
 
 /// @} fea_constraints
 
-} // END_OF_NAMESPACE____
-} // END_OF_NAMESPACE____
-
+}  // end namespace fea
+}  // end namespace chrono
 
 #endif

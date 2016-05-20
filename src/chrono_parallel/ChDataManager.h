@@ -21,9 +21,9 @@
 #pragma once
 
 // Chrono Includes
-#include "lcp/ChLcpSystemDescriptor.h"
-#include "physics/ChBody.h"
-#include "physics/ChLinksAll.h"
+#include "chrono/solver/ChSystemDescriptor.h"
+#include "chrono/physics/ChBody.h"
+#include "chrono/physics/ChLinksAll.h"
 
 // Chrono Parallel Includes
 #include "chrono_parallel/ChTimerParallel.h"
@@ -50,6 +50,9 @@ using blaze::subvector;
 using thrust::host_vector;
 
 namespace chrono {
+
+/// @addtogroup parallel_module
+/// @{
 
 typedef blaze::SparseSubmatrix<CompressedMatrix<real> > SubMatrixType;
 typedef blaze::DenseSubvector<DynamicVector<real> > SubVectorType;
@@ -203,9 +206,8 @@ class CH_PARALLEL_API ChParallelDataManager {
     // from when the code supported the GPU (host vs device)
     host_container host_data;
 
-    // This pointer is used by the bilarerals for computing the jacobian and other
-    // terms
-    ChLcpSystemDescriptor* lcp_system_descriptor;
+    // This pointer is used by the bilarerals for computing the jacobian and other terms
+    ChSystemDescriptor* system_descriptor;
 
     // These pointers are used to compute the mass matrix instead of filling a
     // a temporary data structure
@@ -244,5 +246,7 @@ class CH_PARALLEL_API ChParallelDataManager {
     // This is useful when debugging
     int ExportCurrentSystem(std::string output_dir);
 };
+
+/// @} parallel_module
 }
 

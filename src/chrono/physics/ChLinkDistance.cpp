@@ -31,7 +31,6 @@ ChLinkDistance::ChLinkDistance() {
     pos1 = pos2 = VNULL;
     distance = 0;
     curr_dist = 0;
-    cache_li_speed = cache_li_pos = 0;
 }
 
 ChLinkDistance::~ChLinkDistance() {
@@ -84,8 +83,6 @@ void ChLinkDistance::Copy(ChLinkDistance* source) {
     pos2 = source->pos2;
     distance = source->distance;
     curr_dist = source->curr_dist;
-    cache_li_speed = source->cache_li_speed;
-    cache_li_pos = source->cache_li_pos;
 }
 
 ChLink* ChLinkDistance::new_Duplicate() {
@@ -126,19 +123,19 @@ void ChLinkDistance::Update(double mytime, bool update_assets) {
     ChVector<> CqAr = -Vcross(D2relA, pos1);
     ChVector<> CqBr = Vcross(D2relB, pos2);
 
-    Cx.Get_Cq_a()->ElementN(0) = (float)CqAx.x;
-    Cx.Get_Cq_a()->ElementN(1) = (float)CqAx.y;
-    Cx.Get_Cq_a()->ElementN(2) = (float)CqAx.z;
-    Cx.Get_Cq_a()->ElementN(3) = (float)CqAr.x;
-    Cx.Get_Cq_a()->ElementN(4) = (float)CqAr.y;
-    Cx.Get_Cq_a()->ElementN(5) = (float)CqAr.z;
+    Cx.Get_Cq_a()->ElementN(0) = CqAx.x;
+    Cx.Get_Cq_a()->ElementN(1) = CqAx.y;
+    Cx.Get_Cq_a()->ElementN(2) = CqAx.z;
+    Cx.Get_Cq_a()->ElementN(3) = CqAr.x;
+    Cx.Get_Cq_a()->ElementN(4) = CqAr.y;
+    Cx.Get_Cq_a()->ElementN(5) = CqAr.z;
 
-    Cx.Get_Cq_b()->ElementN(0) = (float)CqBx.x;
-    Cx.Get_Cq_b()->ElementN(1) = (float)CqBx.y;
-    Cx.Get_Cq_b()->ElementN(2) = (float)CqBx.z;
-    Cx.Get_Cq_b()->ElementN(3) = (float)CqBr.x;
-    Cx.Get_Cq_b()->ElementN(4) = (float)CqBr.y;
-    Cx.Get_Cq_b()->ElementN(5) = (float)CqBr.z;
+    Cx.Get_Cq_b()->ElementN(0) = CqBx.x;
+    Cx.Get_Cq_b()->ElementN(1) = CqBx.y;
+    Cx.Get_Cq_b()->ElementN(2) = CqBx.z;
+    Cx.Get_Cq_b()->ElementN(3) = CqBr.x;
+    Cx.Get_Cq_b()->ElementN(4) = CqBr.y;
+    Cx.Get_Cq_b()->ElementN(5) = CqBr.z;
 
     //***TO DO***  C_dt? C_dtdt? (may be never used..)
 }
@@ -183,12 +180,12 @@ void ChLinkDistance::IntLoadConstraint_C(const unsigned int off_L,  ///< offset 
         Qc(off_L) += c * (curr_dist - distance);
 }
 
-void ChLinkDistance::IntToLCP(const unsigned int off_v,  ///< offset in v, R
-                              const ChStateDelta& v,
-                              const ChVectorDynamic<>& R,
-                              const unsigned int off_L,  ///< offset in L, Qc
-                              const ChVectorDynamic<>& L,
-                              const ChVectorDynamic<>& Qc) {
+void ChLinkDistance::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                                     const ChStateDelta& v,
+                                     const ChVectorDynamic<>& R,
+                                     const unsigned int off_L,  ///< offset in L, Qc
+                                     const ChVectorDynamic<>& L,
+                                     const ChVectorDynamic<>& Qc) {
     if (!IsActive())
         return;
 
@@ -197,19 +194,19 @@ void ChLinkDistance::IntToLCP(const unsigned int off_v,  ///< offset in v, R
     Cx.Set_b_i(Qc(off_L));
 }
 
-void ChLinkDistance::IntFromLCP(const unsigned int off_v,  ///< offset in v
-                                ChStateDelta& v,
-                                const unsigned int off_L,  ///< offset in L
-                                ChVectorDynamic<>& L) {
+void ChLinkDistance::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                                       ChStateDelta& v,
+                                       const unsigned int off_L,  ///< offset in L
+                                       ChVectorDynamic<>& L) {
     if (!IsActive())
         return;
 
     L(off_L) = Cx.Get_l_i();
 }
 
-////////// LCP INTERFACES ////
+// SOLVER INTERFACES
 
-void ChLinkDistance::InjectConstraints(ChLcpSystemDescriptor& mdescriptor) {
+void ChLinkDistance::InjectConstraints(ChSystemDescriptor& mdescriptor) {
     if (!this->IsActive())
         return;
 
@@ -242,27 +239,6 @@ void ChLinkDistance::ConstraintsFetch_react(double factor) {
 
     react_torque = VNULL;
 }
-
-//
-// Following functions are for exploiting the contact persistence
-//
-
-void ChLinkDistance::ConstraintsLiLoadSuggestedSpeedSolution() {
-    Cx.Set_l_i(this->cache_li_speed);
-}
-
-void ChLinkDistance::ConstraintsLiLoadSuggestedPositionSolution() {
-    Cx.Set_l_i(this->cache_li_pos);
-}
-
-void ChLinkDistance::ConstraintsLiFetchSuggestedSpeedSolution() {
-    this->cache_li_speed = (float)Cx.Get_l_i();
-}
-
-void ChLinkDistance::ConstraintsLiFetchSuggestedPositionSolution() {
-    this->cache_li_pos = (float)Cx.Get_l_i();
-}
-
 
 
 void ChLinkDistance::ArchiveOUT(ChArchiveOut& marchive)

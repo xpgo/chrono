@@ -28,11 +28,8 @@ ChLinkRevoluteSpherical::ChLinkRevoluteSpherical()
       m_cur_dot(0) {
     m_C = new ChMatrixDynamic<>(2, 1);
 
-    m_cache_speed[0] = 0;
-    m_cache_speed[1] = 0;
-
-    m_cache_pos[0] = 0;
-    m_cache_pos[1] = 0;
+    m_multipliers[0] = 0;
+    m_multipliers[1] = 0;
 }
 
 ChLinkRevoluteSpherical::~ChLinkRevoluteSpherical() {
@@ -59,11 +56,8 @@ void ChLinkRevoluteSpherical::Copy(ChLinkRevoluteSpherical* source) {
     m_cnstr_dist.SetVariables(&Body1->Variables(), &Body2->Variables());
     m_cnstr_dot.SetVariables(&Body1->Variables(), &Body2->Variables());
 
-    m_cache_speed[0] = source->m_cache_speed[0];
-    m_cache_speed[1] = source->m_cache_speed[1];
-
-    m_cache_pos[0] = source->m_cache_pos[0];
-    m_cache_pos[1] = source->m_cache_pos[1];
+    m_multipliers[0] = source->m_multipliers[0];
+    m_multipliers[1] = source->m_multipliers[1];
 }
 
 ChLink* ChLinkRevoluteSpherical::new_Duplicate() {
@@ -191,24 +185,24 @@ void ChLinkRevoluteSpherical::Update(double time, bool update_assets) {
         ChVector<> Phi_r1 = -u12_abs;
         ChVector<> Phi_pi1 = Vcross(u12_loc1, m_pos1);
 
-        m_cnstr_dist.Get_Cq_a()->ElementN(0) = (float)Phi_r1.x;
-        m_cnstr_dist.Get_Cq_a()->ElementN(1) = (float)Phi_r1.y;
-        m_cnstr_dist.Get_Cq_a()->ElementN(2) = (float)Phi_r1.z;
+        m_cnstr_dist.Get_Cq_a()->ElementN(0) = Phi_r1.x;
+        m_cnstr_dist.Get_Cq_a()->ElementN(1) = Phi_r1.y;
+        m_cnstr_dist.Get_Cq_a()->ElementN(2) = Phi_r1.z;
 
-        m_cnstr_dist.Get_Cq_a()->ElementN(3) = (float)Phi_pi1.x;
-        m_cnstr_dist.Get_Cq_a()->ElementN(4) = (float)Phi_pi1.y;
-        m_cnstr_dist.Get_Cq_a()->ElementN(5) = (float)Phi_pi1.z;
+        m_cnstr_dist.Get_Cq_a()->ElementN(3) = Phi_pi1.x;
+        m_cnstr_dist.Get_Cq_a()->ElementN(4) = Phi_pi1.y;
+        m_cnstr_dist.Get_Cq_a()->ElementN(5) = Phi_pi1.z;
 
         ChVector<> Phi_r2 = u12_abs;
         ChVector<> Phi_pi2 = -Vcross(u12_loc2, m_pos2);
 
-        m_cnstr_dist.Get_Cq_b()->ElementN(0) = (float)Phi_r2.x;
-        m_cnstr_dist.Get_Cq_b()->ElementN(1) = (float)Phi_r2.y;
-        m_cnstr_dist.Get_Cq_b()->ElementN(2) = (float)Phi_r2.z;
+        m_cnstr_dist.Get_Cq_b()->ElementN(0) = Phi_r2.x;
+        m_cnstr_dist.Get_Cq_b()->ElementN(1) = Phi_r2.y;
+        m_cnstr_dist.Get_Cq_b()->ElementN(2) = Phi_r2.z;
 
-        m_cnstr_dist.Get_Cq_b()->ElementN(3) = (float)Phi_pi2.x;
-        m_cnstr_dist.Get_Cq_b()->ElementN(4) = (float)Phi_pi2.y;
-        m_cnstr_dist.Get_Cq_b()->ElementN(5) = (float)Phi_pi2.z;
+        m_cnstr_dist.Get_Cq_b()->ElementN(3) = Phi_pi2.x;
+        m_cnstr_dist.Get_Cq_b()->ElementN(4) = Phi_pi2.y;
+        m_cnstr_dist.Get_Cq_b()->ElementN(5) = Phi_pi2.z;
     }
 
     // Cache violation of the dot constraint
@@ -220,24 +214,24 @@ void ChLinkRevoluteSpherical::Update(double time, bool update_assets) {
         ChVector<> Phi_r1 = -dir1_abs;
         ChVector<> Phi_pi1 = Vcross(m_dir1, m_pos1) - Vcross(u12_loc1, m_pos1);
 
-        m_cnstr_dot.Get_Cq_a()->ElementN(0) = (float)Phi_r1.x;
-        m_cnstr_dot.Get_Cq_a()->ElementN(1) = (float)Phi_r1.y;
-        m_cnstr_dot.Get_Cq_a()->ElementN(2) = (float)Phi_r1.z;
+        m_cnstr_dot.Get_Cq_a()->ElementN(0) = Phi_r1.x;
+        m_cnstr_dot.Get_Cq_a()->ElementN(1) = Phi_r1.y;
+        m_cnstr_dot.Get_Cq_a()->ElementN(2) = Phi_r1.z;
 
-        m_cnstr_dot.Get_Cq_a()->ElementN(3) = (float)Phi_pi1.x;
-        m_cnstr_dot.Get_Cq_a()->ElementN(4) = (float)Phi_pi1.y;
-        m_cnstr_dot.Get_Cq_a()->ElementN(5) = (float)Phi_pi1.z;
+        m_cnstr_dot.Get_Cq_a()->ElementN(3) = Phi_pi1.x;
+        m_cnstr_dot.Get_Cq_a()->ElementN(4) = Phi_pi1.y;
+        m_cnstr_dot.Get_Cq_a()->ElementN(5) = Phi_pi1.z;
 
         ChVector<> Phi_r2 = dir1_abs;
         ChVector<> Phi_pi2 = -Vcross(dir1_loc2, m_pos2);
 
-        m_cnstr_dot.Get_Cq_b()->ElementN(0) = (float)Phi_r2.x;
-        m_cnstr_dot.Get_Cq_b()->ElementN(1) = (float)Phi_r2.y;
-        m_cnstr_dot.Get_Cq_b()->ElementN(2) = (float)Phi_r2.z;
+        m_cnstr_dot.Get_Cq_b()->ElementN(0) = Phi_r2.x;
+        m_cnstr_dot.Get_Cq_b()->ElementN(1) = Phi_r2.y;
+        m_cnstr_dot.Get_Cq_b()->ElementN(2) = Phi_r2.z;
 
-        m_cnstr_dot.Get_Cq_b()->ElementN(3) = (float)Phi_pi2.x;
-        m_cnstr_dot.Get_Cq_b()->ElementN(4) = (float)Phi_pi2.y;
-        m_cnstr_dot.Get_Cq_b()->ElementN(5) = (float)Phi_pi2.z;
+        m_cnstr_dot.Get_Cq_b()->ElementN(3) = Phi_pi2.x;
+        m_cnstr_dot.Get_Cq_b()->ElementN(4) = Phi_pi2.y;
+        m_cnstr_dot.Get_Cq_b()->ElementN(5) = Phi_pi2.z;
     }
 }
 
@@ -247,21 +241,21 @@ void ChLinkRevoluteSpherical::IntStateGatherReactions(const unsigned int off_L, 
     if (!this->IsActive())
         return;
 
-    L(off_L) = m_cache_speed[0];
-    L(off_L + 1) = m_cache_speed[1];
+    L(off_L + 0) = m_multipliers[0];
+    L(off_L + 1) = m_multipliers[1];
 }
 
 void ChLinkRevoluteSpherical::IntStateScatterReactions(const unsigned int off_L, const ChVectorDynamic<>& L) {
     if (!this->IsActive())
         return;
 
-    m_cache_speed[0] = L(off_L);
-    m_cache_speed[1] = L(off_L + 1);
+    m_multipliers[0] = L(off_L + 0);
+    m_multipliers[1] = L(off_L + 1);
 
     // Also compute 'intuitive' reactions:
 
-    double lam_dist = m_cache_speed[0];  // ||pos2_abs - pos1_abs|| - dist = 0
-    double lam_dot = m_cache_speed[1];   // dot(dir1_abs, pos2_abs - pos1_abs) = 0
+    double lam_dist = m_multipliers[0];  // ||pos2_abs - pos1_abs|| - dist = 0
+    double lam_dot = m_multipliers[1];   // dot(dir1_abs, pos2_abs - pos1_abs) = 0
 
     // Calculate the reaction torques and forces on Body 2 in the joint frame
     // (Note: origin of the joint frame is at the center of the revolute joint
@@ -305,12 +299,12 @@ void ChLinkRevoluteSpherical::IntLoadConstraint_C(const unsigned int off_L,  ///
     Qc(off_L + 1) += cnstr_dot_violation;
 }
 
-void ChLinkRevoluteSpherical::IntToLCP(const unsigned int off_v,  ///< offset in v, R
-                                       const ChStateDelta& v,
-                                       const ChVectorDynamic<>& R,
-                                       const unsigned int off_L,  ///< offset in L, Qc
-                                       const ChVectorDynamic<>& L,
-                                       const ChVectorDynamic<>& Qc) {
+void ChLinkRevoluteSpherical::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                                              const ChStateDelta& v,
+                                              const ChVectorDynamic<>& R,
+                                              const unsigned int off_L,  ///< offset in L, Qc
+                                              const ChVectorDynamic<>& L,
+                                              const ChVectorDynamic<>& Qc) {
     if (!IsActive())
         return;
 
@@ -321,10 +315,10 @@ void ChLinkRevoluteSpherical::IntToLCP(const unsigned int off_v,  ///< offset in
     m_cnstr_dot.Set_b_i(Qc(off_L + 1));
 }
 
-void ChLinkRevoluteSpherical::IntFromLCP(const unsigned int off_v,  ///< offset in v
-                                         ChStateDelta& v,
-                                         const unsigned int off_L,  ///< offset in L
-                                         ChVectorDynamic<>& L) {
+void ChLinkRevoluteSpherical::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                                                ChStateDelta& v,
+                                                const unsigned int off_L,  ///< offset in L
+                                                ChVectorDynamic<>& L) {
     if (!IsActive())
         return;
 
@@ -335,7 +329,7 @@ void ChLinkRevoluteSpherical::IntFromLCP(const unsigned int off_v,  ///< offset 
 // -----------------------------------------------------------------------------
 // Implementation of solver interface functions
 // -----------------------------------------------------------------------------
-void ChLinkRevoluteSpherical::InjectConstraints(ChLcpSystemDescriptor& descriptor) {
+void ChLinkRevoluteSpherical::InjectConstraints(ChSystemDescriptor& descriptor) {
     if (!IsActive())
         return;
 
@@ -435,33 +429,6 @@ ChVector<> ChLinkRevoluteSpherical::Get_react_torque_body2() {
     //  axis defined for the joint)
     //  react_torque = (0,0,0)
     return VNULL;
-}
-
-// -----------------------------------------------------------------------------
-// Load and store multipliers (caching to allow warm starting)
-// -----------------------------------------------------------------------------
-void ChLinkRevoluteSpherical::ConstraintsLiLoadSuggestedSpeedSolution() {
-    // Set multipliers to those cached at previous step.
-    m_cnstr_dist.Set_l_i(m_cache_speed[0]);
-    m_cnstr_dot.Set_l_i(m_cache_speed[1]);
-}
-
-void ChLinkRevoluteSpherical::ConstraintsLiLoadSuggestedPositionSolution() {
-    // Set multipliers to those cached at previous step.
-    m_cnstr_dist.Set_l_i(m_cache_pos[0]);
-    m_cnstr_dot.Set_l_i(m_cache_pos[1]);
-}
-
-void ChLinkRevoluteSpherical::ConstraintsLiFetchSuggestedSpeedSolution() {
-    // Cache current multipliers.
-    m_cache_speed[0] = m_cnstr_dist.Get_l_i();
-    m_cache_speed[1] = m_cnstr_dot.Get_l_i();
-}
-
-void ChLinkRevoluteSpherical::ConstraintsLiFetchSuggestedPositionSolution() {
-    // Cache current multipliers.
-    m_cache_pos[0] = m_cnstr_dist.Get_l_i();
-    m_cache_pos[1] = m_cnstr_dot.Get_l_i();
 }
 
 

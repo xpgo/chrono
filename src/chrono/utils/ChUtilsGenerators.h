@@ -47,7 +47,7 @@ namespace chrono {
 namespace utils {
 
 // Enumeration of various geometric shapes
-enum MixtureType { SPHERE, ELLIPSOID, BOX, CYLINDER, CONE, CAPSULE, ROUNDEDCYLINDER };
+enum MixtureType { SPHERE, ELLIPSOID, BOX, CYLINDER, CONE, CAPSULE, BISPHERE, ROUNDEDCYLINDER };
 
 // Forward declarations
 class Generator;
@@ -80,8 +80,7 @@ class ChApi MixtureIngredient {
     MixtureIngredient(Generator* generator, MixtureType type, double ratio);
     ~MixtureIngredient();
 
-    void setDefaultMaterialDVI(const std::shared_ptr<ChMaterialSurface>& mat);
-    void setDefaultMaterialDEM(const std::shared_ptr<ChMaterialSurfaceDEM>& mat);
+    void setDefaultMaterial(std::shared_ptr<ChMaterialSurfaceBase> mat);
     void setDefaultDensity(double density);
     void setDefaultSize(const ChVector<>& size);
 
@@ -160,7 +159,7 @@ class ChApi Generator {
 
     // Add a new mixture ingredient of the specified type and in the given ratio
     // (note that the ratios are normalized before creating bodies)
-    std::shared_ptr<MixtureIngredient>& AddMixtureIngredient(MixtureType type, double ratio);
+    std::shared_ptr<MixtureIngredient> AddMixtureIngredient(MixtureType type, double ratio);
 
     // Get/Set the identifier that will be assigned to the next body.
     // Identifiers are incremented for successively created bodies.
@@ -213,7 +212,7 @@ class ChApi Generator {
     // (CSV format)
     void writeObjectInfo(const std::string& filename);
 
-    int getTotalNumBodies() const { return m_totalNumBodies; }
+    unsigned int getTotalNumBodies() const { return m_totalNumBodies; }
     double getTotalMass() const { return m_totalMass; }
     double getTotalVolume() const { return m_totalVolume; }
 
@@ -239,7 +238,7 @@ class ChApi Generator {
 
     std::vector<std::shared_ptr<MixtureIngredient>> m_mixture;
     std::vector<BodyInfo> m_bodies;
-    int m_totalNumBodies;
+    unsigned int m_totalNumBodies;
     double m_totalMass;
     double m_totalVolume;
 

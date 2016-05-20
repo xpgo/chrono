@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "chrono/core/ChTimer.h"
 #include "chrono/physics/ChContinuumMaterial.h"
 #include "chrono/physics/ChIndexedNodes.h"
 #include "chrono/physics/ChMaterialSurface.h"
@@ -24,23 +25,12 @@
 #include "chrono_fea/ChMeshSurface.h"
 #include "chrono_fea/ChNodeFEAbase.h"
 
-/**
-    @defgroup fea Chrono::FEA
-    @brief Finite Element Analysis
-    @{
-        @defgroup fea_nodes Nodes
-        @defgroup fea_elements Elements
-        @defgroup fea_constraints Constraints
-        @defgroup fea_math Mathematical support
-    @}
-*/
 
 namespace chrono {
 
-/// Namespace with classes for the Chrono::FEA module.
 namespace fea {
 
-/// @addtogroup fea
+/// @addtogroup fea_module
 /// @{
 
 /// Class which defines a mesh of finite elements of class ChFelem,
@@ -62,14 +52,21 @@ class ChApiFea ChMesh : public ChIndexedNodes {
     bool automatic_gravity_load;
 	int num_points_gravity;
 
+    ChTimer<> timer_internal_forces;
+    ChTimer<> timer_KRMload;
+    int ncalls_internal_forces;
+    int ncalls_KRMload;
+
   public:
-    ChMesh() {
-        n_dofs = 0;
-        n_dofs_w = 0;
-        automatic_gravity_load = true;
-        num_points_gravity = 1;
-    };
-    ~ChMesh(){};
+    ChMesh()
+        : n_dofs(0),
+          n_dofs_w(0),
+          automatic_gravity_load(true),
+          num_points_gravity(1),
+          ncalls_internal_forces(0),
+          ncalls_KRMload(0) {}
+
+    ~ChMesh() {}
 
     void AddNode(std::shared_ptr<ChNodeFEAbase> m_node);
     void AddElement(std::shared_ptr<ChElementBase> m_elem);
@@ -87,7 +84,17 @@ class ChApiFea ChMesh : public ChIndexedNodes {
     virtual int GetDOF_w() { return n_dofs_w; }
 
     /// Override default in ChPhysicsItem
-    virtual bool GetCollide() { return true; };
+    virtual bool GetCollide() { return true; }
+
+    /// Get number of calls to internal forces evaluation.
+    int GetNumCallsInternalForces() { return ncalls_internal_forces; }
+    /// Get number of calls to load Jacobian information.
+    int GetNumCallsJacobianLoad() { return ncalls_KRMload; }
+
+    /// Get cummulative timing for internal force evaluation.
+    double GetTimingInternalForces() { return timer_internal_forces(); }
+    /// Get cummulative timing for Jacobian load calls.
+    double GetTimingJacobianLoad() { return timer_KRMload(); }
 
     /// Add a contact surface
     void AddContactSurface(std::shared_ptr<ChContactSurface> m_surf);
@@ -138,19 +145,25 @@ class ChApiFea ChMesh : public ChIndexedNodes {
     /// to all contained elements (that support gravity) using the G value from the ChSystem.
     /// So this saves you from adding many ChLoad<ChLoaderGravity> to all elements.
 	void SetAutomaticGravity(bool mg, int num_points = 1) { automatic_gravity_load = mg; num_points_gravity = num_points; }
-    /// Tell if this mesh will add automatically a gravity load to all contained elements 
-    bool GetAutomaticGravity() {return automatic_gravity_load;} 
+    /// Tell if this mesh will add automatically a gravity load to all contained elements
+    bool GetAutomaticGravity() { return automatic_gravity_load; }
+
+    /// Get ChMesh mass properties
+    void ComputeMassProperties(double& mass,          ///< ChMesh object mass
+                               ChVector<>& com,       ///< ChMesh center of gravity
+                               ChMatrix33<>& inertia  ///< ChMesh inertia tensor
+                               );
 
     //
     // STATE FUNCTIONS
     //
 
-    // (override/implement interfaces for global state vectors, see ChPhysicsItem for comments.)
-    virtual void IntStateGather(const unsigned int off_x,
-                                ChState& x,
-                                const unsigned int off_v,
-                                ChStateDelta& v,
-                                double& T);
+        // (override/implement interfaces for global state vectors, see ChPhysicsItem for comments.)
+        virtual void IntStateGather(const unsigned int off_x,
+                                    ChState& x,
+                                    const unsigned int off_v,
+                                    ChStateDelta& v,
+                                    double& T);
     virtual void IntStateScatter(const unsigned int off_x,
                                  const ChState& x,
                                  const unsigned int off_v,
@@ -168,38 +181,41 @@ class ChApiFea ChMesh : public ChIndexedNodes {
                                     ChVectorDynamic<>& R,
                                     const ChVectorDynamic<>& w,
                                     const double c);
-    virtual void IntToLCP(const unsigned int off_v,
-                          const ChStateDelta& v,
-                          const ChVectorDynamic<>& R,
-                          const unsigned int off_L,
-                          const ChVectorDynamic<>& L,
-                          const ChVectorDynamic<>& Qc);
-    virtual void IntFromLCP(const unsigned int off_v, ChStateDelta& v, const unsigned int off_L, ChVectorDynamic<>& L);
+    virtual void IntToDescriptor(const unsigned int off_v,
+                                 const ChStateDelta& v,
+                                 const ChVectorDynamic<>& R,
+                                 const unsigned int off_L,
+                                 const ChVectorDynamic<>& L,
+                                 const ChVectorDynamic<>& Qc);
+    virtual void IntFromDescriptor(const unsigned int off_v,
+                                   ChStateDelta& v,
+                                   const unsigned int off_L,
+                                   ChVectorDynamic<>& L);
 
     //
-    // LCP SYSTEM FUNCTIONS        for interfacing all elements with LCP solver
+    // SYSTEM FUNCTIONS        for interfacing all elements with solver
     //
 
     /// Tell to a system descriptor that there are items of type
-    /// ChLcpKblock in this object (for further passing it to a LCP solver)
+    /// ChKblock in this object (for further passing it to a solver)
     /// Basically does nothing, but maybe that inherited classes may specialize this.
-    virtual void InjectKRMmatrices(ChLcpSystemDescriptor& mdescriptor);
+    virtual void InjectKRMmatrices(ChSystemDescriptor& mdescriptor);
 
     /// Adds the current stiffness K and damping R and mass M matrices in encapsulated
-    /// ChLcpKblock item(s), if any. The K, R, M matrices are added with scaling
+    /// ChKblock item(s), if any. The K, R, M matrices are added with scaling
     /// values Kfactor, Rfactor, Mfactor.
     virtual void KRMmatricesLoad(double Kfactor, double Rfactor, double Mfactor);
 
-    /// Sets the 'fb' part (the known term) of the encapsulated ChLcpVariables to zero.
+    /// Sets the 'fb' part (the known term) of the encapsulated ChVariables to zero.
     virtual void VariablesFbReset();
 
     /// Adds the current forces (applied to item) into the
-    /// encapsulated ChLcpVariables, in the 'fb' part: qf+=forces*factor
+    /// encapsulated ChVariables, in the 'fb' part: qf+=forces*factor
     virtual void VariablesFbLoadForces(double factor = 1.);
 
-    /// Initialize the 'qb' part of the ChLcpVariables with the
-    /// current value of speeds. Note: since 'qb' is the unknown of the LCP, this
-    /// function seems unuseful, unless used before VariablesFbIncrementMq()
+    /// Initialize the 'qb' part of the ChVariables with the
+    /// current value of speeds. Note: since 'qb' is the unknown, this
+    /// function seems unnecessary, unless used before VariablesFbIncrementMq()
     virtual void VariablesQbLoadSpeed();
 
     /// Adds M*q (masses multiplied current 'qb') to Fb, ex. if qb is initialized
@@ -208,13 +224,13 @@ class ChApiFea ChMesh : public ChIndexedNodes {
     virtual void VariablesFbIncrementMq();
 
     /// Fetches the item speed (ex. linear and angular vel.in rigid bodies) from the
-    /// 'qb' part of the ChLcpVariables and sets it as the current item speed.
+    /// 'qb' part of the ChVariables and sets it as the current item speed.
     /// If 'step' is not 0, also should compute the approximate acceleration of
     /// the item using backward differences, that is  accel=(new_speed-old_speed)/step.
-    /// Mostly used after the LCP provided the solution in ChLcpVariables.
+    /// Mostly used after the solver provided the solution in ChVariables.
     virtual void VariablesQbSetSpeed(double step = 0.);
 
-    /// Increment item positions by the 'qb' part of the ChLcpVariables,
+    /// Increment item positions by the 'qb' part of the ChVariables,
     /// multiplied by a 'step' factor.
     ///     pos+=qb*step
     /// If qb is a speed, this behaves like a single step of 1-st order
@@ -222,9 +238,9 @@ class ChApiFea ChMesh : public ChIndexedNodes {
     virtual void VariablesQbIncrementPosition(double step);
 
     /// Tell to a system descriptor that there are variables of type
-    /// ChLcpVariables in this object (for further passing it to a LCP solver)
+    /// ChVariables in this object (for further passing it to a solver)
     /// Basically does nothing, but maybe that inherited classes may specialize this.
-    virtual void InjectVariables(ChLcpSystemDescriptor& mdescriptor);
+    virtual void InjectVariables(ChSystemDescriptor& mdescriptor);
 
   private:
     /// Initial setup (before analysis).
@@ -235,7 +251,7 @@ class ChApiFea ChMesh : public ChIndexedNodes {
     virtual void SetupInitial() override;
 };
 
-/// @} fea
+/// @} fea_module
 
 }  // END_OF_NAMESPACE____
 }  // END_OF_NAMESPACE____

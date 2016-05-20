@@ -265,29 +265,27 @@ void ChMesh::IntStateIncrement(
 }
 
 void ChMesh::IntLoadResidual_F(
-    const unsigned int off,		 ///< offset in R residual (not used here! use particle's offsets)
-    ChVectorDynamic<>& R,		 ///< result: the R residual, R += c*F
-    const double c				 ///< a scaling factor
-)
-{
-  // applied nodal forces
-  unsigned int local_off_v=0;
-  for (unsigned int j = 0; j < vnodes.size(); j++)
-  {
-    if (!vnodes[j]->GetFixed())
-    {
-      this->vnodes[j]->NodeIntLoadResidual_F(	off+local_off_v,
-          R,
-          c);
-      local_off_v += vnodes[j]->Get_ndof_w();
+    const unsigned int off,  // offset in R residual (not used here! use particle's offsets)
+    ChVectorDynamic<>& R,    // result: the R residual, R += c*F
+    const double c           // a scaling factor
+    ) {
+    // applied nodal forces
+    unsigned int local_off_v = 0;
+    for (unsigned int j = 0; j < vnodes.size(); j++) {
+        if (!vnodes[j]->GetFixed()) {
+            this->vnodes[j]->NodeIntLoadResidual_F(off + local_off_v, R, c);
+            local_off_v += vnodes[j]->Get_ndof_w();
+        }
     }
-  }
 
-  // internal forces
-#pragma omp parallel for
+    // internal forces
+    timer_internal_forces.start();
+#pragma omp parallel for schedule (dynamic, 4)
     for (int ie = 0; ie < this->velements.size(); ie++) {
         this->velements[ie]->EleIntLoadResidual_F(R, c);
     }
+    timer_internal_forces.stop();
+    ncalls_internal_forces++;
 
     // Apply gravity loads without the need of adding
     // a ChLoad object to each element: just instance here a single ChLoad and reuse
@@ -308,10 +306,30 @@ void ChMesh::IntLoadResidual_F(
                 }
             }
         }
-  }
+    }
 }
 
+void ChMesh::ComputeMassProperties(double& mass,           // ChMesh object mass
+                                   ChVector<>& com,        // ChMesh center of gravity
+                                   ChMatrix33<>& inertia)  // ChMesh inertia tensor
+{
+    mass = 0;
+    com = ChVector<>(0);
+    inertia = ChMatrix33<>(1);
 
+    // Initialize all nodal total masses to zero
+    for (unsigned int j = 0; j < vnodes.size(); j++) {
+        vnodes[j]->m_TotalMass = 0.0;
+    }
+    // Loop over all elements and calculate contribution to nodal mass
+    for (unsigned int ie = 0; ie < this->velements.size(); ie++) {
+        this->velements[ie]->ComputeNodalMass();
+    }
+    // Loop over all the nodes of the mesh to obtain total object mass
+    for (unsigned int j = 0; j < vnodes.size(); j++) {
+        mass += vnodes[j]->m_TotalMass;
+    }
+}
 void ChMesh::IntLoadResidual_Mv(
     const unsigned int off,		 ///< offset in R residual
     ChVectorDynamic<>& R,		 ///< result: the R residual, R += c*M*v
@@ -337,60 +355,49 @@ void ChMesh::IntLoadResidual_Mv(
   }
 }
 
-void ChMesh::IntToLCP(
-    const unsigned int off_v,			///< offset in v, R
-    const ChStateDelta& v,
-    const ChVectorDynamic<>& R,
-    const unsigned int off_L,			///< offset in L, Qc
-    const ChVectorDynamic<>& L,
-    const ChVectorDynamic<>& Qc
-)
-{
-  unsigned int local_off_v=0;
-  for (unsigned int j = 0; j < vnodes.size(); j++)
-  {
-    if (!vnodes[j]->GetFixed())
-    {
-      vnodes[j]->NodeIntToLCP(off_v + local_off_v,  v, R);
-      local_off_v += vnodes[j]->Get_ndof_w();
+void ChMesh::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                             const ChStateDelta& v,
+                             const ChVectorDynamic<>& R,
+                             const unsigned int off_L,  ///< offset in L, Qc
+                             const ChVectorDynamic<>& L,
+                             const ChVectorDynamic<>& Qc) {
+    unsigned int local_off_v = 0;
+    for (unsigned int j = 0; j < vnodes.size(); j++) {
+        if (!vnodes[j]->GetFixed()) {
+            vnodes[j]->NodeIntToDescriptor(off_v + local_off_v, v, R);
+            local_off_v += vnodes[j]->Get_ndof_w();
+        }
     }
-  }
 }
 
-void ChMesh::IntFromLCP(
-    const unsigned int off_v,			///< offset in v
-    ChStateDelta& v,
-    const unsigned int off_L,			///< offset in L
-    ChVectorDynamic<>& L
-)
-{
-  unsigned int local_off_v=0;
-  for (unsigned int j = 0; j < vnodes.size(); j++)
-  {
-    if (!vnodes[j]->GetFixed())
-    {
-      vnodes[j]->NodeIntFromLCP(off_v + local_off_v,  v);
-      local_off_v += vnodes[j]->Get_ndof_w();
+void ChMesh::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                               ChStateDelta& v,
+                               const unsigned int off_L,  ///< offset in L
+                               ChVectorDynamic<>& L) {
+    unsigned int local_off_v = 0;
+    for (unsigned int j = 0; j < vnodes.size(); j++) {
+        if (!vnodes[j]->GetFixed()) {
+            vnodes[j]->NodeIntFromDescriptor(off_v + local_off_v, v);
+            local_off_v += vnodes[j]->Get_ndof_w();
+        }
     }
-  }
 }
 
+//// SOLVER FUNCTIONS
 
-
-
-//// LCP SOLVER
-
-void ChMesh::InjectKRMmatrices(ChLcpSystemDescriptor& mdescriptor) 
+void ChMesh::InjectKRMmatrices(ChSystemDescriptor& mdescriptor) 
 {
   for (unsigned int ie = 0; ie < this->velements.size(); ie++)
     this->velements[ie]->InjectKRMmatrices(mdescriptor);
 }
 
-void ChMesh::KRMmatricesLoad(double Kfactor, double Rfactor, double Mfactor)
-{
-#pragma omp parallel for 
-  for (int ie = 0; ie < this->velements.size(); ie++)
-    this->velements[ie]->KRMmatricesLoad(Kfactor, Rfactor, Mfactor);
+void ChMesh::KRMmatricesLoad(double Kfactor, double Rfactor, double Mfactor) {
+    timer_KRMload.start();
+#pragma omp parallel for
+    for (int ie = 0; ie < this->velements.size(); ie++)
+        this->velements[ie]->KRMmatricesLoad(Kfactor, Rfactor, Mfactor);
+    timer_KRMload.stop();
+    ncalls_KRMload++;
 }
 
 void ChMesh::VariablesFbReset()
@@ -439,7 +446,7 @@ void ChMesh::VariablesQbIncrementPosition(double step)
     this->vnodes[ie]->VariablesQbIncrementPosition(step);
 }
 
-void ChMesh::InjectVariables(ChLcpSystemDescriptor& mdescriptor)
+void ChMesh::InjectVariables(ChSystemDescriptor& mdescriptor)
 {
   for (unsigned int ie = 0; ie < this->vnodes.size(); ie++)
     this->vnodes[ie]->InjectVariables(mdescriptor);

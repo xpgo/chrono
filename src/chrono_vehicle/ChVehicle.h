@@ -30,14 +30,9 @@
 #include "chrono_vehicle/ChApiVehicle.h"
 #include "chrono_vehicle/ChSubsysDefs.h"
 
-/**
-    @defgroup vehicle Chrono::Vehicle
-    @brief Ground vehicle modeling
-*/
 
 namespace chrono {
 
-/// Namespace for the Chrono::Vehicle module.
 namespace vehicle {
 
 /// @addtogroup vehicle
@@ -81,6 +76,10 @@ class CH_VEHICLE_API ChVehicle {
     /// The chassis orientation is returned as a quaternion representing a
     /// rotation with respect to the global reference frame.
     const ChQuaternion<>& GetChassisRotCOM() const { return m_chassis->GetRot(); }
+
+    /// Get the vehicle total mass.
+    /// This includes the mass of the chassis and all vehicle subsystems.
+    virtual double GetVehicleMass() const = 0;
 
     /// Get the vehicle speed.
     /// Return the speed measured at the origin of the chassis reference frame.

@@ -19,11 +19,11 @@
 
 #include <vector>
 
+#include "chrono/core/ChQuadrature.h"
 #include "chrono_fea/ChApiFEA.h"
 #include "chrono_fea/ChElementShell.h"
 #include "chrono_fea/ChNodeFEAxyzD.h"
 #include "chrono_fea/ChUtilsFEA.h"
-#include "core/ChQuadrature.h"
 
 namespace chrono {
 namespace fea {
@@ -66,6 +66,16 @@ class ChApiFea ChMaterialShellANCF {
 // ----------------------------------------------------------------------------
 /// ANCF laminated shell element with four nodes.
 /// This class implements composite material elastic force formulations.
+/// 
+/// The node numbering is in ccw fashion as in the following scheme:
+///         v
+///         ^
+/// D o-----+-----o C
+///   |     |     |
+/// --+-----+-----+-> u
+///   |     |     |
+/// A o-----+-----o B
+///
 class ChApiFea ChElementShellANCF : public ChElementShell, public ChLoadableUV, public ChLoadableUVW {
   public:
     ChElementShellANCF();
@@ -113,12 +123,11 @@ class ChApiFea ChElementShellANCF : public ChElementShell, public ChLoadableUV, 
     /// Get the number of nodes used by this element.
     virtual int GetNnodes() override { return 4; }
 
-    /// Get the number of coordinates of the node positions in space.
-    /// Note this is not the coordinates of the field, use GetNdofs() instead.
-    virtual int GetNcoords() override { return 4 * 6; }
-
     /// Get the number of coordinates in the field used by the referenced nodes.
     virtual int GetNdofs() override { return 4 * 6; }
+
+    /// Get the number of coordinates from the n-th node used by this element.
+    virtual int GetNodeNdofs(int n) override { return 6; }
 
     /// Specify the nodes of this element.
     void SetNodes(std::shared_ptr<ChNodeFEAxyzD> nodeA,
@@ -196,7 +205,8 @@ class ChApiFea ChElementShellANCF : public ChElementShell, public ChLoadableUV, 
     /// NOTE! to avoid wasting zero and repeated elements, here
     /// it stores only the four values in a 1 row, 8 columns matrix!
     void ShapeFunctionsDerivativeZ(ChMatrix<>& Nz, double x, double y, double z);
-
+	/// Return a vector with three strain components
+	ChVector<> EvaluateSectionStrains();
   private:
     std::vector<std::shared_ptr<ChNodeFEAxyzD> > m_nodes;  ///< element nodes
     std::vector<Layer> m_layers;                           ///< element layers
@@ -243,6 +253,9 @@ class ChApiFea ChElementShellANCF : public ChElementShell, public ChLoadableUV, 
 
     // Set M as the global mass matrix.
     virtual void ComputeMmatrixGlobal(ChMatrix<>& M) override;
+
+    /// Add contribution of element inertia to total nodal masses
+    virtual void ComputeNodalMass() override;
 
     /// Computes the internal forces.
     /// (E.g. the actual position of nodes is not in relaxed reference position) and set values
@@ -365,8 +378,8 @@ class ChApiFea ChElementShellANCF : public ChElementShell, public ChLoadableUV, 
 
     virtual void EvaluateSectionVelNorm(double U, double V, ChVector<>& Result) override;
 
-    /// Get the pointers to the contained ChLcpVariables, appending to the mvars vector.
-    virtual void LoadableGetVariables(std::vector<ChLcpVariables*>& mvars) override;
+    /// Get the pointers to the contained ChVariables, appending to the mvars vector.
+    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) override;
 
     /// Evaluate N'*F , where N is some type of shape function
     /// evaluated at U,V coordinates of the surface, each ranging in -1..+1

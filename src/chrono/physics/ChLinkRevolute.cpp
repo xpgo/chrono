@@ -23,8 +23,7 @@ ChLinkRevolute::ChLinkRevolute() {
     m_C = new ChMatrixDynamic<>(5, 1);
 
     for (int i = 0; i < 5; i++) {
-        m_cache_speed[i] = 0;
-        m_cache_pos[i] = 0;
+        m_multipliers[i] = 0;
     }
 }
 
@@ -51,8 +50,7 @@ void ChLinkRevolute::Copy(ChLinkRevolute* source) {
     m_cnstr_vw.SetVariables(&Body1->Variables(), &Body2->Variables());
 
     for (int i = 0; i < 5; i++) {
-        m_cache_speed[i] = source->m_cache_speed[i];
-        m_cache_pos[i] = source->m_cache_pos[i];
+        m_multipliers[i] = source->m_multipliers[i];
     }
 }
 
@@ -257,27 +255,27 @@ void ChLinkRevolute::IntStateGatherReactions(const unsigned int off_L, ChVectorD
     if (!this->IsActive())
         return;
 
-    L(off_L) = m_cache_speed[0];
-    L(off_L + 1) = m_cache_speed[1];
-    L(off_L + 2) = m_cache_speed[2];
-    L(off_L + 3) = m_cache_speed[3];
-    L(off_L + 4) = m_cache_speed[4];
+    L(off_L + 0) = m_multipliers[0];
+    L(off_L + 1) = m_multipliers[1];
+    L(off_L + 2) = m_multipliers[2];
+    L(off_L + 3) = m_multipliers[3];
+    L(off_L + 4) = m_multipliers[4];
 }
 
 void ChLinkRevolute::IntStateScatterReactions(const unsigned int off_L, const ChVectorDynamic<>& L) {
     if (!this->IsActive())
         return;
 
-    m_cache_speed[0] = L(off_L);
-    m_cache_speed[1] = L(off_L + 1);
-    m_cache_speed[2] = L(off_L + 2);
-    m_cache_speed[3] = L(off_L + 3);
-    m_cache_speed[4] = L(off_L + 4);
+    m_multipliers[0] = L(off_L + 0);
+    m_multipliers[1] = L(off_L + 1);
+    m_multipliers[2] = L(off_L + 2);
+    m_multipliers[3] = L(off_L + 3);
+    m_multipliers[4] = L(off_L + 4);
 
     // Also compute 'intuitive' reactions:
-    ChVector<> lam_sph(m_cache_speed[0], m_cache_speed[1], m_cache_speed[2]);
-    double lam_uw = m_cache_speed[3];
-    double lam_vw = m_cache_speed[4];
+    ChVector<> lam_sph(m_multipliers[0], m_multipliers[1], m_multipliers[2]);
+    double lam_uw = m_multipliers[3];
+    double lam_vw = m_multipliers[4];
 
     // Calculate the reaction force and torque acting on the 2nd body at the joint
     // location, expressed in the joint reference frame.  Taking into account the
@@ -345,12 +343,12 @@ void ChLinkRevolute::IntLoadConstraint_C(const unsigned int off_L,  ///< offset 
     Qc(off_L + 4) += cnstr_vw_violation;
 }
 
-void ChLinkRevolute::IntToLCP(const unsigned int off_v,  ///< offset in v, R
-                              const ChStateDelta& v,
-                              const ChVectorDynamic<>& R,
-                              const unsigned int off_L,  ///< offset in L, Qc
-                              const ChVectorDynamic<>& L,
-                              const ChVectorDynamic<>& Qc) {
+void ChLinkRevolute::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                                     const ChStateDelta& v,
+                                     const ChVectorDynamic<>& R,
+                                     const unsigned int off_L,  ///< offset in L, Qc
+                                     const ChVectorDynamic<>& L,
+                                     const ChVectorDynamic<>& Qc) {
     if (!IsActive())
         return;
 
@@ -367,10 +365,10 @@ void ChLinkRevolute::IntToLCP(const unsigned int off_v,  ///< offset in v, R
     m_cnstr_vw.Set_b_i(Qc(off_L + 4));
 }
 
-void ChLinkRevolute::IntFromLCP(const unsigned int off_v,  ///< offset in v
-                                ChStateDelta& v,
-                                const unsigned int off_L,  ///< offset in L
-                                ChVectorDynamic<>& L) {
+void ChLinkRevolute::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                                       ChStateDelta& v,
+                                       const unsigned int off_L,  ///< offset in L
+                                       ChVectorDynamic<>& L) {
     if (!IsActive())
         return;
 
@@ -384,7 +382,7 @@ void ChLinkRevolute::IntFromLCP(const unsigned int off_v,  ///< offset in v
 // -----------------------------------------------------------------------------
 // Implementation of solver interface functions
 // -----------------------------------------------------------------------------
-void ChLinkRevolute::InjectConstraints(ChLcpSystemDescriptor& descriptor) {
+void ChLinkRevolute::InjectConstraints(ChSystemDescriptor& descriptor) {
     if (!IsActive())
         return;
 
@@ -466,46 +464,6 @@ void ChLinkRevolute::ConstraintsFetch_react(double factor) {
     ChVector<> T2 = mat2.MatrT_x_Vect(lam_uw * u1 + lam_vw * v1);
     react_torque = -m_frame2.GetA().MatrT_x_Vect(T2);
 }
-
-// -----------------------------------------------------------------------------
-// Load and store multipliers (caching to allow warm starting)
-// -----------------------------------------------------------------------------
-void ChLinkRevolute::ConstraintsLiLoadSuggestedSpeedSolution() {
-    // Set multipliers to those cached at previous step.
-    m_cnstr_x.Set_l_i(m_cache_speed[0]);
-    m_cnstr_y.Set_l_i(m_cache_speed[1]);
-    m_cnstr_z.Set_l_i(m_cache_speed[2]);
-    m_cnstr_uw.Set_l_i(m_cache_speed[3]);
-    m_cnstr_vw.Set_l_i(m_cache_speed[4]);
-}
-
-void ChLinkRevolute::ConstraintsLiLoadSuggestedPositionSolution() {
-    // Set multipliers to those cached at previous step.
-    m_cnstr_x.Set_l_i(m_cache_pos[0]);
-    m_cnstr_y.Set_l_i(m_cache_pos[1]);
-    m_cnstr_z.Set_l_i(m_cache_pos[2]);
-    m_cnstr_uw.Set_l_i(m_cache_pos[3]);
-    m_cnstr_vw.Set_l_i(m_cache_pos[4]);
-}
-
-void ChLinkRevolute::ConstraintsLiFetchSuggestedSpeedSolution() {
-    // Cache current multipliers.
-    m_cache_speed[0] = m_cnstr_x.Get_l_i();
-    m_cache_speed[1] = m_cnstr_y.Get_l_i();
-    m_cache_speed[2] = m_cnstr_z.Get_l_i();
-    m_cache_speed[3] = m_cnstr_uw.Get_l_i();
-    m_cache_speed[4] = m_cnstr_vw.Get_l_i();
-}
-
-void ChLinkRevolute::ConstraintsLiFetchSuggestedPositionSolution() {
-    // Cache current multipliers.
-    m_cache_pos[0] = m_cnstr_x.Get_l_i();
-    m_cache_pos[1] = m_cnstr_y.Get_l_i();
-    m_cache_pos[2] = m_cnstr_z.Get_l_i();
-    m_cache_pos[3] = m_cnstr_uw.Get_l_i();
-    m_cache_pos[4] = m_cnstr_vw.Get_l_i();
-}
-
 
 
 void ChLinkRevolute::ArchiveOUT(ChArchiveOut& marchive)

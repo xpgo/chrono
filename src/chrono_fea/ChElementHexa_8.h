@@ -22,10 +22,9 @@ namespace fea {
 /// @addtogroup fea_elements
 /// @{
 
-/// Class for FEA elements of hexahedron type (isoparametric 3D bricks)
-/// with 8 nodes. This element has a linear displacement field.
-class ChApiFea ChElementHexa_8 : public ChElementHexahedron,
-                                 public ChLoadableUVW {
+/// Class for FEA elements of hexahedron type (isoparametric 3D bricks) with 8 nodes.
+/// This element has a linear displacement field.
+class ChApiFea ChElementHexa_8 : public ChElementHexahedron, public ChLoadableUVW {
   protected:
     std::vector<std::shared_ptr<ChNodeFEAxyz> > nodes;
     std::shared_ptr<ChContinuumElastic> Material;
@@ -40,9 +39,9 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron,
     ChElementHexa_8();
     virtual ~ChElementHexa_8();
 
-    virtual int GetNnodes() { return 8; }
-    virtual int GetNcoords() { return 8 * 3; }
-    virtual int GetNdofs() { return 8 * 3; }
+    virtual int GetNnodes() override { return 8; }
+    virtual int GetNdofs() override { return 8 * 3; }
+    virtual int GetNodeNdofs(int n) override { return 3; }
 
     virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
 
@@ -62,7 +61,7 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron,
         nodes[5] = nodeF;
         nodes[6] = nodeG;
         nodes[7] = nodeH;
-        std::vector<ChLcpVariables*> mvars;
+        std::vector<ChVariables*> mvars;
         mvars.push_back(&nodes[0]->Variables());
         mvars.push_back(&nodes[1]->Variables());
         mvars.push_back(&nodes[2]->Variables());
@@ -442,7 +441,7 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron,
     ChGaussPoint* GetGaussPoint(int N) { return GpVector[N]; }
 
     //
-    // Functions for interfacing to the LCP solver
+    // Functions for interfacing to the solver
     //            (***not needed, thank to bookkeeping in parent class ChElementGeneric)
 
     //
@@ -491,8 +490,8 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron,
         /// Get the size of the i-th sub-block of DOFs in global vector
     virtual unsigned int GetSubBlockSize(int nblock) { return 3;}
 
-        /// Get the pointers to the contained ChLcpVariables, appending to the mvars vector.
-    virtual void LoadableGetVariables(std::vector<ChLcpVariables*>& mvars) {
+        /// Get the pointers to the contained ChVariables, appending to the mvars vector.
+    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) {
         for (int i=0; i<nodes.size(); ++i)
             mvars.push_back(&this->nodes[i]->Variables());
     };

@@ -19,30 +19,30 @@
 #include <memory.h>
 #include <algorithm>
 
-#include "physics/ChSystem.h"
-#include "physics/ChGlobal.h"
-#include "physics/ChBodyAuxRef.h"
-#include "physics/ChContactContainerDVI.h"
-#include "physics/ChProximityContainerBase.h"
+#include "chrono/physics/ChSystem.h"
+#include "chrono/physics/ChGlobal.h"
+#include "chrono/physics/ChBodyAuxRef.h"
+#include "chrono/physics/ChContactContainerDVI.h"
+#include "chrono/physics/ChProximityContainerBase.h"
 
-#include "lcp/ChLcpSystemDescriptor.h"
-#include "lcp/ChLcpSimplexSolver.h"
-#include "lcp/ChLcpIterativeSOR.h"
-#include "lcp/ChLcpIterativeSymmSOR.h"
-#include "lcp/ChLcpIterativeSORmultithread.h"
-#include "lcp/ChLcpIterativeJacobi.h"
-#include "lcp/ChLcpIterativeMINRES.h"
-#include "lcp/ChLcpIterativePMINRES.h"
-#include "lcp/ChLcpIterativeBB.h"
-#include "lcp/ChLcpIterativePCG.h"
-#include "lcp/ChLcpIterativeAPGD.h"
-#include "parallel/ChOpenMP.h"
+#include "chrono/solver/ChSystemDescriptor.h"
+#include "chrono/solver/ChSolverSimplex.h"
+#include "chrono/solver/ChSolverSOR.h"
+#include "chrono/solver/ChSolverSymmSOR.h"
+#include "chrono/solver/ChSolverSORmultithread.h"
+#include "chrono/solver/ChSolverJacobi.h"
+#include "chrono/solver/ChSolverMINRES.h"
+#include "chrono/solver/ChSolverPMINRES.h"
+#include "chrono/solver/ChSolverBB.h"
+#include "chrono/solver/ChSolverPCG.h"
+#include "chrono/solver/ChSolverAPGD.h"
 
-#include "core/ChTimer.h"
-#include "collision/ChCCollisionSystemBullet.h"
-#include "collision/ChCModelBullet.h"
-#include "timestepper/ChTimestepper.h"
-#include "timestepper/ChStaticAnalysis.h"
+#include "chrono/collision/ChCCollisionSystemBullet.h"
+#include "chrono/collision/ChCModelBullet.h"
+#include "chrono/core/ChTimer.h"
+#include "chrono/parallel/ChOpenMP.h"
+#include "chrono/timestepper/ChStaticAnalysis.h"
+#include "chrono/timestepper/ChTimestepper.h"
 
 using namespace chrono::collision;
 
@@ -239,19 +239,23 @@ ChSystem::ChSystem(unsigned int max_objects, double scene_size, bool init_sys) {
         collision_system = new ChCollisionSystemBullet(max_objects, scene_size);
     }
 
+    // Set default collision envelope and margin.
+    collision::ChCollisionModel::SetDefaultSuggestedEnvelope(0.03);
+    collision::ChCollisionModel::SetDefaultSuggestedMargin(0.01);
+
     timestepper = std::make_shared<ChTimestepperEulerImplicitLinearized>(this);
 
     collisionpoint_callback = 0;
 
-    LCP_descriptor = 0;
-    LCP_solver_speed = 0;
-    LCP_solver_stab = 0;
+    descriptor = 0;
+    solver_speed = 0;
+    solver_stab = 0;
 
-    iterLCPmaxIters = 30;
-    iterLCPmaxItersStab = 10;
+    max_iter_solver_speed = 30;
+    max_iter_solver_stab = 10;
     
     if (init_sys) {
-        SetLcpSolverType(LCP_ITERATIVE_SYMMSOR);
+        SetSolverType(SOLVER_SYMMSOR);
     }
 
     use_sleeping = false;
@@ -285,15 +289,15 @@ ChSystem::~ChSystem() {
     RemoveAllProbes();
     RemoveAllControls();
 
-    if (LCP_solver_speed)
-        delete LCP_solver_speed;
-    LCP_solver_speed = 0;
-    if (LCP_solver_stab)
-        delete LCP_solver_stab;
-    LCP_solver_stab = 0;
-    if (LCP_descriptor)
-        delete LCP_descriptor;
-    LCP_descriptor = 0;
+    if (solver_speed)
+        delete solver_speed;
+    solver_speed = 0;
+    if (solver_stab)
+        delete solver_stab;
+    solver_stab = 0;
+    if (descriptor)
+        delete descriptor;
+    descriptor = 0;
 
     if (collision_system)
         delete collision_system;
@@ -334,9 +338,9 @@ void ChSystem::Copy(ChSystem* source) {
     
     min_bounce_speed = source->min_bounce_speed;
     max_penetration_recovery_speed = source->max_penetration_recovery_speed;
-    iterLCPmaxIters = source->iterLCPmaxIters;
-    iterLCPmaxItersStab = source->iterLCPmaxItersStab;
-    SetLcpSolverType(GetLcpSolverType());
+    max_iter_solver_speed = source->max_iter_solver_speed;
+    max_iter_solver_stab = source->max_iter_solver_stab;
+    SetSolverType(GetSolverType());
     parallel_thread_number = source->parallel_thread_number;
     use_sleeping = source->use_sleeping;
 
@@ -379,143 +383,143 @@ void ChSystem::Clear() {
 // Set/Get routines
 //
 
-void ChSystem::SetLcpSolverType(eCh_lcpSolver mval) {
-    if (mval == LCP_CUSTOM)
+void ChSystem::SetSolverType(eCh_solverType mval) {
+    if (mval == SOLVER_CUSTOM)
         return;
 
-    lcp_solver_type = mval;
+    solver_type = mval;
 
-    if (LCP_solver_speed)
-        delete LCP_solver_speed;
-    LCP_solver_speed = 0;
-    if (LCP_solver_stab)
-        delete LCP_solver_stab;
-    LCP_solver_stab = 0;
-    if (LCP_descriptor)
-        delete LCP_descriptor;
-    LCP_descriptor = 0;
+    if (solver_speed)
+        delete solver_speed;
+    solver_speed = 0;
+    if (solver_stab)
+        delete solver_stab;
+    solver_stab = 0;
+    if (descriptor)
+        delete descriptor;
+    descriptor = 0;
 
-    LCP_descriptor = new ChLcpSystemDescriptor;
-    LCP_descriptor->SetNumThreads(parallel_thread_number);
+    descriptor = new ChSystemDescriptor;
+    descriptor->SetNumThreads(parallel_thread_number);
 
     contact_container = std::make_shared<ChContactContainerDVI>();
     contact_container->SetSystem(this);
 
     switch (mval) {
-        case LCP_ITERATIVE_SOR:
-            LCP_solver_speed = new ChLcpIterativeSOR();
-            LCP_solver_stab = new ChLcpIterativeSOR();
+        case SOLVER_SOR:
+            solver_speed = new ChSolverSOR();
+            solver_stab = new ChSolverSOR();
             break;
-        case LCP_ITERATIVE_SYMMSOR:
-            LCP_solver_speed = new ChLcpIterativeSymmSOR();
-            LCP_solver_stab = new ChLcpIterativeSymmSOR();
+        case SOLVER_SYMMSOR:
+            solver_speed = new ChSolverSymmSOR();
+            solver_stab = new ChSolverSymmSOR();
             break;
-        case LCP_SIMPLEX:
-            LCP_solver_speed = new ChLcpSimplexSolver();
-            LCP_solver_stab = new ChLcpSimplexSolver();
+        case SOLVER_SIMPLEX:
+            solver_speed = new ChSolverSimplex();
+            solver_stab = new ChSolverSimplex();
             break;
-        case LCP_ITERATIVE_JACOBI:
-            LCP_solver_speed = new ChLcpIterativeJacobi();
-            LCP_solver_stab = new ChLcpIterativeJacobi();
+        case SOLVER_JACOBI:
+            solver_speed = new ChSolverJacobi();
+            solver_stab = new ChSolverJacobi();
             break;
-        case LCP_ITERATIVE_SOR_MULTITHREAD:
-            LCP_solver_speed = new ChLcpIterativeSORmultithread((char*)"speedLCP", parallel_thread_number);
-            LCP_solver_stab = new ChLcpIterativeSORmultithread((char*)"posLCP", parallel_thread_number);
+        case SOLVER_SOR_MULTITHREAD:
+            solver_speed = new ChSolverSORmultithread((char*)"speedSolver", parallel_thread_number);
+            solver_stab = new ChSolverSORmultithread((char*)"posSolver", parallel_thread_number);
             break;
-        case LCP_ITERATIVE_PMINRES:
-            LCP_solver_speed = new ChLcpIterativePMINRES();
-            LCP_solver_stab = new ChLcpIterativePMINRES();
+        case SOLVER_PMINRES:
+            solver_speed = new ChSolverPMINRES();
+            solver_stab = new ChSolverPMINRES();
             break;
-        case LCP_ITERATIVE_BARZILAIBORWEIN:
-            LCP_solver_speed = new ChLcpIterativeBB();
-            LCP_solver_stab = new ChLcpIterativeBB();
+        case SOLVER_BARZILAIBORWEIN:
+            solver_speed = new ChSolverBB();
+            solver_stab = new ChSolverBB();
             break;
-        case LCP_ITERATIVE_PCG:
-            LCP_solver_speed = new ChLcpIterativePCG();
-            LCP_solver_stab = new ChLcpIterativePCG();
+        case SOLVER_PCG:
+            solver_speed = new ChSolverPCG();
+            solver_stab = new ChSolverPCG();
             break;
-        case LCP_ITERATIVE_APGD:
-            LCP_solver_speed = new ChIterativeAPGD();
-            LCP_solver_stab = new ChIterativeAPGD();
+        case SOLVER_APGD:
+            solver_speed = new ChSolverAPGD();
+            solver_stab = new ChSolverAPGD();
             break;
-        case LCP_ITERATIVE_MINRES:
-            LCP_solver_speed = new ChLcpIterativeMINRES();
-            LCP_solver_stab = new ChLcpIterativeMINRES();
+        case SOLVER_MINRES:
+            solver_speed = new ChSolverMINRES();
+            solver_stab = new ChSolverMINRES();
             break;
         default:
-            LCP_solver_speed = new ChLcpIterativeSymmSOR();
-            LCP_solver_stab = new ChLcpIterativeSymmSOR();
+            solver_speed = new ChSolverSymmSOR();
+            solver_stab = new ChSolverSymmSOR();
             break;
     }
 }
 
-ChLcpSolver* ChSystem::GetLcpSolverSpeed() {
+ChSolver* ChSystem::GetSolverSpeed() {
     // In case the solver is iterative, pre-configure it with the max. number of
     // iterations and with the convergence tolerance (convert the user-specified
     // tolerance for forces into a tolerance for impulses).
-    if (ChLcpIterativeSolver* iter_solver = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_speed)) {
-        iter_solver->SetMaxIterations(GetIterLCPmaxItersSpeed());
+    if (ChIterativeSolver* iter_solver = dynamic_cast<ChIterativeSolver*>(solver_speed)) {
+        iter_solver->SetMaxIterations(GetMaxItersSolverSpeed());
         iter_solver->SetTolerance(tol_force * step);
     }
 
-    return LCP_solver_speed;
+    return solver_speed;
 }
 
-ChLcpSolver* ChSystem::GetLcpSolverStab() {
+ChSolver* ChSystem::GetSolverStab() {
     // In case the solver is iterative, pre-configure it with the max. number of
     // iterations and with the convergence tolerance (convert the user-specified
     // tolerance for forces into a tolerance for impulses).
-    if (ChLcpIterativeSolver* iter_solver = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_stab)) {
-        iter_solver->SetMaxIterations(GetIterLCPmaxItersSpeed());
+    if (ChIterativeSolver* iter_solver = dynamic_cast<ChIterativeSolver*>(solver_stab)) {
+        iter_solver->SetMaxIterations(GetMaxItersSolverSpeed());
         iter_solver->SetTolerance(tol_force * step);
     }
 
-    return LCP_solver_stab;
+    return solver_stab;
 }
 
-void ChSystem::SetIterLCPwarmStarting(bool usewarm) {
-    if (ChLcpIterativeSolver* iter_solver_speed = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_speed)) {
+void ChSystem::SetSolverWarmStarting(bool usewarm) {
+    if (ChIterativeSolver* iter_solver_speed = dynamic_cast<ChIterativeSolver*>(solver_speed)) {
         iter_solver_speed->SetWarmStart(usewarm);
     }
-    if (ChLcpIterativeSolver* iter_solver_stab = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_stab)) {
+    if (ChIterativeSolver* iter_solver_stab = dynamic_cast<ChIterativeSolver*>(solver_stab)) {
         iter_solver_stab->SetWarmStart(usewarm);
     }
 }
 
-bool ChSystem::GetIterLCPwarmStarting() {
-    if (ChLcpIterativeSolver* iter_solver_speed = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_speed)) {
+bool ChSystem::GetSolverWarmStarting() {
+    if (ChIterativeSolver* iter_solver_speed = dynamic_cast<ChIterativeSolver*>(solver_speed)) {
         return iter_solver_speed->GetWarmStart();
     }
     return false;
 }
 
-void ChSystem::SetIterLCPomega(double momega) {
-    if (ChLcpIterativeSolver* iter_solver_speed = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_speed)) {
+void ChSystem::SetSolverOverrelaxationParam(double momega) {
+    if (ChIterativeSolver* iter_solver_speed = dynamic_cast<ChIterativeSolver*>(solver_speed)) {
         iter_solver_speed->SetOmega(momega);
     }
-    if (ChLcpIterativeSolver* iter_solver_stab = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_stab)) {
+    if (ChIterativeSolver* iter_solver_stab = dynamic_cast<ChIterativeSolver*>(solver_stab)) {
         iter_solver_stab->SetOmega(momega);
     }
 }
 
-double ChSystem::GetIterLCPomega() {
-    if (ChLcpIterativeSolver* iter_solver_speed = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_speed)) {
+double ChSystem::GetSolverOverrelaxationParam() {
+    if (ChIterativeSolver* iter_solver_speed = dynamic_cast<ChIterativeSolver*>(solver_speed)) {
         return iter_solver_speed->GetOmega();
     }
     return 1.0;
 }
 
-void ChSystem::SetIterLCPsharpnessLambda(double momega) {
-    if (ChLcpIterativeSolver* iter_solver_speed = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_speed)) {
+void ChSystem::SetSolverSharpnessParam(double momega) {
+    if (ChIterativeSolver* iter_solver_speed = dynamic_cast<ChIterativeSolver*>(solver_speed)) {
         iter_solver_speed->SetSharpnessLambda(momega);
     }
-    if (ChLcpIterativeSolver* iter_solver_stab = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_stab)) {
+    if (ChIterativeSolver* iter_solver_stab = dynamic_cast<ChIterativeSolver*>(solver_stab)) {
         iter_solver_stab->SetSharpnessLambda(momega);
     }
 }
 
-double ChSystem::GetIterLCPsharpnessLambda() {
-    if (ChLcpIterativeSolver* iter_solver_speed = dynamic_cast<ChLcpIterativeSolver*>(LCP_solver_speed)) {
+double ChSystem::GetSolverSharpnessParam() {
+    if (ChIterativeSolver* iter_solver_speed = dynamic_cast<ChIterativeSolver*>(solver_speed)) {
         return iter_solver_speed->GetSharpnessLambda();
     }
     return 1.0;
@@ -527,36 +531,36 @@ void ChSystem::SetParallelThreadNumber(int mthreads) {
 
     parallel_thread_number = mthreads;
 
-    LCP_descriptor->SetNumThreads(mthreads);
+    descriptor->SetNumThreads(mthreads);
 
-    if (lcp_solver_type == LCP_ITERATIVE_SOR_MULTITHREAD) {
-        ((ChLcpIterativeSORmultithread*)LCP_solver_speed)->ChangeNumberOfThreads(mthreads);
-        ((ChLcpIterativeSORmultithread*)LCP_solver_stab)->ChangeNumberOfThreads(mthreads);
+    if (solver_type == SOLVER_SOR_MULTITHREAD) {
+        ((ChSolverSORmultithread*)solver_speed)->ChangeNumberOfThreads(mthreads);
+        ((ChSolverSORmultithread*)solver_stab)->ChangeNumberOfThreads(mthreads);
     }
 }
 
 // Plug-in components configuration
 
-void ChSystem::ChangeLcpSystemDescriptor(ChLcpSystemDescriptor* newdescriptor) {
+void ChSystem::ChangeSystemDescriptor(ChSystemDescriptor* newdescriptor) {
     assert(newdescriptor);
-    if (this->LCP_descriptor)
-        delete (this->LCP_descriptor);
-    this->LCP_descriptor = newdescriptor;
+    if (this->descriptor)
+        delete (this->descriptor);
+    this->descriptor = newdescriptor;
 }
-void ChSystem::ChangeLcpSolverSpeed(ChLcpSolver* newsolver) {
+void ChSystem::ChangeSolverSpeed(ChSolver* newsolver) {
     assert(newsolver);
-    if (this->LCP_solver_speed)
-        delete (this->LCP_solver_speed);
-    this->LCP_solver_speed = newsolver;
-    this->lcp_solver_type = LCP_CUSTOM;
+    if (this->solver_speed)
+        delete (this->solver_speed);
+    this->solver_speed = newsolver;
+    this->solver_type = SOLVER_CUSTOM;
 }
 
-void ChSystem::ChangeLcpSolverStab(ChLcpSolver* newsolver) {
+void ChSystem::ChangeSolverStab(ChSolver* newsolver) {
     assert(newsolver);
-    if (this->LCP_solver_stab)
-        delete (this->LCP_solver_stab);
-    this->LCP_solver_stab = newsolver;
-    this->lcp_solver_type = LCP_CUSTOM;
+    if (this->solver_stab)
+        delete (this->solver_stab);
+    this->solver_stab = newsolver;
+    this->solver_type = SOLVER_CUSTOM;
 }
 
 void ChSystem::ChangeContactContainer(std::shared_ptr<ChContactContainerBase> newcontainer) {
@@ -766,10 +770,10 @@ void ChSystem::SetIntegrationType(eCh_integrationType m_integration) {
     // (the previous will be automatically deallocated thanks to shared pointers)
     switch (integration_type) {
         case INT_ANITESCU:
-            timestepper = std::shared_ptr<ChTimestepper>();  // null because Integrate_Y_impulse will fallback to old code
+            timestepper = std::make_shared<ChTimestepperEulerImplicitLinearized>(this); // alias of INT_EULER_IMPLICIT_LINEARIZED
             break;
         case INT_TASORA:
-            timestepper = std::shared_ptr<ChTimestepper>();  // null because Integrate_Y_impulse will fallback to old code
+            timestepper = std::make_shared<ChTimestepperEulerImplicitProjected>(this); // alias of INT_EULER_IMPLICIT_PROJECTED
             break;
         case INT_EULER_IMPLICIT:
             timestepper = std::make_shared<ChTimestepperEulerImplicit>(this);
@@ -834,12 +838,12 @@ bool ChSystem::ManageSleepingBodies() {
 
     // Make this class for iterating through contacts 
 
-    class _wakeup_reporter_class : public ChReportContactCallback2 {
+    class _wakeup_reporter_class : public ChReportContactCallback {
       public:
         /// Callback, used to report contact points already added to the container.
         /// This must be implemented by a child class of ChReportContactCallback.
         /// If returns false, the contact scanning will be stopped.
-        virtual bool ReportContactCallback2(
+        virtual bool ReportContactCallback(
             const ChVector<>& pA,             ///< get contact pA
             const ChVector<>& pB,             ///< get contact pB
             const ChMatrix33<>& plane_coord,  ///< get contact plane coordsystem (A column 'X' is contact normal)
@@ -848,7 +852,7 @@ bool ChSystem::ManageSleepingBodies() {
             const ChVector<>& react_torques,  ///< get react.torques, if rolling friction (if already computed).
             ChContactable* contactobjA,  ///< get model A (note: some containers may not support it and could be zero!)
             ChContactable* contactobjB   ///< get model B (note: some containers may not support it and could be zero!)
-            ) {
+            ) override {
             if (!(contactobjA && contactobjB))
                 return true;
             ChBody* b1 = dynamic_cast<ChBody*>(contactobjA);
@@ -926,7 +930,7 @@ bool ChSystem::ManageSleepingBodies() {
         }
 
         // scan all contacts and wake neighbouring bodies
-        this->contact_container->ReportAllContacts2(&my_waker);
+        this->contact_container->ReportAllContacts(&my_waker);
 
         // bailout wakeup cycle prematurely, if all bodies are not sleeping
         if (!my_waker.someone_sleeps)
@@ -955,163 +959,17 @@ bool ChSystem::ManageSleepingBodies() {
 
 ///////////////////////////////
 /////////
-/////////  LCP BOOKKEEPING
+/////////  DESCRIPTOR BOOKKEEPING
 /////////
 
-
-void ChSystem::LCPprepare_inject(ChLcpSystemDescriptor& mdescriptor) {
-
+void ChSystem::DescriptorPrepareInject(ChSystemDescriptor& mdescriptor) {
     mdescriptor.BeginInsertion();  // This resets the vectors of constr. and var. pointers.
 
-    this->InjectConstraints(mdescriptor);
-    this->InjectVariables(mdescriptor);
-    this->InjectKRMmatrices(mdescriptor);
+    InjectConstraints(mdescriptor);
+    InjectVariables(mdescriptor);
+    InjectKRMmatrices(mdescriptor);
 
     mdescriptor.EndInsertion();
-}
-
-void ChSystem::LCPprepare_reset() {
-    for (int ip = 0; ip < linklist.size(); ++ip) {
-        linklist[ip]->ConstraintsBiReset();
-    }
-    for (int ip = 0; ip < bodylist.size(); ++ip) {
-        bodylist[ip]->VariablesFbReset();
-    }
-    for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-        otherphysicslist[ip]->VariablesFbReset();
-        otherphysicslist[ip]->ConstraintsBiReset();
-    }
-    this->contact_container->ConstraintsBiReset();
-}
-
-void ChSystem::LCPprepare_load(bool load_jacobians,
-                               bool load_Mv,
-                               double F_factor,
-                               double K_factor,
-                               double R_factor,
-                               double M_factor,
-                               double Ct_factor,
-                               double C_factor,
-                               double recovery_clamp,
-                               bool do_clamp) {
-    for (int ip = 0; ip < linklist.size(); ++ip)  // ITERATE on links
-    {
-        std::shared_ptr<ChLink> Lpointer = linklist[ip];
-
-        if (C_factor)
-            Lpointer->ConstraintsBiLoad_C(C_factor, recovery_clamp, do_clamp);
-        if (Ct_factor)
-            Lpointer->ConstraintsBiLoad_Ct(Ct_factor);  // Ct
-        if (load_Mv) {
-            Lpointer->VariablesQbLoadSpeed();    //   v_old
-            Lpointer->VariablesFbIncrementMq();  // M*v_old
-        }
-        if (load_jacobians)
-            Lpointer->ConstraintsLoadJacobians();
-        if (F_factor) {
-                Lpointer->ConstraintsFbLoadForces(F_factor);  // f*dt
-            }
-        }
-
-    for (int ip = 0; ip < bodylist.size(); ++ip)  // ITERATE on bodies
-    {
-        std::shared_ptr<ChBody> Bpointer = bodylist[ip];
-        if (F_factor)
-            Bpointer->VariablesFbLoadForces(F_factor);  // f*dt
-        if (load_Mv) {
-            Bpointer->VariablesQbLoadSpeed();    //   v_old
-            Bpointer->VariablesFbIncrementMq();  // M*v_old
-        }
-    }
-
-    // Radu:
-    //   The loop below is not immediately parallelizable because of items such as
-    //   ChShaftsTorqueBase which add torques to other items' variables.  As such,
-    //   there is potential contention with the various VariablesFbLoadForces and
-    //   VariablesFbIncrementMq functions.
-    //
-    //   While it would be possible to protect the calls to the above two functions
-    //   in additional critical sections, more experimentation is needed to decide
-    //   if it's worth it.
-
-    for (int ip = 0; ip < otherphysicslist.size(); ++ip)  // ITERATE on other physics
-    {
-        std::shared_ptr<ChPhysicsItem> PHpointer = otherphysicslist[ip];
-        if (F_factor)
-            PHpointer->VariablesFbLoadForces(F_factor);  // f*dt
-        if (load_Mv) {
-            PHpointer->VariablesQbLoadSpeed();    //   v_old
-            PHpointer->VariablesFbIncrementMq();  // M*v_old
-        }
-        if (C_factor)
-            PHpointer->ConstraintsBiLoad_C(C_factor, recovery_clamp, do_clamp);
-        if (Ct_factor)
-            PHpointer->ConstraintsBiLoad_Ct(Ct_factor);  // Ct
-        if (load_jacobians)
-            PHpointer->ConstraintsLoadJacobians();
-        if (K_factor || R_factor || M_factor)
-            PHpointer->KRMmatricesLoad(K_factor, R_factor, M_factor);
-        if (F_factor) {
-            PHpointer->ConstraintsFbLoadForces(F_factor);  // f*dt
-        }
-    }
-
-    if (C_factor)
-        contact_container->ConstraintsBiLoad_C(C_factor, recovery_clamp, do_clamp);
-    if (F_factor)
-        contact_container->ConstraintsFbLoadForces(F_factor);  // f*dt
-    if (load_jacobians)
-        contact_container->ConstraintsLoadJacobians();
-}
-
-void ChSystem::LCPprepare_Li_from_speed_cache() {
-    for (int ip = 0; ip < linklist.size(); ++ip) {
-        linklist[ip]->ConstraintsLiLoadSuggestedSpeedSolution();
-    }
-    for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-        otherphysicslist[ip]->ConstraintsLiLoadSuggestedSpeedSolution();
-    }
-    this->contact_container->ConstraintsLiLoadSuggestedSpeedSolution();
-}
-
-void ChSystem::LCPprepare_Li_from_position_cache() {
-    for (int ip = 0; ip < linklist.size(); ++ip) {
-        linklist[ip]->ConstraintsLiLoadSuggestedPositionSolution();
-    }
-    for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-        otherphysicslist[ip]->ConstraintsLiLoadSuggestedPositionSolution();
-    }
-    this->contact_container->ConstraintsLiLoadSuggestedPositionSolution();
-}
-
-void ChSystem::LCPresult_Li_into_speed_cache() {
-    for (int ip = 0; ip < linklist.size(); ++ip) {
-        linklist[ip]->ConstraintsLiFetchSuggestedSpeedSolution();
-    }
-    for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-        otherphysicslist[ip]->ConstraintsLiFetchSuggestedSpeedSolution();
-    }
-    this->contact_container->ConstraintsLiFetchSuggestedSpeedSolution();
-}
-
-void ChSystem::LCPresult_Li_into_position_cache() {
-    for (int ip = 0; ip < linklist.size(); ++ip) {
-        linklist[ip]->ConstraintsLiFetchSuggestedPositionSolution();
-    }
-    for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-        otherphysicslist[ip]->ConstraintsLiFetchSuggestedPositionSolution();
-    }
-    this->contact_container->ConstraintsLiFetchSuggestedPositionSolution();
-}
-
-void ChSystem::LCPresult_Li_into_reactions(double mfactor) {
-    for (int ip = 0; ip < linklist.size(); ++ip) {
-        linklist[ip]->ConstraintsFetch_react(mfactor);
-    }
-    for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-        otherphysicslist[ip]->ConstraintsFetch_react(mfactor);
-    }
-    this->contact_container->ConstraintsFetch_react(mfactor);
 }
 
 //////////////////////////////////
@@ -1119,22 +977,18 @@ void ChSystem::LCPresult_Li_into_reactions(double mfactor) {
 //////// CHPHYSICS ITEM INTERFACE
 ////////
 
-
-
-
 //
-// SETUP 
+// SETUP
 //
 // Set all  offsets in position/speed global vectors, for all items.
 // Count all bodies and links, etc, compute &set dof for statistics,
 // allocates or reallocate bookkeeping data/vectors, if any,
 
-
 void ChSystem::Setup() {
     events->Record(CHEVENT_SETUP);
 
-    // inherit the parent class 
-    // (compute offsets of bodies, links, etc.) 
+    // inherit the parent class
+    // (compute offsets of bodies, links, etc.)
     ChAssembly::Setup();
 
     // also compute offsets for contact container
@@ -1374,36 +1228,37 @@ void ChSystem::IntLoadConstraint_Ct(const unsigned int off_L,  ///< offset in Qc
     contact_container->IntLoadConstraint_Ct(displ_L + contact_container->GetOffset_L(), Qc, c);
 }
 
-void ChSystem::IntToLCP(const unsigned int off_v,  ///< offset in v, R
-                          const ChStateDelta& v,
-                          const ChVectorDynamic<>& R,
-                          const unsigned int off_L,  ///< offset in L, Qc
-                          const ChVectorDynamic<>& L,
-                          const ChVectorDynamic<>& Qc) {
-    unsigned int displ_L = off_L  - this->offset_L;
-    unsigned int displ_v = off_v  - this->offset_w;
+void ChSystem::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                               const ChStateDelta& v,
+                               const ChVectorDynamic<>& R,
+                               const unsigned int off_L,  ///< offset in L, Qc
+                               const ChVectorDynamic<>& L,
+                               const ChVectorDynamic<>& Qc) {
+    unsigned int displ_L = off_L - this->offset_L;
+    unsigned int displ_v = off_v - this->offset_w;
 
     // Inherit: operate parent method on sub objects (bodies, links, etc.)
-    ChAssembly::IntToLCP(off_v,  v, R, off_L,  L, Qc);
+    ChAssembly::IntToDescriptor(off_v, v, R, off_L, L, Qc);
     // Use also on contact container:
-    contact_container->IntToLCP(displ_v + contact_container->GetOffset_w(),v,R, displ_L + contact_container->GetOffset_L(),L,Qc);
+    contact_container->IntToDescriptor(displ_v + contact_container->GetOffset_w(), v, R,
+                                       displ_L + contact_container->GetOffset_L(), L, Qc);
 }
 
-void ChSystem::IntFromLCP(const unsigned int off_v,  ///< offset in v
-                            ChStateDelta& v,
-                            const unsigned int off_L,  ///< offset in L
-                            ChVectorDynamic<>& L) {
-    unsigned int displ_L = off_L  - this->offset_L;
-    unsigned int displ_v = off_v  - this->offset_w;
+void ChSystem::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                                 ChStateDelta& v,
+                                 const unsigned int off_L,  ///< offset in L
+                                 ChVectorDynamic<>& L) {
+    unsigned int displ_L = off_L - this->offset_L;
+    unsigned int displ_v = off_v - this->offset_w;
 
     // Inherit: operate parent method on sub objects (bodies, links, etc.)
-    ChAssembly::IntFromLCP(off_v,  v, off_L, L);
+    ChAssembly::IntFromDescriptor(off_v, v, off_L, L);
     // Use also on contact container:
-    contact_container->IntFromLCP(displ_v + contact_container->GetOffset_w(),v, displ_L + contact_container->GetOffset_L(),L);
+    contact_container->IntFromDescriptor(displ_v + contact_container->GetOffset_w(),v, displ_L + contact_container->GetOffset_L(),L);
 }
 
 ////
-void ChSystem::InjectVariables(ChLcpSystemDescriptor& mdescriptor) {
+void ChSystem::InjectVariables(ChSystemDescriptor& mdescriptor) {
     // Inherit: operate parent method on sub objects (bodies, links, etc.)
     ChAssembly::InjectVariables(mdescriptor);
     // Use also on contact container:
@@ -1452,7 +1307,7 @@ void ChSystem::VariablesQbIncrementPosition(double dt_step) {
     contact_container->VariablesQbIncrementPosition(dt_step);
 }
 
-void ChSystem::InjectConstraints(ChLcpSystemDescriptor& mdescriptor) {
+void ChSystem::InjectConstraints(ChSystemDescriptor& mdescriptor) {
     // Inherit: operate parent method on sub objects (bodies, links, etc.)
     ChAssembly::InjectConstraints(mdescriptor);
     // Use also on contact container:
@@ -1501,34 +1356,6 @@ void ChSystem::ConstraintsLoadJacobians() {
     contact_container->ConstraintsLoadJacobians();
 }
 
-void ChSystem::ConstraintsLiLoadSuggestedSpeedSolution() {
-    // Inherit: operate parent method on sub objects (bodies, links, etc.)
-    ChAssembly::ConstraintsLiLoadSuggestedSpeedSolution();
-    // Use also on contact container:
-    contact_container->ConstraintsLiLoadSuggestedSpeedSolution();
-}
-
-void ChSystem::ConstraintsLiLoadSuggestedPositionSolution() {
-    // Inherit: operate parent method on sub objects (bodies, links, etc.)
-    ChAssembly::ConstraintsLiLoadSuggestedPositionSolution();
-    // Use also on contact container:
-    contact_container->ConstraintsLiLoadSuggestedPositionSolution();
-}
-
-void ChSystem::ConstraintsLiFetchSuggestedSpeedSolution() {
-    // Inherit: operate parent method on sub objects (bodies, links, etc.)
-    ChAssembly::ConstraintsLiFetchSuggestedSpeedSolution();
-    // Use also on contact container:
-    contact_container->ConstraintsLiFetchSuggestedSpeedSolution();
-}
-
-void ChSystem::ConstraintsLiFetchSuggestedPositionSolution() {
-    // Inherit: operate parent method on sub objects (bodies, links, etc.)
-    ChAssembly::ConstraintsLiFetchSuggestedPositionSolution();
-    // Use also on contact container:
-    contact_container->ConstraintsLiFetchSuggestedPositionSolution();
-}
-
 void ChSystem::ConstraintsFetch_react(double factor) {
     // Inherit: operate parent method on sub objects (bodies, links, etc.)
     ChAssembly::ConstraintsFetch_react(factor);
@@ -1536,7 +1363,7 @@ void ChSystem::ConstraintsFetch_react(double factor) {
     contact_container->ConstraintsFetch_react(factor);
 }
 
-void ChSystem::InjectKRMmatrices(ChLcpSystemDescriptor& mdescriptor) {
+void ChSystem::InjectKRMmatrices(ChSystemDescriptor& mdescriptor) {
     // Inherit: operate parent method on sub objects (bodies, links, etc.)
     ChAssembly::InjectKRMmatrices(mdescriptor);
     // Use also on contact container:
@@ -1632,19 +1459,19 @@ void ChSystem::StateSolveCorrection(ChStateDelta& Dv,             ///< result: c
     if (force_state_scatter)
         this->StateScatter(x, v, T);
 
-    // R and Qc vectors  --> LCP sparse solver structures  (also sets L and Dv to warmstart)
+    // R and Qc vectors  --> solver sparse solver structures  (also sets L and Dv to warmstart)
 
-    this->IntToLCP(0, Dv, R, 0, L, Qc);
+    this->IntToDescriptor(0, Dv, R, 0, L, Qc);
 
-    // G and Cq  matrices:  fill the LCP sparse solver structures:
+    // G and Cq  matrices:  fill the sparse solver structures:
 
     this->ConstraintsLoadJacobians();
     
-    // M, K, R matrices:  fill the LCP sparse solver structures:
+    // M, K, R matrices:  fill the sparse solver structures:
 
     if (c_a || c_v || c_x)
-        this->KRMmatricesLoad(-c_x, -c_v, c_a); // for KRM blocks in ChLcpKblock objects: fill them
-    this->LCP_descriptor->SetMassFactor(c_a); // for ChLcpVariable objects, that does not have ChLcpKblock: just use a coeff., to avoid duplicated data 
+        this->KRMmatricesLoad(-c_x, -c_v, c_a); // for KRM blocks in ChKblock objects: fill them
+    this->descriptor->SetMassFactor(c_a); // for ChVariable objects, that does not have ChKblock: just use a coeff., to avoid duplicated data 
 
 
     // diagnostics:
@@ -1659,8 +1486,8 @@ void ChSystem::StateSolveCorrection(ChStateDelta& Dv,             ///< result: c
         sprintf(cprefix, "solve_%04d_%02d_", this->stepcount, this->solvecount);
         std::string sprefix(cprefix);
 
-        this->LCP_descriptor->DumpLastMatrices(true,  sprefix.c_str());
-        this->LCP_descriptor->DumpLastMatrices(false, sprefix.c_str());
+        this->descriptor->DumpLastMatrices(true,  sprefix.c_str());
+        this->descriptor->DumpLastMatrices(false, sprefix.c_str());
 
         chrono::ChStreamOutAsciiFile file_x( (sprefix+"x_pre.dat").c_str() );
         file_x.SetNumFormat(numformat);
@@ -1679,18 +1506,18 @@ void ChSystem::StateSolveCorrection(ChStateDelta& Dv,             ///< result: c
         ((ChMatrix<>)Qc).StreamOUTdenseMatlabFormat(file_Qc); // already saved as b from DumpLastMatrices?
     }
 
-    // Solve the LCP problem!!!!!!!!
+    // Solve the problem
 
-    timer_lcp.start();
+    timer_solver.start();
 
-    GetLcpSolverSpeed()->Solve(*this->LCP_descriptor);
+    GetSolverSpeed()->Solve(*this->descriptor);
 
-    timer_lcp.stop();
+    timer_solver.stop();
 
 
-    // Dv and L vectors  <-- LCP sparse solver structures
+    // Dv and L vectors  <-- sparse solver structures
 
-    this->IntFromLCP(0, Dv, 0, L);
+    this->IntFromDescriptor(0, Dv, 0, L);
     
     // diagnostics:
 
@@ -1855,329 +1682,15 @@ int ChSystem::DoStepDynamics(double m_step) {
 }
 
 
-int ChSystem::Integrate_Y() {
-    ResetTimers();
-    switch (integration_type) {
-        case INT_ANITESCU:
-            return Integrate_Y_impulse_Anitescu();
-        case INT_TASORA:
-            return Integrate_Y_impulse_Tasora();
-        default:
-            return Integrate_Y_timestepper();
-    }
-
-    return TRUE;
-}
-
-//
-//  PERFORM ANITESCU INTEGRATION STEP  -IMPULSIVE METHOD-
-//
-//  ...but using the differential inclusion approach, better for
-//  systems with contacts (use the Anitescu method, with stabilization)
-//
-
-int ChSystem::Integrate_Y_impulse_Anitescu() {
-    GetLog() << "WARNING! The INT_ANITESCU timestepper is deprecated. Use the INT_EULER_IMPLICIT_LINEARIZED instead.\n";
-
-    int ret_code = TRUE;
-
-    timer_step.start();
-
-    events->Record(CHEVENT_TIMESTEP);
-
-    // Executes the "forStep" script, if any
-    ExecuteScriptForStep();
-    // Executes the "forStep" script
-    // in all controls of controlslist
-    ExecuteControlsForStep();
-
-    this->stepcount++;
-    this->solvecount = 0;
-
-    // Compute contacts and create contact constraints
-    ComputeCollisions();
-
-    // Counts dofs, statistics, etc.
-    Setup();
-
-    // Update everything.
-    // Note that we do not update visualization assets at this point.
-    Update(false);
-
-    // Re-wake the bodies that cannot sleep because they are in contact with
-    // some body that is not in sleep state.
-    ManageSleepingBodies();
-
-    timer_lcp.start();
-
-    //
-    // Enforce velocity/impulses constraints ....................
-    //
-
-    // reset known-term vectors
-    LCPprepare_reset();
-
-    // fill LCP known-term vectors with proper terms (forces, etc.):
-    //
-    // | M+dt^2*K+dt*R -Cq'|*|v_new|- | [M]*v_old + f*dt      | = |0| ,  c>=0, l>=0, l*c=0;
-    // | Cq              0 | |l    |  | -Ct +min(-C/dt,vlim)  |   |c|
-    //
-
-    LCPprepare_load(true,         // Cq,
-                    true,         // adds [M]*v_old to the known vector
-                    step,         // f*dt
-                    step * step,  // dt^2*K  (nb only non-Schur based solvers support K matrix blocks)
-                    step,         // dt*R   (nb only non-Schur based solvers support R matrix blocks)
-                    1.0,          // M (for FEM with non-lumped masses, add their mass-matrixes)
-                    1.0,          // Ct   (needed, for rheonomic motors)
-                    1.0 / step,   // C/dt
-                    max_penetration_recovery_speed,  // vlim, max penetrations recovery speed (positive for exiting)
-                    true);                           // do above max. clamping on -C/dt
-
-    // if warm start is used, can exploit cached multipliers from last step...
-    LCPprepare_Li_from_speed_cache();
-
-    // make vectors of variables and constraints, used by the following LCP solver
-    LCPprepare_inject(*this->LCP_descriptor);
-
-    // Solve the LCP problem.
-    // Solution variables are new speeds 'v_new'
-    GetLcpSolverSpeed()->Solve(*this->LCP_descriptor);
-
-    timer_lcp.stop();
-
-    // stores computed multipliers in constraint caches, maybe useful for warm starting next step
-    LCPresult_Li_into_speed_cache();
-
-    // updates the reactions of the constraint
-    LCPresult_Li_into_reactions(1.0 / step);  // R = l/dt  , approximately
-
-    // perform an Eulero integration step (1st order stepping as pos+=v_new*dt)
-
-    for (int ip = 0; ip < bodylist.size(); ++ip) {
-        std::shared_ptr<ChBody> Bpointer = bodylist[ip];
-
-        // EULERO INTEGRATION: pos+=v_new*dt  (do not do this, if GPU already computed it)
-        Bpointer->VariablesQbIncrementPosition(step);
-        // Set body speed, and approximates the acceleration by differentiation.
-        Bpointer->VariablesQbSetSpeed(step);
-
-        // Now also updates all markers & forces
-        Bpointer->Update(this->ChTime);
-    }
-
-    for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-        std::shared_ptr<ChPhysicsItem> PHpointer = otherphysicslist[ip];
-
-        // EULERO INTEGRATION: pos+=v_new*dt  (do not do this, if GPU already computed it)
-        PHpointer->VariablesQbIncrementPosition(step);
-        // Set body speed, and approximates the acceleration by differentiation.
-        PHpointer->VariablesQbSetSpeed(step);
-
-        // Now also updates all markers & forces
-        PHpointer->Update(this->ChTime);
-    }
-
-    this->ChTime = ChTime + step;
-
-    // Executes custom processing at the end of step
-    CustomEndOfStep();
-
-    // If there are some probe objects in the probe list,
-    // tell them to record their variables (ususally x-y couples)
-    RecordAllProbes();
-
-    // Time elapsed for step..
-    timer_step.stop();
-
-    return (ret_code);
-}
-
-//
-//  PERFORM TASORA INTEGRATION STEP  -IMPULSIVE METHOD-
-//
-//  ...but using the differential inclusion approach, better for
-//  systems with contacts (use the Tasora method, with separate
-//  positional stabilization)
-//
-
-int ChSystem::Integrate_Y_impulse_Tasora() {
-    GetLog() << "WARNING! The INT_TASORA timestepper is deprecated. Use the INT_EULER_IMPLICIT_PROJECTED instead.\n";
-
-    int ret_code = TRUE;
-
-    timer_step.start();
-
-    events->Record(CHEVENT_TIMESTEP);
-
-    // Executes the "forStep" script, if any
-    ExecuteScriptForStep();
-    // Executes the "forStep" script
-    // in all controls of controlslist
-    ExecuteControlsForStep();
-
-    this->stepcount++;
-    this->solvecount =0;
-
-    // Compute contacts and create contact constraints
-    ComputeCollisions();
-
-    // Counts dofs, statistics, etc.
-    Setup();
-
-    // Update everything.
-    // Note that we do not update visualization assets at this point.
-    Update(false);
-
-    // Re-wake the bodies that cannot sleep because they are in contact with
-    // some body that is not in sleep state.
-    ManageSleepingBodies();
-
-    timer_lcp.reset();
-    timer_lcp.start();
-
-    // 1-
-    // Enforce velocity/impulses constraints ....................
-    //
-
-    // reset known-term vectors
-    LCPprepare_reset();
-
-    // fill LCP known-term vectors with proper terms (forces, etc.):
-    //
-    // | M -Cq'|*|v_new|- | [M]*v_old + f*dt    | = |0| ,  c>=0, l>=0, l*c=0;
-    // | Cq  0 | |l    |  |  - Ct +min(-C/dt,0) |   |c|
-    //
-
-    LCPprepare_load(true,         // Cq
-                    true,         // adds [M]*v_old to the known vector
-                    step,         // f*dt
-                    step * step,  // dt^2*K  (nb only non-Schur based solvers support K matrix blocks)
-                    step,         // dt*R   (nb only non-Schur based solvers support K matrix blocks)
-                    1.0,          // M (for FEM with non-lumped masses, add their mass-matrices)
-                    1.0,          // Ct      (needed, for rheonomic motors)
-                    1.0 / step,   // C/dt
-                    0.0,          // max constr.recovery speed (positive for exiting)
-                    true);        // do above max. clamping on -C/dt
-
-    // if warm start is used, can exploit cached multipliers from last step...
-    LCPprepare_Li_from_speed_cache();
-
-    // make vectors of variables and constraints, used by the following LCP solver
-    LCPprepare_inject(*this->LCP_descriptor);
-
-    // Solve the LCP problem.
-    // Solution variables are new speeds 'v_new'
-
-    GetLcpSolverSpeed()->Solve(*this->LCP_descriptor);
-
-    // stores computed multipliers in constraint caches, maybe useful for warm starting next step
-    LCPresult_Li_into_speed_cache();
-
-    // updates the reactions of the constraint
-    LCPresult_Li_into_reactions(1.0 / step);  // R = l/dt  , approximately
-
-    // perform an Eulero integration step (1st order stepping as pos+=v_new*dt)
-
-    for (int ip = 0; ip < bodylist.size(); ++ip) {
-        std::shared_ptr<ChBody> Bpointer = bodylist[ip];
-
-        // EULERO INTEGRATION: pos+=v_new*dt
-        Bpointer->VariablesQbIncrementPosition(step);
-        // Set body speed, and approximates the acceleration by differentiation.
-        Bpointer->VariablesQbSetSpeed(step);
-
-        // Now also updates all markers & forces
-        // Bpointer->UpdateALL(this->ChTime); // not needed - will be done later anyway
-    }
-
-    for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-        std::shared_ptr<ChPhysicsItem> PHpointer = otherphysicslist[ip];
-
-        // EULERO INTEGRATION: pos+=v_new*dt
-        PHpointer->VariablesQbIncrementPosition(step);
-        // Set body speed, and approximates the acceleration by differentiation.
-        PHpointer->VariablesQbSetSpeed(step);
-
-        // Now also updates all markers & forces
-        // PHpointer->UpdateALL(this->ChTime); // not needed - will be done later anyway
-    }
-
-    this->ChTime = ChTime + step;
-
-    // 2-
-    // Stabilize constraint positions ....................
-    //
-
-    // reset known-term vectors
-    LCPprepare_reset();
-
-    // Fill known-term vectors with proper terms 0 and -C :
-    //
-    // | M -Cq'|*|Dpos|- |0 |= |0| ,  c>=0, l>=0, l*c=0;
-    // | Cq  0 | |l   |  |-C|  |c|
-    //
-
-    LCPprepare_load(false,   // Cq are already there..
-                    false,   // no addition of M*v in known term
-                    0,       // no forces
-                    0,       // no K matrix
-                    0,       // no R matrix
-                    1.0,     // M (for FEM with non-lumped masses, add their mass-matrices)
-                    0,       // no Ct term
-                    1.0,     // C
-                    0.0,     // recovery max speed (not used)
-                    false);  // no clamping on -C term
-
-    // if warm start is used, can exploit cached multipliers from last step...
-    LCPprepare_Li_from_position_cache();
-
-    // Solve the LCP problem.
-    // Solution variables are 'Dpos', delta positions.
-
-    GetLcpSolverStab()->Solve(*this->LCP_descriptor);
-
-    // stores computed multipliers in constraint caches, maybe useful for warm starting next step
-    LCPresult_Li_into_position_cache();
-
-    {
-        for (int ip = 0; ip < bodylist.size(); ++ip) {
-            std::shared_ptr<ChBody> Bpointer = bodylist[ip];
-
-            Bpointer->VariablesQbIncrementPosition(1.0);  // pos+=Dpos
-            // Now also updates all markers & forces
-            Bpointer->Update(this->ChTime);
-        }
-
-        for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-            std::shared_ptr<ChPhysicsItem> PHpointer = otherphysicslist[ip];
-
-            PHpointer->VariablesQbIncrementPosition(1.0);  // pos+=Dpos
-            // Now also updates all markers & forces
-            PHpointer->Update(this->ChTime);
-        }
-    }
-
-    timer_lcp.stop();
-
-    // Executes custom processing at the end of step
-    CustomEndOfStep();
-
-    // If there are some probe objects in the probe list,
-    // tell them to record their variables (ususally x-y couples)
-    RecordAllProbes();
-
-    // Time elapsed for step..
-    timer_step.stop();
-
-    return (ret_code);
-}
 
 //
 //  PERFORM INTEGRATION STEP  using pluggable timestepper
 //
 
-int ChSystem::Integrate_Y_timestepper() {
+int ChSystem::Integrate_Y() {
+
+    ResetTimers();
+
     int ret_code = TRUE;
 
     timer_step.start();
@@ -2208,10 +1721,10 @@ int ChSystem::Integrate_Y_timestepper() {
     ManageSleepingBodies();
 
     // Prepare lists of variables and constraints. 
-    LCPprepare_inject(*this->LCP_descriptor);
-    LCP_descriptor->UpdateCountsAndOffsets();
+    DescriptorPrepareInject(*descriptor);
+    descriptor->UpdateCountsAndOffsets();
 
-    timer_lcp.reset();
+    timer_solver.reset();
 
     // Set some settings in timestepper object
     timestepper->SetQcDoClamp(true);
@@ -2229,6 +1742,9 @@ int ChSystem::Integrate_Y_timestepper() {
     // tell them to record their variables (ususally x-y couples)
     RecordAllProbes();
 
+    // Call method to gather contact forces/torques in rigid bodies
+    contact_container->ComputeContactForces();
+
     // Time elapsed for step..
     timer_step.stop();
 
@@ -2245,137 +1761,22 @@ int ChSystem::DoAssembly(int action, int mflags) {
 
     this->solvecount = 0;
 
-    // Counts dofs, statistics, etc.
     Setup();
+    Update();
 
-    // Update the system and all its components.
-    // No need to update visualization assets here.
-    Update(false);
+    int old_maxsteps = this->GetMaxItersSolverSpeed();
+    this->SetMaxItersSolverSpeed(300);
 
-    //
-    // (1)--------  POSITION
-    //
-    if (action & ASS_POSITION) {
-        for (int m_iter = 0; m_iter < maxiter; m_iter++) {
-            if (mflags & ASF_COLLISIONS) {
-                // Compute new contacts and create contact constraints
-                ComputeCollisions();
+    // Prepare lists of variables and constraints. 
+    DescriptorPrepareInject(*descriptor);
 
-                Setup();        // Counts dofs, statistics, etc.
-                Update(false);  // Update everything (do not update visualization assets)
-            }
+    ChAssemblyAnalysis manalysis(*this);
+    manalysis.SetMaxAssemblyIters(this->GetMaxiter());
 
-            // Reset known-term vectors
-            LCPprepare_reset();
+    // Perform analysis
+    manalysis.AssemblyAnalysis(action, mflags);
 
-            // Fill known-term vectors with proper terms 0 and -C :
-            //
-            // | M -Cq'|*|Dpos|- |0 |= |0| ,  c>=0, l>=0, l*c=0;
-            // | Cq  0 | |l   |  |-C|  |c|
-            //
-            LCPprepare_load(true,    // calculate Jacobian Cq
-                            false,   // no addition of M*v in known term
-                            0,       // no forces
-                            0,       // no K matrix
-                            0,       // no R matrix
-                            1.0,     // M (for FEM with non-lumped masses, add their mass-matrices)
-                            0,       // no Ct term
-                            1.0,     // C
-                            0.0,     //
-                            false);  // no clamping on -C/dt
-
-            // Make the vectors of pointers to constraint and variables, for LCP solver
-            LCPprepare_inject(*this->LCP_descriptor);
-
-            // Check violation and exit Newton loop if reached tolerance.
-            double max_res, max_LCPerr;
-            this->LCP_descriptor->ComputeFeasabilityViolation(max_res, max_LCPerr);
-            if (max_res <= this->tol)
-                break;
-
-            // Solve the LCP problem.
-            // Solution variables are 'Dpos', delta positions.
-            // Note: use settings of the 'speed' lcp solver (i.e. use max number
-            // of iterations as you would use for the speed probl., if iterative solver)
-            GetLcpSolverSpeed()->Solve(*this->LCP_descriptor);
-
-            // Update bodies and other physics items at new positions
-
-            for (int ip = 0; ip < bodylist.size(); ++ip) {
-                bodylist[ip]->VariablesQbIncrementPosition(1.0);  // pos += Dpos
-                bodylist[ip]->Update(this->ChTime);
-            }
-
-            for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-                otherphysicslist[ip]->VariablesQbIncrementPosition(1.0);  // pos += Dpos
-                otherphysicslist[ip]->Update(this->ChTime);
-            }
-
-            Update();  // Update everything
-
-        }  // end loop Newton iterations
-    }
-
-    //
-    // 2) -------- SPEEDS and ACCELERATIONS
-    //
-    if ((action & ASS_SPEED) || (action & ASS_ACCEL)) {
-        // Save current value of the time step and max number of 'speed' iterations.
-        double step_saved = step;
-        int niter_saved = GetIterLCPmaxItersSpeed();
-
-        // Use a small time step for assembly. Also, temporarily increase the max
-        // number of iterations for the speed solver (to accommodate for the bad
-        // initial guess)
-        step = 1e-7;
-        SetIterLCPmaxItersSpeed(5 * niter_saved);
-
-        // Reset known-term vectors
-        LCPprepare_reset();
-
-        // Fill LCP known-term vectors with proper terms
-        //
-        // | M -Cq'|*|v_new|- | [M]*v_old +f*dt | = |0| ,  c>=0, l>=0, l*c=0;
-        // | Cq  0 | |l    |  |  - Ct           |   |c|
-        //
-        LCPprepare_load(false,        // Cq are already there..
-                        true,         // adds [M]*v_old to the known vector
-                        step,         // f*dt
-                        step * step,  // dt^2*K  (nb only non-Schur based solvers support K matrix blocks)
-                        step,         // dt*R   (nb only non-Schur based solvers support K matrix blocks)
-                        1.0,          // M (for FEM with non-lumped masses, add their mass-matrices)
-                        1.0,          // Ct term
-                        0,            // no C term
-                        0.0,          //
-                        false);       // no clamping on -C/dt
-
-        // Make the vectors of pointers to constraint and variables, for LCP solver
-        LCPprepare_inject(*this->LCP_descriptor);
-
-        // Solve the LCP problem using the speed solver. Solution variables are new
-        // speeds 'v_new'
-        GetLcpSolverSpeed()->Solve(*this->LCP_descriptor);
-
-        // Update the constraint reaction forces.
-        LCPresult_Li_into_reactions(1 / step);
-
-        // Loop over all bodies and other physics items; approximate speeds using
-        // finite diferences (with the local, small time step value) and update all
-        // markers and forces.
-        for (int ip = 0; ip < bodylist.size(); ++ip) {
-            bodylist[ip]->VariablesQbSetSpeed(step);
-            bodylist[ip]->Update(this->ChTime);
-        }
-
-        for (int ip = 0; ip < otherphysicslist.size(); ++ip) {
-            otherphysicslist[ip]->VariablesQbSetSpeed(step);
-            otherphysicslist[ip]->Update(this->ChTime);
-        }
-
-        // Restore the time step and max number of iterations.
-        step = step_saved;
-        SetIterLCPmaxItersSpeed(niter_saved);
-    }
+    this->SetMaxItersSolverSpeed(old_maxsteps);
 
     return 0;
 }
@@ -2389,35 +1790,35 @@ int ChSystem::DoStaticLinear() {
     Setup();
     Update();
 
-    int old_maxsteps = this->GetIterLCPmaxItersSpeed();
-    this->SetIterLCPmaxItersSpeed(300);
+    int old_maxsteps = this->GetMaxItersSolverSpeed();
+    this->SetMaxItersSolverSpeed(300);
 
     // Prepare lists of variables and constraints. 
-    LCPprepare_inject(*this->LCP_descriptor);
+    DescriptorPrepareInject(*descriptor);
 
     ChStaticLinearAnalysis manalysis(*this);
 
     // Perform analysis
     manalysis.StaticAnalysis();
 
-    this->SetIterLCPmaxItersSpeed(old_maxsteps);
+    this->SetMaxItersSolverSpeed(old_maxsteps);
 
     bool dump_data = false;
 
     if (dump_data) {
-        this->GetLcpSystemDescriptor()->DumpLastMatrices();
+        GetSystemDescriptor()->DumpLastMatrices();
 
         // optional check for correctness in result
         chrono::ChMatrixDynamic<double> md;
-        GetLcpSystemDescriptor()->BuildDiVector(md);  // d={f;-b}
+        GetSystemDescriptor()->BuildDiVector(md);  // d={f;-b}
 
         chrono::ChMatrixDynamic<double> mx;
-        GetLcpSystemDescriptor()->FromUnknownsToVector(mx);  // x ={q,-l}
+        GetSystemDescriptor()->FromUnknownsToVector(mx);  // x ={q,-l}
         chrono::ChStreamOutAsciiFile file_x("dump_x.dat");
         mx.StreamOUTdenseMatlabFormat(file_x);
 
         chrono::ChMatrixDynamic<double> mZx;
-        GetLcpSystemDescriptor()->SystemProduct(mZx, &mx);  // Zx = Z*x
+        GetSystemDescriptor()->SystemProduct(mZx, &mx);  // Zx = Z*x
 
         GetLog() << "CHECK: norm of solver residual: ||Z*x-d|| -------------------\n";
         GetLog() << (mZx - md).NormInf() << "\n";
@@ -2435,11 +1836,11 @@ int ChSystem::DoStaticNonlinear(int nsteps) {
     Setup();
     Update();
 
-    int old_maxsteps = this->GetIterLCPmaxItersSpeed();
-    this->SetIterLCPmaxItersSpeed(300);
+    int old_maxsteps = this->GetMaxItersSolverSpeed();
+    this->SetMaxItersSolverSpeed(300);
 
     // Prepare lists of variables and constraints. 
-    LCPprepare_inject(*this->LCP_descriptor);
+    DescriptorPrepareInject(*descriptor);
 
     ChStaticNonLinearAnalysis manalysis(*this);
     manalysis.SetMaxiters(nsteps);
@@ -2447,7 +1848,7 @@ int ChSystem::DoStaticNonlinear(int nsteps) {
     // Perform analysis
     manalysis.StaticAnalysis();
 
-    this->SetIterLCPmaxItersSpeed(old_maxsteps);
+    this->SetMaxItersSolverSpeed(old_maxsteps);
 
     return 0;
 }
@@ -2723,15 +2124,15 @@ void ChSystem::ArchiveOUT(ChArchiveOut& marchive)
     marchive << CHNVP(maxiter);
     marchive << CHNVP(use_sleeping);
 
-    eCh_lcpSolver_mapper msolmapper;
-    marchive << CHNVP(msolmapper(lcp_solver_type),"lcp_solver_type");
-    marchive << CHNVP(LCP_descriptor); 
-    marchive << CHNVP(LCP_solver_speed); 
-    marchive << CHNVP(LCP_solver_stab);  
+    eCh_solverType_mapper msolmapper;
+    marchive << CHNVP(msolmapper(solver_type), "solver_type");
+    marchive << CHNVP(descriptor); 
+    marchive << CHNVP(solver_speed); 
+    marchive << CHNVP(solver_stab);  
 
-    marchive << CHNVP(iterLCPmaxIters);
-    marchive << CHNVP(iterLCPmaxItersStab);
-    marchive << CHNVP(simplexLCPmaxSteps); 
+    marchive << CHNVP(max_iter_solver_speed);
+    marchive << CHNVP(max_iter_solver_stab);
+    marchive << CHNVP(max_steps_simplex);
     marchive << CHNVP(min_bounce_speed); 
     marchive << CHNVP(max_penetration_recovery_speed);
     marchive << CHNVP(parallel_thread_number); 
@@ -2777,21 +2178,21 @@ void ChSystem::ArchiveIN(ChArchiveIn& marchive)
     marchive >> CHNVP(maxiter);
     marchive >> CHNVP(use_sleeping);
 
-    eCh_lcpSolver_mapper msolmapper;
-    marchive >> CHNVP(msolmapper(lcp_solver_type),"lcp_solver_type");
+    eCh_solverType_mapper msolmapper;
+    marchive >> CHNVP(msolmapper(solver_type),"solver_type");
 
-    if (LCP_descriptor) delete LCP_descriptor;
-    marchive >> CHNVP(LCP_descriptor); 
+    if (descriptor) delete descriptor;
+    marchive >> CHNVP(descriptor); 
 
-    if (LCP_solver_speed) delete LCP_solver_speed;
-    marchive >> CHNVP(LCP_solver_speed); 
+    if (solver_speed) delete solver_speed;
+    marchive >> CHNVP(solver_speed); 
     
-    if (LCP_solver_stab) delete LCP_solver_stab;
-    marchive >> CHNVP(LCP_solver_stab);  
+    if (solver_stab) delete solver_stab;
+    marchive >> CHNVP(solver_stab);  
 
-    marchive >> CHNVP(iterLCPmaxIters);
-    marchive >> CHNVP(iterLCPmaxItersStab);
-    marchive >> CHNVP(simplexLCPmaxSteps); 
+    marchive >> CHNVP(max_iter_solver_speed);
+    marchive >> CHNVP(max_iter_solver_stab);
+    marchive >> CHNVP(max_steps_simplex);
     marchive >> CHNVP(min_bounce_speed); 
     marchive >> CHNVP(max_penetration_recovery_speed);
     marchive >> CHNVP(parallel_thread_number); 
@@ -2853,9 +2254,4 @@ int ChSystem::FileWriteChR(ChStreamOutBinary& m_file) {
     return 1;
 }
 
-
-
-
-}  // END_OF_NAMESPACE____
-
-/////////////////////////////////////// eof
+}  // end namespace chrono

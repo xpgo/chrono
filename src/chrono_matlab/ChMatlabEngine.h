@@ -30,9 +30,6 @@
 #include "chrono_matlab/ChApiMatlab.h"
 #include "core/ChMath.h"
 #include "core/ChLinkedListMatrix.h"
-//#include "lcp/ChLcpSystemDescriptor.h"
-
-// include also the Matlab header..
 
 // Following namespace trick is a fix for VS2010+ and Matlab: avoid error with typedef in matrix.h
 namespace matlabengine {
@@ -40,6 +37,10 @@ namespace matlabengine {
 };
 
 namespace chrono {
+
+/// @addtogroup matlab_module
+/// @{
+
 
 /// Class for accessing the Matlab engine with a C++ wrapper.
 /// When a ChMatlabEngine object is instanced, a Matlab engine
@@ -112,6 +113,7 @@ class ChApiMatlab ChMatlabEngine {
     }
 };
 
+/// @} matlab_module
 }  // END_OF_NAMESPACE____
 
 #endif

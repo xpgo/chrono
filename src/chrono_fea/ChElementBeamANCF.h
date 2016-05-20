@@ -19,7 +19,7 @@
 
 //#define BEAM_VERBOSE
 #include "chrono/core/ChVector.h"
-#include "core/ChQuadrature.h"
+#include "chrono/core/ChQuadrature.h"
 #include "chrono_fea/ChElementBeam.h"
 #include "chrono_fea/ChBeamSection.h"
 #include "chrono_fea/ChNodeFEAxyzD.h"
@@ -61,9 +61,9 @@ class ChElementBeamANCF : public ChElementBeam, public ChLoadableU, public ChLoa
 
     virtual ~ChElementBeamANCF() {}
 
-    virtual int GetNnodes() { return 2; }
-    virtual int GetNcoords() { return 2 * 6; }
-    virtual int GetNdofs() { return 2 * 6; }
+    virtual int GetNnodes() override { return 2; }
+    virtual int GetNdofs() override { return 2 * 6; }
+    virtual int GetNodeNdofs(int n) override { return 6; }
 
     virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
 
@@ -73,7 +73,7 @@ class ChElementBeamANCF : public ChElementBeam, public ChLoadableU, public ChLoa
 
         nodes[0] = nodeA;
         nodes[1] = nodeB;
-        std::vector<ChLcpVariables*> mvars;
+        std::vector<ChVariables*> mvars;
         mvars.push_back(&nodes[0]->Variables());
         mvars.push_back(&nodes[0]->Variables_D());
         mvars.push_back(&nodes[1]->Variables());
@@ -898,7 +898,7 @@ class ChElementBeamANCF : public ChElementBeam, public ChLoadableU, public ChLoa
     }
 
     //
-    // Functions for interfacing to the LCP solver
+    // Functions for interfacing to the solver
     //            (***not needed, thank to bookkeeping in parent class ChElementGeneric)
 
     //
@@ -940,8 +940,8 @@ class ChElementBeamANCF : public ChElementBeam, public ChLoadableU, public ChLoa
     /// Get the size of the i-th sub-block of DOFs in global vector
     virtual unsigned int GetSubBlockSize(int nblock) { return 6; }
 
-    /// Get the pointers to the contained ChLcpVariables, appending to the mvars vector.
-    virtual void LoadableGetVariables(std::vector<ChLcpVariables*>& mvars) { 
+    /// Get the pointers to the contained ChVariables, appending to the mvars vector.
+    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) { 
         mvars.push_back(&this->nodes[0]->Variables());
         mvars.push_back(&this->nodes[0]->Variables_D());
         mvars.push_back(&this->nodes[1]->Variables());

@@ -14,6 +14,7 @@
 #define CHELEMENTTETRA10_H
 
 #include <cmath>
+
 #include "chrono_fea/ChElementTetrahedron.h"
 #include "chrono_fea/ChNodeFEAxyz.h"
 
@@ -26,8 +27,7 @@ namespace fea {
 /// Tetahedron FEA element with 10 nodes.
 /// This is a quadratic element for displacementes; stress and strain
 /// are interpolated depending on Gauss points.
-class ChApiFea ChElementTetra_10 : public ChElementTetrahedron,
-                                   public ChLoadableUVW  {
+class ChApiFea ChElementTetra_10 : public ChElementTetrahedron, public ChLoadableUVW {
   protected:
     std::vector<std::shared_ptr<ChNodeFEAxyz> > nodes;
     std::shared_ptr<ChContinuumElastic> Material;
@@ -42,9 +42,9 @@ class ChApiFea ChElementTetra_10 : public ChElementTetrahedron,
     ChElementTetra_10();
     virtual ~ChElementTetra_10();
 
-    virtual int GetNnodes() { return 10; }
-    virtual int GetNcoords() { return 10 * 3; }
-    virtual int GetNdofs() { return 10 * 3; }
+    virtual int GetNnodes() override { return 10; }
+    virtual int GetNdofs() override { return 10 * 3; }
+    virtual int GetNodeNdofs(int n) override { return 3; }
 
     virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
 
@@ -68,7 +68,7 @@ class ChApiFea ChElementTetra_10 : public ChElementTetrahedron,
         nodes[7] = nodeH;
         nodes[8] = nodeI;
         nodes[9] = nodeJ;
-        std::vector<ChLcpVariables*> mvars;
+        std::vector<ChVariables*> mvars;
         mvars.push_back(&nodes[0]->Variables());
         mvars.push_back(&nodes[1]->Variables());
         mvars.push_back(&nodes[2]->Variables());
@@ -688,7 +688,7 @@ class ChApiFea ChElementTetra_10 : public ChElementTetrahedron,
     ChMatrix<>& GetStiffnessMatrix() { return StiffnessMatrix; }
 
     //
-    // Functions for interfacing to the LCP solver
+    // Functions for interfacing to the solver
     //            (***not needed, thank to bookkeeping in parent class ChElementGeneric)
 
     //
@@ -741,8 +741,8 @@ class ChApiFea ChElementTetra_10 : public ChElementTetrahedron,
         /// Get the size of the i-th sub-block of DOFs in global vector
     virtual unsigned int GetSubBlockSize(int nblock) { return 3;}
 
-        /// Get the pointers to the contained ChLcpVariables, appending to the mvars vector.
-    virtual void LoadableGetVariables(std::vector<ChLcpVariables*>& mvars) {
+        /// Get the pointers to the contained ChVariables, appending to the mvars vector.
+    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) {
         for (int i=0; i<nodes.size(); ++i)
             mvars.push_back(&this->nodes[i]->Variables());
     };

@@ -13,9 +13,9 @@
 #define CHCONTACTDVIROLLING_H
 
 
-#include "physics/ChContactDVI.h"
-#include "lcp/ChLcpConstraintTwoTuplesRollingN.h"
-#include "lcp/ChLcpConstraintTwoTuplesRollingT.h"
+#include "chrono/physics/ChContactDVI.h"
+#include "chrono/solver/ChConstraintTwoTuplesRollingN.h"
+#include "chrono/solver/ChConstraintTwoTuplesRollingT.h"
 
 namespace chrono {
 
@@ -41,9 +41,9 @@ class ChContactDVIrolling :
  
     // The three scalar constraints, to be feed into the
     // system solver. They contain jacobians data and special functions.
-    ChLcpConstraintTwoTuplesRollingN < typecarr_a,  typecarr_b> Rx;
-    ChLcpConstraintTwoTuplesRollingT < typecarr_a,  typecarr_b> Ru;
-    ChLcpConstraintTwoTuplesRollingT < typecarr_a,  typecarr_b> Rv;
+    ChConstraintTwoTuplesRollingN < typecarr_a,  typecarr_b> Rx;
+    ChConstraintTwoTuplesRollingT < typecarr_a,  typecarr_b> Ru;
+    ChConstraintTwoTuplesRollingT < typecarr_a,  typecarr_b> Rv;
 
     ChVector<> react_torque;
 
@@ -213,11 +213,11 @@ class ChContactDVIrolling :
         // no force to add - this is DVI, not DEM
     //};
 
-    virtual void ContIntToLCP(const unsigned int off_L,  ///< offset in L, Qc
-                      const ChVectorDynamic<>& L,
-                      const ChVectorDynamic<>& Qc)  {
+    virtual void ContIntToDescriptor(const unsigned int off_L,  ///< offset in L, Qc
+                                     const ChVectorDynamic<>& L,
+                                     const ChVectorDynamic<>& Qc) {
         // base behaviour too
-        ChContactDVI< Ta, Tb >::ContIntToLCP(off_L, L, Qc);
+        ChContactDVI<Ta, Tb>::ContIntToDescriptor(off_L, L, Qc);
 
         Rx.Set_l_i(L(off_L + 3));
         Ru.Set_l_i(L(off_L + 4));
@@ -228,17 +228,17 @@ class ChContactDVIrolling :
         Rv.Set_b_i(Qc(off_L + 5));
     }
 
-    virtual void ContIntFromLCP(const unsigned int off_L,  ///< offset in L
-                        ChVectorDynamic<>& L)  {
+    virtual void ContIntFromDescriptor(const unsigned int off_L,  ///< offset in L
+                                       ChVectorDynamic<>& L) {
         // base behaviour too
-        ChContactDVI< Ta, Tb >::ContIntFromLCP(off_L, L);
+        ChContactDVI<Ta, Tb>::ContIntFromDescriptor(off_L, L);
 
         L(off_L + 3) = Rx.Get_l_i();
         L(off_L + 4) = Ru.Get_l_i();
         L(off_L + 5) = Rv.Get_l_i();
     }
 
-    virtual void InjectConstraints(ChLcpSystemDescriptor& mdescriptor)  {
+    virtual void InjectConstraints(ChSystemDescriptor& mdescriptor)  {
         // base behaviour too
         ChContactDVI< Ta, Tb >::InjectConstraints(mdescriptor);
 
@@ -284,39 +284,8 @@ class ChContactDVIrolling :
         react_torque.y = Ru.Get_l_i() * factor;
         react_torque.z = Rv.Get_l_i() * factor;
     }
-
-    virtual void ConstraintsLiLoadSuggestedSpeedSolution()  {
-        // base behaviour too
-        ChContactDVI< Ta, Tb >::ConstraintsLiLoadSuggestedSpeedSolution();
-
-        // [Note: no persistent cache used for rolling multipliers - do nothing]
-    }
-
-    virtual void ConstraintsLiLoadSuggestedPositionSolution()  {
-        // base behaviour too
-        ChContactDVI< Ta, Tb >::ConstraintsLiLoadSuggestedPositionSolution();
-
-        // [Note: no persistent cache used for rolling multipliers - do nothing]
-    }
-
-    virtual void ConstraintsLiFetchSuggestedSpeedSolution()  {
-        // base behaviour too
-        ChContactDVI< Ta, Tb >::ConstraintsLiFetchSuggestedSpeedSolution();
-
-        // [Note: no persistent cache used for rolling multipliers - do nothing]
-    }
-
-    virtual void ConstraintsLiFetchSuggestedPositionSolution()  {
-        // base behaviour too
-        ChContactDVI< Ta, Tb >::ConstraintsLiFetchSuggestedPositionSolution();
-
-        // [Note: no persistent cache used for rolling multipliers - do nothing]
-    }
-
 };
 
-
-
-}  // END_OF_NAMESPACE____
+}  // end namespace chrono
 
 #endif

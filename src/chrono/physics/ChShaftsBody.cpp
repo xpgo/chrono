@@ -33,8 +33,6 @@ ChClassRegister<ChShaftsBody> a_registration_ChShaftsBody;
 
 ChShaftsBody::ChShaftsBody() {
     this->torque_react = 0;
-    this->cache_li_speed = 0.f;
-    this->cache_li_pos = 0.f;
 
     this->shaft = 0;
     this->body = 0;
@@ -53,8 +51,6 @@ void ChShaftsBody::Copy(ChShaftsBody* source) {
     // copy class data
 
     torque_react = source->torque_react;
-    cache_li_speed = source->cache_li_speed;
-    cache_li_pos = source->cache_li_pos;
     this->shaft_dir = source->shaft_dir;
     this->shaft = 0;
     this->body = 0;
@@ -120,27 +116,27 @@ void ChShaftsBody::IntLoadConstraint_C(const unsigned int off_L,  ///< offset in
     Qc(off_L) += cnstr_violation;
 }
 
-void ChShaftsBody::IntToLCP(const unsigned int off_v,  ///< offset in v, R
-                            const ChStateDelta& v,
-                            const ChVectorDynamic<>& R,
-                            const unsigned int off_L,  ///< offset in L, Qc
-                            const ChVectorDynamic<>& L,
-                            const ChVectorDynamic<>& Qc) {
+void ChShaftsBody::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                                   const ChStateDelta& v,
+                                   const ChVectorDynamic<>& R,
+                                   const unsigned int off_L,  ///< offset in L, Qc
+                                   const ChVectorDynamic<>& L,
+                                   const ChVectorDynamic<>& Qc) {
     constraint.Set_l_i(L(off_L));
 
     constraint.Set_b_i(Qc(off_L));
 }
 
-void ChShaftsBody::IntFromLCP(const unsigned int off_v,  ///< offset in v
-                              ChStateDelta& v,
-                              const unsigned int off_L,  ///< offset in L
-                              ChVectorDynamic<>& L) {
+void ChShaftsBody::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                                     ChStateDelta& v,
+                                     const unsigned int off_L,  ///< offset in L
+                                     ChVectorDynamic<>& L) {
     L(off_L) = constraint.Get_l_i();
 }
 
-////////// LCP INTERFACES ////
+// SOLVER INTERFACES
 
-void ChShaftsBody::InjectConstraints(ChLcpSystemDescriptor& mdescriptor) {
+void ChShaftsBody::InjectConstraints(ChSystemDescriptor& mdescriptor) {
     // if (!this->IsActive())
     //	return;
 
@@ -187,26 +183,7 @@ void ChShaftsBody::ConstraintsFetch_react(double factor) {
     this->torque_react = constraint.Get_l_i() * factor;
 }
 
-// Following functions are for exploiting the contact persistence
-
-void ChShaftsBody::ConstraintsLiLoadSuggestedSpeedSolution() {
-    constraint.Set_l_i(this->cache_li_speed);
-}
-
-void ChShaftsBody::ConstraintsLiLoadSuggestedPositionSolution() {
-    constraint.Set_l_i(this->cache_li_pos);
-}
-
-void ChShaftsBody::ConstraintsLiFetchSuggestedSpeedSolution() {
-    this->cache_li_speed = (float)constraint.Get_l_i();
-}
-
-void ChShaftsBody::ConstraintsLiFetchSuggestedPositionSolution() {
-    this->cache_li_pos = (float)constraint.Get_l_i();
-}
-
 //////// FILE I/O
-
 
 void ChShaftsBody::ArchiveOUT(ChArchiveOut& marchive)
 {

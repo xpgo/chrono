@@ -10,7 +10,7 @@
 // and at http://projectchrono.org/license-chrono.txt.
 //
 
-#include "chrono/lcp/ChLcpIterativeSolver.h"
+#include "chrono/solver/ChIterativeSolver.h"
 #include "chrono/physics/ChContactContainerBase.h"
 #include "chrono/physics/ChLinkMate.h"
 #include "chrono/assets/ChColor.h"
@@ -63,16 +63,16 @@ void ChIrrTools::alignIrrlichtNodeToChronoCsys(scene::ISceneNode* mnode, const C
 // Draw contact points.
 // Uses the _draw_reporter_class callback class.
 // -----------------------------------------------------------------------------
-class _draw_reporter_class : public ChReportContactCallback2 {
+class _draw_reporter_class : public ChReportContactCallback {
   public:
-    virtual bool ReportContactCallback2(const ChVector<>& pA,
+    virtual bool ReportContactCallback(const ChVector<>& pA,
                                        const ChVector<>& pB,
                                        const ChMatrix33<>& plane_coord,
                                        const double& distance,
                                        const ChVector<>& react_forces,
                                        const ChVector<>& react_torques,
                                        ChContactable* modA,
-                                       ChContactable* modB) {
+                                       ChContactable* modB) override {
         ChMatrix33<>& mplanecoord = const_cast<ChMatrix33<>&>(plane_coord);
         ChVector<> v1 = pA;
         ChVector<> v2;
@@ -134,7 +134,7 @@ int ChIrrTools::drawAllContactPoints(ChSystem& mphysicalSystem,
     my_drawer.drawtype = drawtype;
 
     // scan all contacts
-    mphysicalSystem.GetContactContainer()->ReportAllContacts2(&my_drawer);
+    mphysicalSystem.GetContactContainer()->ReportAllContacts(&my_drawer);
 
     return 0;
 }
@@ -143,16 +143,16 @@ int ChIrrTools::drawAllContactPoints(ChSystem& mphysicalSystem,
 // Draw contact information as labels at the contact point.
 // Uses the _label_reporter_class callback class.
 // -----------------------------------------------------------------------------
-class _label_reporter_class : public ChReportContactCallback2 {
+class _label_reporter_class : public ChReportContactCallback {
   public:
-    virtual bool ReportContactCallback2(const ChVector<>& pA,
+    virtual bool ReportContactCallback(const ChVector<>& pA,
                                        const ChVector<>& pB,
                                        const ChMatrix33<>& plane_coord,
                                        const double& distance,
                                        const ChVector<>& react_forces,
                                        const ChVector<>& react_torques,
                                        ChContactable* modA,
-                                       ChContactable* modB) {
+                                       ChContactable* modB) override {
         char buffer[25];
         irr::core::vector3df mpos((irr::f32)pA.x, (irr::f32)pA.y, (irr::f32)pA.z);
         irr::core::position2d<s32> spos =
@@ -210,7 +210,7 @@ int ChIrrTools::drawAllContactLabels(ChSystem& mphysicalSystem,
     my_label_rep.labeltype = labeltype;
 
     // scan all contacts
-    mphysicalSystem.GetContactContainer()->ReportAllContacts2(&my_label_rep);
+    mphysicalSystem.GetContactContainer()->ReportAllContacts(&my_label_rep);
 
     return 0;
 }
@@ -500,11 +500,11 @@ void ChIrrTools::drawHUDviolation(irr::video::IVideoDriver* driver,
                                   int sy,
                                   double spfact,
                                   double posfact) {
-    if (asystem.GetLcpSolverType() == ChSystem::LCP_SIMPLEX)
+    if (asystem.GetSolverType() == ChSystem::SOLVER_SIMPLEX)
         return;
 
-    ChLcpIterativeSolver* msolver_speed = (ChLcpIterativeSolver*)asystem.GetLcpSolverSpeed();
-    ChLcpIterativeSolver* msolver_stab = (ChLcpIterativeSolver*)asystem.GetLcpSolverStab();
+    ChIterativeSolver* msolver_speed = (ChIterativeSolver*)asystem.GetSolverSpeed();
+    ChIterativeSolver* msolver_stab = (ChIterativeSolver*)asystem.GetSolverStab();
     msolver_speed->SetRecordViolation(true);
     msolver_stab->SetRecordViolation(true);
 
@@ -543,12 +543,12 @@ void ChIrrTools::drawHUDviolation(irr::video::IVideoDriver* driver,
         gui::IGUIFont* font = mdevice->getGUIEnvironment()->getBuiltInFont();
         if (font) {
             char buffer[100];
-            font->draw(L"LCP speed violation", irr::core::rect<s32>(mx + sx / 2 - 100, my, mx + sx, my + 10),
+            font->draw(L"Solver speed violation", irr::core::rect<s32>(mx + sx / 2 - 100, my, mx + sx, my + 10),
                        irr::video::SColor(200, 100, 0, 0));
             sprintf(buffer, "%g", sy / spfact);
             font->draw(irr::core::stringw(buffer).c_str(), irr::core::rect<s32>(mx, my, mx + 30, my + 10),
                        irr::video::SColor(200, 100, 0, 0));
-            font->draw(L"LCP position violation", irr::core::rect<s32>(mx + sx - 100, my, mx + sx, my + 10),
+            font->draw(L"Solver position violation", irr::core::rect<s32>(mx + sx - 100, my, mx + sx, my + 10),
                        irr::video::SColor(200, 0, 100, 0));
             sprintf(buffer, "%g", sy / posfact);
             font->draw(irr::core::stringw(buffer).c_str(), irr::core::rect<s32>(mx + sx / 2, my, mx + sx / 2 + 10, my + 10),
@@ -770,8 +770,8 @@ void  ChIrrTools::drawColorbar(double vmin, double vmax,
         core::rect<s32> mrect(mx,    my+(s32)(i*ystep),  mx+sx, my+(s32)((i+1)*ystep) );
         ChColor c_up = ChColor::ComputeFalseColor(mv_up, vmin, vmax, false);
         ChColor c_dw = ChColor::ComputeFalseColor(mv_dw, vmin, vmax, false);
-        video::SColor col_up (255, 255*c_up.R, 255*c_up.G, 255*c_up.B);
-        video::SColor col_dw (255, 255*c_dw.R, 255*c_dw.G, 255*c_dw.B);
+        video::SColor col_up (255, u32(255*c_up.R), u32(255*c_up.G), u32(255*c_up.B));
+        video::SColor col_dw (255, u32(255*c_dw.R), u32(255*c_dw.G), u32(255*c_dw.B));
         driver->draw2DRectangle(mrect, col_up,col_up, col_dw, col_dw);
 
         if (font) {

@@ -23,7 +23,7 @@
 namespace chrono {
 namespace fea {
 
-/// @addtogroup fea
+/// @addtogroup fea_module
 /// @{
 
 /// Collection of mesh file loader utilities.
@@ -67,6 +67,7 @@ class ChApiFea ChMeshFileLoader {
         std::shared_ptr<ChMesh> mesh,  ///< destination mesh
         const char* filename,
         std::shared_ptr<ChMaterialShellANCF> my_material,
+        std::vector<double>& node_ave_area,
         std::vector<int>& BC_nodes,
         ChVector<> pos_transform = VNULL,              ///< optional displacement of imported mesh
         ChMatrix33<> rot_transform = ChMatrix33<>(1),  ///< optional rotation/scaling of imported mesh
@@ -75,7 +76,7 @@ class ChApiFea ChMeshFileLoader {
         bool printElements = false);
 };
 
-/// @} fea
+/// @} fea_module
 
 }  // end namespace fea
 }  // end namespace chrono

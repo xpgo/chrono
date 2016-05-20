@@ -13,30 +13,13 @@
 #ifndef CHMATTERSPH_H
 #define CHMATTERSPH_H
 
-//////////////////////////////////////////////////
-//
-//   ChMatterSPH.h
-//
-//   Class for clusters of points that can
-//   simulate a fluid or an elastic / plastic
-//   solid with the SPH Smooth Particle Hydrodynamics
-//   approach, that is with a 'meshless' FEA approach.
-//
-//   HEADER file for CHRONO,
-//	 Multibody dynamics engine
-//
-// ------------------------------------------------
-//             www.deltaknowledge.com
-// ------------------------------------------------
-///////////////////////////////////////////////////
-
 #include <math.h>
 
-#include "physics/ChIndexedNodes.h"
-#include "physics/ChNodeXYZ.h"
-#include "physics/ChContinuumMaterial.h"
-#include "collision/ChCCollisionModel.h"
-#include "lcp/ChLcpVariablesNode.h"
+#include "chrono/physics/ChIndexedNodes.h"
+#include "chrono/physics/ChNodeXYZ.h"
+#include "chrono/physics/ChContinuumMaterial.h"
+#include "chrono/collision/ChCCollisionModel.h"
+#include "chrono/solver/ChVariablesNode.h"
 
 namespace chrono {
 
@@ -74,8 +57,8 @@ class ChApi ChNodeSPH : public ChNodeXYZ, public ChContactable_1vars<3> {
     // Get the mass of the node
     double GetMass() const { return variables.GetNodeMass(); }
 
-	// Access the 'LCP variables' of the node
-	ChLcpVariablesNode& Variables() {return variables;}
+	// Access the variables of the node
+	virtual ChVariablesNode& Variables() override {return variables;}
 
     // Get the SPH container
     ChMatterSPH* GetContainer() const {return container;}
@@ -87,41 +70,87 @@ class ChApi ChNodeSPH : public ChNodeXYZ, public ChContactable_1vars<3> {
     // INTERFACE TO ChContactable
     //
 
-        /// Access variables
-    virtual ChLcpVariables* GetVariables1() {return &Variables(); }
+    /// Access variables.
+    virtual ChVariables* GetVariables1() override { return &Variables(); }
 
-        /// Tell if the object must be considered in collision detection
-    virtual bool IsContactActive() { return true; }
+    /// Tell if the object must be considered in collision detection.
+    virtual bool IsContactActive() override { return true; }
 
-        /// Get the absolute speed of point abs_point if attached to the 
-        /// surface. Easy in this case because there are no roations..
-    virtual ChVector<> GetContactPointSpeed(const ChVector<>& abs_point) {return this->pos_dt;};
+    /// Get the number of DOFs affected by this object (position part).
+    virtual int ContactableGet_ndof_x() override { return 3; }
 
-        /// ChCollisionModel might call this to get the position of the 
-        /// contact model (when rigid) and sync it
-    virtual ChCoordsys<> GetCsysForCollisionModel() {return ChCoordsys<>(this->pos, QUNIT);}
+    /// Get the number of DOFs affected by this object (speed part).
+    virtual int ContactableGet_ndof_w() override { return 3; }
 
-        /// Apply the force, expressed in absolute reference, applied in pos, to the 
-        /// coordinates of the variables. Force for example could come from a penalty model.
-    virtual void ContactForceLoadResidual_F(const ChVector<>& F, const ChVector<>& abs_point, 
-                                         ChVectorDynamic<>& R);
+    /// Get all the DOFs packed in a single vector (position part)
+    virtual void ContactableGetStateBlock_x(ChState& x) override { x.PasteVector(this->pos, 0, 0); }
 
-        /// Compute the jacobian(s) part(s) for this contactable item. For example,
-        /// if the contactable is a ChBody, this should update the corresponding 1x6 jacobian.
-    virtual void ComputeJacobianForContactPart(const ChVector<>& abs_point, ChMatrix33<>& contact_plane, 
-                            type_constraint_tuple& jacobian_tuple_N,
-                            type_constraint_tuple& jacobian_tuple_U,
-                            type_constraint_tuple& jacobian_tuple_V,
-                            bool second);
+    /// Get all the DOFs packed in a single vector (speed part)
+    virtual void ContactableGetStateBlock_w(ChStateDelta& w) override { w.PasteVector(this->pos_dt, 0, 0); }
 
-    virtual double GetContactableMass()  {return this->GetMass();}
+    /// Increment the provided state of this object by the given state-delta increment.
+    /// Compute: x_new = x + dw.
+    virtual void ContactableIncrementState(const ChState& x, const ChStateDelta& dw, ChState& x_new) override {
+        NodeIntStateIncrement(0, x_new, x, 0, dw);
+    }
 
-        /// Return the pointer to the surface material. 
-    virtual std::shared_ptr<ChMaterialSurfaceBase>& GetMaterialSurfaceBase();
+    /// Express the local point in absolute frame, for the given state position.
+    virtual ChVector<> GetContactPoint(const ChVector<>& loc_point, const ChState& state_x) override {
+        return state_x.ClipVector(0, 0);
+    }
 
-        /// This is only for backward compatibility
-    virtual ChPhysicsItem* GetPhysicsItem();
+    /// Get the absolute speed of a local point attached to the contactable.
+    /// The given point is assumed to be expressed in the local frame of this object.
+    /// This function must use the provided states.
+    virtual ChVector<> GetContactPointSpeed(const ChVector<>& loc_point,
+                                            const ChState& state_x,
+                                            const ChStateDelta& state_w) override {
+        return state_w.ClipVector(0, 0);
+    }
 
+    /// Get the absolute speed of point abs_point if attached to the surface.
+    /// Easy in this case because there are no roations..
+    virtual ChVector<> GetContactPointSpeed(const ChVector<>& abs_point) override { return this->pos_dt; }
+
+    /// Return the coordinate system for the associated collision model.
+    /// ChCollisionModel might call this to get the position of the
+    /// contact model (when rigid) and sync it.
+    virtual ChCoordsys<> GetCsysForCollisionModel() override { return ChCoordsys<>(this->pos, QUNIT); }
+
+    /// Apply the force, expressed in absolute reference, applied in pos, to the
+    /// coordinates of the variables. Force for example could come from a penalty model.
+    virtual void ContactForceLoadResidual_F(const ChVector<>& F,
+                                            const ChVector<>& abs_point,
+                                            ChVectorDynamic<>& R) override;
+
+    /// Apply the given force at the given point and load the generalized force array.
+    /// The force and its application point are specified in the gloabl frame.
+    /// Each object must set the entries in Q corresponding to its variables, starting at the specified offset.
+    /// If needed, the object states must be extracted from the provided state position.
+    virtual void ContactForceLoadQ(const ChVector<>& F,
+                                   const ChVector<>& point,
+                                   const ChState& state_x,
+                                   ChVectorDynamic<>& Q,
+                                   int offset) override {
+        Q.PasteVector(F, offset, 0);
+    }
+
+    /// Compute the jacobian(s) part(s) for this contactable item. For example,
+    /// if the contactable is a ChBody, this should update the corresponding 1x6 jacobian.
+    virtual void ComputeJacobianForContactPart(const ChVector<>& abs_point,
+                                               ChMatrix33<>& contact_plane,
+                                               type_constraint_tuple& jacobian_tuple_N,
+                                               type_constraint_tuple& jacobian_tuple_U,
+                                               type_constraint_tuple& jacobian_tuple_V,
+                                               bool second) override;
+
+    virtual double GetContactableMass() override { return this->GetMass(); }
+
+    /// Return the pointer to the surface material.
+    virtual std::shared_ptr<ChMaterialSurfaceBase>& GetMaterialSurfaceBase() override;
+
+    /// This is only for backward compatibility
+    virtual ChPhysicsItem* GetPhysicsItem() override;
 
     // SERIALIZATION
 
@@ -134,7 +163,7 @@ class ChApi ChNodeSPH : public ChNodeXYZ, public ChContactable_1vars<3> {
 
     ChMatterSPH* container;
 
-    ChLcpVariablesNode variables;
+    ChVariablesNode variables;
 
     collision::ChCollisionModel* collision_model;
 
@@ -296,30 +325,33 @@ class ChApi ChMatterSPH : public ChIndexedNodes {
                                     ChVectorDynamic<>& R,
                                     const ChVectorDynamic<>& w,
                                     const double c);
-    virtual void IntToLCP(const unsigned int off_v,
-                          const ChStateDelta& v,
-                          const ChVectorDynamic<>& R,
-                          const unsigned int off_L,
-                          const ChVectorDynamic<>& L,
-                          const ChVectorDynamic<>& Qc);
-    virtual void IntFromLCP(const unsigned int off_v, ChStateDelta& v, const unsigned int off_L, ChVectorDynamic<>& L);
+    virtual void IntToDescriptor(const unsigned int off_v,
+                                 const ChStateDelta& v,
+                                 const ChVectorDynamic<>& R,
+                                 const unsigned int off_L,
+                                 const ChVectorDynamic<>& L,
+                                 const ChVectorDynamic<>& Qc) override;
+    virtual void IntFromDescriptor(const unsigned int off_v,
+                                   ChStateDelta& v,
+                                   const unsigned int off_L,
+                                   ChVectorDynamic<>& L) override;
 
     //
-    // LCP INTERFACE
+    // SOLVER INTERFACE
     //
 
-    // Override/implement LCP system functions of ChPhysicsItem
-    // (to assembly/manage data for LCP system solver)
+    // Override/implement system functions of ChPhysicsItem
+    // (to assemble/manage data for system solver)
 
-    /// Sets the 'fb' part of the encapsulated ChLcpVariablesBody to zero.
+    /// Sets the 'fb' part of the encapsulated ChVariablesBody to zero.
     void VariablesFbReset();
 
     /// Adds the current forces applied to body (including gyroscopic torque) in
-    /// encapsulated ChLcpVariablesBody, in the 'fb' part: qf+=forces*factor
+    /// encapsulated ChVariablesBody, in the 'fb' part: qf+=forces*factor
     void VariablesFbLoadForces(double factor = 1.);
 
-    /// Initialize the 'qb' part of the ChLcpVariablesBody with the
-    /// current value of body speeds. Note: since 'qb' is the unknown of the LCP, this
+    /// Initialize the 'qb' part of the ChVariablesBody with the
+    /// current value of body speeds. Note: since 'qb' is the unknown, this
     /// function seems unuseful, unless used before VariablesFbIncrementMq()
     void VariablesQbLoadSpeed();
 
@@ -329,14 +361,14 @@ class ChApi ChMatterSPH : public ChIndexedNodes {
     void VariablesFbIncrementMq();
 
     /// Fetches the body speed (both linear and angular) from the
-    /// 'qb' part of the ChLcpVariablesBody (does not updates the full body&markers state)
+    /// 'qb' part of the ChVariablesBody (does not updates the full body&markers state)
     /// and sets it as the current body speed.
     /// If 'step' is not 0, also computes the approximate acceleration of
     /// the body using backward differences, that is  accel=(new_speed-old_speed)/step.
-    /// Mostly used after the LCP provided the solution in ChLcpVariablesBody .
+    /// Mostly used after the solver provided the solution in ChVariablesBody .
     void VariablesQbSetSpeed(double step = 0.);
 
-    /// Increment body position by the 'qb' part of the ChLcpVariablesBody,
+    /// Increment body position by the 'qb' part of the ChVariablesBody,
     /// multiplied by a 'step' factor.
     ///     pos+=qb*step
     /// If qb is a speed, this behaves like a single step of 1-st order
@@ -345,9 +377,9 @@ class ChApi ChMatterSPH : public ChIndexedNodes {
     void VariablesQbIncrementPosition(double step);
 
     /// Tell to a system descriptor that there are variables of type
-    /// ChLcpVariables in this object (for further passing it to a LCP solver)
+    /// ChVariables in this object (for further passing it to a solver)
     /// Basically does nothing, but maybe that inherited classes may specialize this.
-    virtual void InjectVariables(ChLcpSystemDescriptor& mdescriptor);
+    virtual void InjectVariables(ChSystemDescriptor& mdescriptor);
 
     // Other functions
 
@@ -394,6 +426,6 @@ class ChApi ChMatterSPH : public ChIndexedNodes {
     virtual void ArchiveIN(ChArchiveIn& marchive);
 };
 
-}  // END_OF_NAMESPACE____
+}  // end namespace chrono
 
 #endif

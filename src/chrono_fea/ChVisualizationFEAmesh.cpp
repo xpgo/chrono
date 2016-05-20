@@ -17,7 +17,8 @@
 #include "chrono_fea/ChElementHexa_20.h"
 #include "chrono_fea/ChElementBeamEuler.h"
 #include "chrono_fea/ChElementBeamANCF.h"
-#include "chrono_fea/ChElementShellANCF.h"
+#include "chrono_fea/ChElementShell.h"
+#include "chrono_fea/ChElementShellEANS4.h"
 #include "chrono_fea/ChFaceTetra_4.h"
 #include "chrono_fea/ChContactSurfaceNodeCloud.h"
 #include "chrono_fea/ChContactSurfaceMesh.h"
@@ -29,7 +30,7 @@ namespace fea {
 
 ChVisualizationFEAmesh::ChVisualizationFEAmesh(ChMesh& mymesh) {
 	FEMmesh = &mymesh;
-	fem_data_type = E_PLOT_NODE_DISP_NORM;
+	fem_data_type = E_PLOT_SURFACE;
 	fem_glyph = E_GLYPH_NONE;
 
 	colorscale_min= 0;
@@ -1112,7 +1113,92 @@ void ChVisualizationFEAmesh::Update(ChPhysicsItem* updater, const ChCoordsys<>& 
 				++nglyvect;
 			}
 	}
-	
+    
+    //***TEST***
+    
+    for (unsigned int iel = 0; iel < this->FEMmesh->GetNelements(); ++iel) {
+            // ------------ELEMENT IS A ChElementShellEANS4?
+            if (auto myshell = std::dynamic_pointer_cast<ChElementShellEANS4>(this->FEMmesh->GetElement(iel))) {
+                glyphs_asset->SetDrawMode(ChGlyphs::GLYPH_VECTOR);
+                glyphs_asset->SetGlyphsSize(0.4);
+                if (false) {
+                    // avg
+                    glyphs_asset->GetNumberOfGlyphs();
+                    glyphs_asset->SetGlyphCoordsys(glyphs_asset->GetNumberOfGlyphs(), 
+                        ChCoordsys<>((myshell->GetNodeA()->GetPos()+myshell->GetNodeB()->GetPos()+myshell->GetNodeC()->GetPos()+myshell->GetNodeD()->GetPos())*0.25, 
+                        myshell->GetAvgRot()) );
+                }
+                // gauss point coordsys
+                if (false) {
+                    glyphs_asset->SetDrawMode(ChGlyphs::GLYPH_COORDSYS);
+                    for (int igp=0; igp<4; ++igp) {
+                        glyphs_asset->GetNumberOfGlyphs();
+                        glyphs_asset->SetGlyphCoordsys(glyphs_asset->GetNumberOfGlyphs(), 
+                            ChCoordsys<>(myshell->EvaluateGP(igp), 
+                            myshell->T_i[igp]) );
+                    }
+                }
+                // gauss point weights
+                if (false) {
+                    for (int igp=0; igp<4; ++igp) {
+                        glyphs_asset->GetNumberOfGlyphs();
+                        glyphs_asset->SetGlyphVector(glyphs_asset->GetNumberOfGlyphs(), 
+                            myshell->EvaluateGP(igp), 
+                            ChVector<>(0,myshell->alpha_i[igp]*4,0) );
+                    }
+                }
+                // node rel.rotations
+                if (false) {
+                    for (int ipt=0; ipt<4; ++ipt) {
+                        glyphs_asset->GetNumberOfGlyphs();
+                        glyphs_asset->SetGlyphVector(glyphs_asset->GetNumberOfGlyphs(), 
+                            myshell->EvaluatePT(ipt), 
+                            myshell->Tavg.Rotate(myshell->phi_tilde[ipt]*50) );
+                    }
+                }
+                // gauss curvatures
+                if (false) {
+                    for (int igp=0; igp<4; ++igp) {
+                        /*
+                        glyphs_asset->GetNumberOfGlyphs();
+                        glyphs_asset->SetGlyphVector(glyphs_asset->GetNumberOfGlyphs(), 
+                            myshell->EvaluateGP(igp), 
+                            myshell->T_i[igp].Rotate(myshell->kur_u_tilde[igp]*50), ChColor(1,0,0) );
+                        glyphs_asset->GetNumberOfGlyphs();
+                        glyphs_asset->SetGlyphVector(glyphs_asset->GetNumberOfGlyphs(), 
+                            myshell->EvaluateGP(igp), 
+                            myshell->T_i[igp].Rotate(myshell->kur_v_tilde[igp]*50), ChColor(0,1,0) );
+                            */
+                        glyphs_asset->GetNumberOfGlyphs();
+                        glyphs_asset->SetGlyphVector(glyphs_asset->GetNumberOfGlyphs(), 
+                            myshell->EvaluateGP(igp), 
+                            myshell->T_i[igp].Rotate((myshell->kur_u_tilde[igp]+myshell->kur_v_tilde[igp])*50), ChColor(0,0,0) );
+                    }
+                }
+                // gauss strains
+                if (true) {
+                    for (int igp=0; igp<4; ++igp) {
+                        
+                        glyphs_asset->GetNumberOfGlyphs();
+                        glyphs_asset->SetGlyphVector(glyphs_asset->GetNumberOfGlyphs(), 
+                            myshell->EvaluateGP(igp), 
+                            myshell->T_i[igp].Rotate(myshell->eps_tilde_u[igp]*1000), ChColor(1,0,0) );
+                        glyphs_asset->GetNumberOfGlyphs();
+                        glyphs_asset->SetGlyphVector(glyphs_asset->GetNumberOfGlyphs(), 
+                            myshell->EvaluateGP(igp), 
+                            myshell->T_i[igp].Rotate(myshell->eps_tilde_v[igp]*1000), ChColor(0,0,1) );
+                        glyphs_asset->GetNumberOfGlyphs();
+                        /*
+                        glyphs_asset->SetGlyphVector(glyphs_asset->GetNumberOfGlyphs(), 
+                            myshell->EvaluateGP(igp), 
+                            myshell->T_i[igp].Rotate((myshell->eps_tilde_u[igp]+myshell->eps_tilde_v[igp])*1000), ChColor(0,0,0) );
+                            */
+                    }
+                }
+                // other...
+            }
+    }
+    
 	// Finally, update also the children, in case they implemented Update(), 
 	// and do this by calling the parent class implementation of ChAssetLevel
 	ChAssetLevel::Update(updater, coords);

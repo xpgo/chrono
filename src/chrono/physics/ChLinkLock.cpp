@@ -152,12 +152,12 @@ void ChLinkLock::Copy(ChLinkLock* source) {
     if (motion_ang3)
         delete motion_ang3;
 
-    motion_X = source->motion_X->new_Duplicate();
-    motion_Y = source->motion_Y->new_Duplicate();
-    motion_Z = source->motion_Z->new_Duplicate();
-    motion_ang = source->motion_ang->new_Duplicate();
-    motion_ang2 = source->motion_ang2->new_Duplicate();
-    motion_ang3 = source->motion_ang3->new_Duplicate();
+    motion_X = source->motion_X->Clone();
+    motion_Y = source->motion_Y->Clone();
+    motion_Z = source->motion_Z->Clone();
+    motion_ang = source->motion_ang->Clone();
+    motion_ang2 = source->motion_ang2->Clone();
+    motion_ang3 = source->motion_ang3->Clone();
 
     motion_axis = source->motion_axis;
     angleset = source->angleset;
@@ -947,8 +947,7 @@ void ChLinkLock::UpdateForces(double mytime) {
 }
 
 //
-// Reimplement parent 'lcp stuff' because 'upper/lower limits' may
-// add constraints
+// Reimplement parent solver methods because 'upper/lower limits' may add constraints
 //
 
 int ChLinkLock::GetDOC_d() {
@@ -1260,6 +1259,9 @@ void ChLinkLock::IntLoadConstraint_C(const unsigned int off_L,  ///< offset in Q
     // parent class:
     ChLinkMasked::IntLoadConstraint_C(off_L, Qc, c, do_clamp, recovery_clamp);
 
+    if (!do_clamp)
+        recovery_clamp = 1e24;
+
     int local_offset = this->GetDOC_c();
 
     if (limit_X && limit_X->Get_active()) {
@@ -1304,21 +1306,21 @@ void ChLinkLock::IntLoadConstraint_C(const unsigned int off_L,  ///< offset in Q
     }
     if (limit_Ry && limit_Ry->Get_active()) {
         if (limit_Ry->constr_lower.IsActive()) {
-            Qc(off_L + local_offset) += ChMax(c * (-sin(0.5 * limit_Ry->Get_min()) + relM.rot.e1), -recovery_clamp);
+            Qc(off_L + local_offset) += ChMax(c * (-sin(0.5 * limit_Ry->Get_min()) + relM.rot.e2), -recovery_clamp);
             ++local_offset;
         }
         if (limit_Ry->constr_upper.IsActive()) {
-            Qc(off_L + local_offset) += ChMax(c * (sin(0.5 * limit_Ry->Get_max()) - relM.rot.e1), -recovery_clamp);
+            Qc(off_L + local_offset) += ChMax(c * (sin(0.5 * limit_Ry->Get_max()) - relM.rot.e2), -recovery_clamp);
             ++local_offset;
         }
     }
     if (limit_Rz && limit_Rz->Get_active()) {
         if (limit_Rz->constr_lower.IsActive()) {
-            Qc(off_L + local_offset) += ChMax(c * (-sin(0.5 * limit_Rz->Get_min()) + relM.rot.e1), -recovery_clamp);
+            Qc(off_L + local_offset) += ChMax(c * (-sin(0.5 * limit_Rz->Get_min()) + relM.rot.e3), -recovery_clamp);
             ++local_offset;
         }
         if (limit_Rz->constr_upper.IsActive()) {
-            Qc(off_L + local_offset) += ChMax(c * (sin(0.5 * limit_Rz->Get_max()) - relM.rot.e1), -recovery_clamp);
+            Qc(off_L + local_offset) += ChMax(c * (sin(0.5 * limit_Rz->Get_max()) - relM.rot.e3), -recovery_clamp);
             ++local_offset;
         }
     }
@@ -1334,14 +1336,14 @@ void ChLinkLock::IntLoadConstraint_Ct(const unsigned int off_L,  ///< offset in 
     // nothing to do for ChLinkLimit
 }
 
-void ChLinkLock::IntToLCP(const unsigned int off_v,  ///< offset in v, R
-                          const ChStateDelta& v,
-                          const ChVectorDynamic<>& R,
-                          const unsigned int off_L,  ///< offset in L, Qc
-                          const ChVectorDynamic<>& L,
-                          const ChVectorDynamic<>& Qc) {
+void ChLinkLock::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                                 const ChStateDelta& v,
+                                 const ChVectorDynamic<>& R,
+                                 const unsigned int off_L,  ///< offset in L, Qc
+                                 const ChVectorDynamic<>& L,
+                                 const ChVectorDynamic<>& Qc) {
     // parent class:
-    ChLinkMasked::IntToLCP(off_v, v, R, off_L, L, Qc);
+    ChLinkMasked::IntToDescriptor(off_v, v, R, off_L, L, Qc);
 
     int local_offset = this->GetDOC_c();
 
@@ -1419,12 +1421,12 @@ void ChLinkLock::IntToLCP(const unsigned int off_v,  ///< offset in v, R
     }
 }
 
-void ChLinkLock::IntFromLCP(const unsigned int off_v,  ///< offset in v
-                            ChStateDelta& v,
-                            const unsigned int off_L,  ///< offset in L
-                            ChVectorDynamic<>& L) {
+void ChLinkLock::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                                   ChStateDelta& v,
+                                   const unsigned int off_L,  ///< offset in L
+                                   ChVectorDynamic<>& L) {
     // parent class:
-    ChLinkMasked::IntFromLCP(off_L, v, off_L, L);
+    ChLinkMasked::IntFromDescriptor(off_L, v, off_L, L);
 
     int local_offset = this->GetDOC_c();
 
@@ -1490,7 +1492,7 @@ void ChLinkLock::IntFromLCP(const unsigned int off_v,  ///< offset in v
     }
 }
 
-void ChLinkLock::InjectConstraints(ChLcpSystemDescriptor& mdescriptor) {
+void ChLinkLock::InjectConstraints(ChSystemDescriptor& mdescriptor) {
     // parent
     ChLinkMasked::InjectConstraints(mdescriptor);
 
@@ -1716,8 +1718,7 @@ void ChLinkLock::ConstraintsBiLoad_Qc(double factor) {
     ChLinkMasked::ConstraintsBiLoad_Qc(factor);
 }
 
-template <class Real>
-void Transform_Cq_to_Cqw_row(ChMatrix<>* mCq, int qrow, ChMatrix<Real>* mCqw, int qwrow, ChBodyFrame* mbody) {
+void Transform_Cq_to_Cqw_row(ChMatrix<>* mCq, int qrow, ChMatrix<>* mCqw, int qwrow, ChBodyFrame* mbody) {
     // traslational part - not changed
     mCqw->PasteClippedMatrix(mCq, qrow, 0, 1, 3, qwrow, 0);
 
@@ -1731,7 +1732,7 @@ void Transform_Cq_to_Cqw_row(ChMatrix<>* mCq, int qrow, ChMatrix<Real>* mCqw, in
         for (col = 0; col < 4; col++) {
             sum += ((mCq->GetElement(qrow, col + 3)) * (mGl.GetElement(colres, col)));
         }
-        mCqw->SetElement(qwrow, colres + 3, (float)(sum * 0.25));
+        mCqw->SetElement(qwrow, colres + 3, sum * 0.25);
     }
 }
 

@@ -31,8 +31,6 @@ ChClassRegister<ChLinkDirFrame> a_registration_ChLinkDirFrame;
 ChLinkDirFrame::ChLinkDirFrame ()
 {
 	this->react= VNULL;
-	this->cache_li_speed = VNULL;
-	this->cache_li_pos = VNULL;
 	this->direction = VECT_X;
 
 	SetIdentifier(GetUniqueIntID()); // mark with unique ID
@@ -53,8 +51,6 @@ void ChLinkDirFrame::Copy(ChLinkDirFrame* source)
 		// copy class data
 
 	react = source->react;
-	cache_li_speed = source->cache_li_speed;
-	cache_li_pos = source->cache_li_pos;
 	direction= source->direction;
 }
 
@@ -188,44 +184,38 @@ void ChLinkDirFrame::IntLoadConstraint_C(
 	Qc(off_L+1) += cres.z;
 }
 
-void ChLinkDirFrame::IntToLCP(
-					const unsigned int off_v,			///< offset in v, R
-					const ChStateDelta& v,
-					const ChVectorDynamic<>& R,
-					const unsigned int off_L,			///< offset in L, Qc
-					const ChVectorDynamic<>& L,
-					const ChVectorDynamic<>& Qc
-					)
-{
-	if (!IsActive())
-    return;
+void ChLinkDirFrame::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+                                     const ChStateDelta& v,
+                                     const ChVectorDynamic<>& R,
+                                     const unsigned int off_L,  ///< offset in L, Qc
+                                     const ChVectorDynamic<>& L,
+                                     const ChVectorDynamic<>& Qc) {
+    if (!IsActive())
+        return;
 
-	constraint1.Set_l_i(L(off_L+0));
+    constraint1.Set_l_i(L(off_L+0));
 	constraint2.Set_l_i(L(off_L+1));
 
 	constraint1.Set_b_i(Qc(off_L+0));
 	constraint2.Set_b_i(Qc(off_L+1));
 }
 
-void ChLinkDirFrame::IntFromLCP(
-					const unsigned int off_v,			///< offset in v
-					ChStateDelta& v,
-					const unsigned int off_L,			///< offset in L
-					ChVectorDynamic<>& L
-					)
-{
-	if (!IsActive())
-    return;
+void ChLinkDirFrame::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+                                       ChStateDelta& v,
+                                       const unsigned int off_L,  ///< offset in L
+                                       ChVectorDynamic<>& L) {
+    if (!IsActive())
+        return;
 
-	L(off_L+0)=constraint1.Get_l_i();
-	L(off_L+1)=constraint2.Get_l_i();
+    L(off_L + 0) = constraint1.Get_l_i();
+    L(off_L + 1) = constraint2.Get_l_i();
 }
 
 
-////////// LCP INTERFACES ////
+////////// SOLVER INTERFACES ////
 
 
-void ChLinkDirFrame::InjectConstraints(ChLcpSystemDescriptor& mdescriptor)
+void ChLinkDirFrame::InjectConstraints(ChSystemDescriptor& mdescriptor)
 {
 	//if (!this->IsActive())
 	//	return;
@@ -295,34 +285,6 @@ void ChLinkDirFrame::ConstraintsFetch_react(double factor)
 	this->react.y = constraint1.Get_l_i() * factor; 
 	this->react.z = constraint2.Get_l_i() * factor; 
 }
-
-// Following functions are for exploiting the contact persistence
-
-void  ChLinkDirFrame::ConstraintsLiLoadSuggestedSpeedSolution()
-{
-	constraint1.Set_l_i(this->cache_li_speed.y);
-	constraint2.Set_l_i(this->cache_li_speed.z);
-}
-
-void  ChLinkDirFrame::ConstraintsLiLoadSuggestedPositionSolution()
-{
-	constraint1.Set_l_i(this->cache_li_pos.y);
-	constraint2.Set_l_i(this->cache_li_pos.z);
-}
-
-void  ChLinkDirFrame::ConstraintsLiFetchSuggestedSpeedSolution()
-{
-	this->cache_li_speed.y = (float)constraint1.Get_l_i();
-	this->cache_li_speed.z = (float)constraint2.Get_l_i();
-}
-
-void  ChLinkDirFrame::ConstraintsLiFetchSuggestedPositionSolution()
-{
-	this->cache_li_pos.y =  (float)constraint1.Get_l_i();
-	this->cache_li_pos.z =  (float)constraint2.Get_l_i();
-}
-
-
 
 //////// FILE I/O
 
