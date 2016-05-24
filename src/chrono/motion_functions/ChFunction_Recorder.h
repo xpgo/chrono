@@ -18,6 +18,7 @@
 #include <list>
 
 #include "chrono/motion_functions/ChFunction_Base.h"
+#include <iterator>
 
 namespace chrono {
 
