@@ -28,7 +28,6 @@ SET(ChronoEngine_FEA_SOURCES
     ChElementShellANCF.cpp
 	  ChElementShellEANS4.cpp
 	ChElementShellTri.cpp
-	ChPatchShellTri.cpp
     ChElementBrick.cpp
     ChNodeFEAxyz.cpp
     ChNodeFEAxyzrot.cpp
@@ -86,7 +85,6 @@ SET(ChronoEngine_FEA_HEADERS
     ChElementShellANCF.h
 	  ChElementShellEANS4.h
 	ChElementShellTri.h
-	ChPatchShellTri.h
 	  ChFaceTetra_4.h
 	  ChLoadsBeam.h
     ChGaussIntegrationRule.h
