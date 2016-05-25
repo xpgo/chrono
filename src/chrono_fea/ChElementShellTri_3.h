@@ -8,7 +8,7 @@
 // found in the LICENSE file at the top level of the distribution
 // and at http://projectchrono.org/license-chrono.txt.
 //
-// File authors: Dario Mangoni
+// File authors: Dario Mangoni, Alessandro Tasora
 
 #ifndef CHELEMENTSHELLTRI_H
 #define CHELEMENTSHELLTRI_H
@@ -214,7 +214,6 @@ private:
 
     void updateStructural()
     {
-        // TODO: might be better to evaluate s_loc of neighbours
 
         for (auto neigh_sel = 0; neigh_sel < 3; neigh_sel++)
         {
@@ -498,6 +497,8 @@ public:
         }
     }
     
+    size_t GetUpdatesCount() const { return updates_count; }
+
 
     void SetBC(int BC_on_edge1, int BC_on_edge2, int BC_on_edge3)
     {
@@ -545,7 +546,6 @@ public:
         m_material->UpdateConsitutiveMatrices();
         //TODO: only clamped edge is supported
         updateBC();
-
     }
 
     /// Gets the number of nodes used by this element.
