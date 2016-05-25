@@ -113,15 +113,59 @@ namespace fea {
 /// Class for FEA elements of Onate shell type.
 /// This element has a linear displacement field.
 class ChApiFea ChElementShellTri_3 : public ChElementShell {
-protected:
+private:
     std::vector<std::shared_ptr<ChNodeFEAxyz>> main_nodes; ///< element nodes
+
+
+    double edge_length[3];
+    double element_area = 0;
+    double thickness = 0;
+    ChMatrixNM<double, 18, 18> stiffness_matrix;
+    ChMatrixNM<double, 18, 18> mass_matrix;
+    ChMatrixNM<double, 18, 18> damping_matrix;
+    ChMatrixNM<double, 18, 18> H_matrix;
+
+    size_t updates_count = 0;
 
     /// edge versors;
     /// s_loc[1] is of edge 1, that goes from 2 to 3
     /// s_loc[2] is of edge 2, that goes from 3 to 1
     /// s_loc[3] is of edge 3, that goes from 1 to 2
-    std::vector<ChMatrixNM<double, 2, 1>> s_loc; 
+    std::vector<ChMatrixNM<double, 2, 1>> s_loc;
+
     ChMatrix33<double> rotGL; ///< rotation matrix from Local to Global frame
+
+    enum boundary_conditions
+    {
+        DEFAULT = 0,
+        CLAMPED = 1,
+        SUPPORTED = 2,
+        SYMMETRIC = 3
+    } edge_bc[3] = { DEFAULT, DEFAULT, DEFAULT };
+
+    std::vector<std::shared_ptr<ChElementShellTri_3>> neighbouring_elements; ///< neighbour elements
+
+    /// column j-th refers to neighbour element attached to edge 'j'
+    /// row i-th refers to the i-th node of the neighbouring element
+    /// the array tells that the i-th node of the j-th neighbour
+    /// is the neighbour_nodes[i][j]-th node of the current element
+    /// if neighbour_nodes[i][j] < 3 the node belongs to the current element
+    /// if neighbour_nodes[i][j] >= 3 the node actually belongs to the j-th neighbour
+    /// so that the neighbour attached to edge1 has node 4
+    /// the neighbour attached to edge2 has node 5
+    /// the neighbour attached to edge3 has node 6
+    int neighbour_nodes[3][3] = {{-1, -1, -1},{-1, -1 ,-1},{ -1, -1 ,-1 } };
+
+    /// column j-th refers to neighbour element attached to edge 'j'
+    /// if neighbour_node_not_shared[i][j] < 3 the node belongs to the current element
+    /// if neighbour_node_not_shared[i][j] >= 3 the node actually belongs to the j-th neighbour
+    /// so that the neighbour attached to edge1 has node 4
+    /// the neighbour attached to edge2 has node 5
+    /// the neighbour attached to edge3 has node 6
+    int neighbour_node_not_shared[3] = { -1,-1,-1 };
+    std::shared_ptr<ChMaterialShellTri_3> m_material;
+
+    ChMatrix33<double> shape_function;
 
     void updateGeometry() {
 
@@ -183,32 +227,6 @@ protected:
     }
 
 
-private:
-    double edge_length[3];
-    double element_area = 0;
-    double thickness = 0;
-    ChMatrixNM<double, 18, 18> stiffness_matrix;
-    ChMatrixNM<double, 18, 18> mass_matrix;
-    ChMatrixNM<double, 18, 18> damping_matrix;
-    ChMatrixNM<double, 18, 18> H_matrix;
-
-    size_t updates_count = 0;
-
-    enum boundary_conditions
-    {
-        DEFAULT = 0,
-        CLAMPED = 1,
-        SUPPORTED = 2,
-        SYMMETRIC = 3
-    } edge_bc[3] = { DEFAULT, DEFAULT, DEFAULT };
-
-    std::vector<std::shared_ptr<ChElementShellTri_3>> neighbouring_elements; ///< neighbour elements
-    /// neighbour_node_not_shared[1] = 3 means that the node of the element attached to the 1st edge has its 3rd node that is not shared with this element
-    /// or, that is the same, that the element attached to the 1st edge is attached with its 3rd edge
-    int neighbour_node_not_shared[3]; 
-    std::shared_ptr<ChMaterialShellTri_3> m_material;
-
-    ChMatrix33<double> shape_function;
 
     
 
@@ -293,42 +311,23 @@ private:
         }
 
         Bll_bend.MatrDivScale(element_area);
-        
-        // oh man, now we have to compute the rotation matrix for the 'w' displacements; finger crossed...
+
         ChMatrixNM<double, 18, 12> rotLGw_transp;
         // first: fix the main element rotation part
         rotLGw_transp.PasteClippedMatrix(&rotGL, 0, 2, 3, 1, 0, 0);
         rotLGw_transp.PasteClippedMatrix(&rotGL, 0, 2, 3, 1, 3, 1);
         rotLGw_transp.PasteClippedMatrix(&rotGL, 0, 2, 3, 1, 6, 2);
+
         for (auto neigh_elem_sel = 0; neigh_elem_sel < 3; neigh_elem_sel++)
         {
             if (neighbouring_elements[neigh_elem_sel].get() == nullptr)
                 continue;
 
-            // TODO: move this 'find' algorithm elsewhere
             for (auto neigh_node_sel = 0; neigh_node_sel < 3; neigh_node_sel++)
             {
-                // in this loop the algorithm do the following:
-                // - takes each node of the selected neighbour element
-                // - two nodes of this element are shared with the current element (so are in the main_nodes vector)
-                // - in which position are these TWO nodes in the main_nodes vector
-                int node_sel;
-                for (node_sel = 0; node_sel < 3; node_sel++)
-                {
-                    if (main_nodes[node_sel]==neighbouring_elements[neigh_elem_sel]->main_nodes[neigh_node_sel])
-                    {
-                        // in node_sel there should be the row of rotLGw_transp in which the rotGL matrix of the current neigh_elem_sel element should be stored
-                        rotLGw_transp.PasteClippedMatrix(&(neighbouring_elements[neigh_elem_sel]->rotGL), 0, 2, 3, 1, 3 * node_sel, 3 * (neigh_elem_sel + 1) + neigh_node_sel);
-
-                        break;
-                    }
-                }
+                rotLGw_transp.PasteClippedMatrix(&(neighbouring_elements[neigh_elem_sel]->rotGL), 0, 2, 3, 1, 3 * neighbour_nodes[neigh_node_sel][neigh_elem_sel], 3 * (neigh_elem_sel + 1) + neigh_node_sel);
             }
 
-            // - the remaining node is NOT shared with the current element
-            // - we know which node of the neighbouring element is not shared;
-            // - for this we have the 'neighbour_node_not_shared' vector
-            rotLGw_transp.PasteClippedMatrix(&neighbouring_elements[neigh_elem_sel]->rotGL, 0, 2, 3, 1, 3 * (neigh_elem_sel+3), 3 * (neigh_elem_sel + 1) + neighbour_node_not_shared[neigh_elem_sel]);
         }
 
         ChMatrixNM<double, 3, 18> Blg_bend;
@@ -442,9 +441,88 @@ public:
 
     void UpdateConnectivity(std::shared_ptr<ChMesh> mesh)
     {
-        
+        bool skip_this_element;
+        int notshared_node;
+        int neighbour_nodes_temp[3];
+
+        for (auto elem_sel = 0; elem_sel < mesh->GetNelements(); elem_sel++) // pick one element from the list
+        {
+            auto candidate = std::dynamic_pointer_cast<ChElementShellTri_3>(mesh->GetElement(elem_sel));
+            skip_this_element = false;
+            notshared_node = -1;
+            neighbour_nodes_temp[0] = 0;
+            neighbour_nodes_temp[1] = 0;
+            neighbour_nodes_temp[2] = 0;
+
+            for (auto neigh_node_sel = 0; neigh_node_sel < 3; neigh_node_sel++) // pick one node of the candidate neighbour
+            {
+                int main_node_sel;
+                for (main_node_sel = 0; main_node_sel < 3; main_node_sel++) // pick one node of the current element
+                {
+                    if (candidate->GetNodeN(neigh_node_sel) == main_nodes[main_node_sel]) // if they match...
+                    {
+                        // store the information that the node 'neigh_node_sel' of the neighbour
+                        // is actually the node 'main_node_sel' of the current element
+                        neighbour_nodes_temp[neigh_node_sel] = main_node_sel;
+                        break;
+                    }
+                } // main_node_sel loop
+
+                if (main_node_sel==3) // the neighbour node hasn't been found within main_nodes
+                {
+                    if (notshared_node == -1) // ...give the candidate one more possibility: it might be exactly the non-shared node
+                    {
+                        notshared_node = neigh_node_sel;
+                    }
+                    else // ... but if the same candidate already throw away its possibility then skip it!
+                    {
+                        skip_this_element = true;
+                        break; // --> it jumps into the neigh_node_sel loop
+                    }
+                }
+
+            } // neigh_node_sel loop
+
+            if (!skip_this_element && candidate.get()!=this)
+            {
+                // the candidate is actually a neighbour; but on which edge?
+                // search the index of the main_node that is not shared with this element;
+                // that would be the edge number on which the just-found neighbour is attached
+                for (auto main_node_sel = 0; main_node_sel<3; ++main_node_sel)
+                {
+                    auto neigh_node_sel = 0;
+                    for (; neigh_node_sel<3; ++neigh_node_sel)
+                    {
+                        if (neighbour_nodes_temp[neigh_node_sel] == main_node_sel)
+                            break;
+                    }
+
+                    // if in 'neighbour_nodes' there is the point pointed to main_node_sel
+                    // then the neigh_node_sel will be <3
+                    if (neigh_node_sel == 3)
+                    {
+                        // the main_node_sel is not found in the 
+                        neighbouring_elements[main_node_sel] = candidate;
+                        neighbour_nodes_temp[notshared_node] = main_node_sel + 3;
+
+                        neighbour_nodes[0][main_node_sel] = neighbour_nodes_temp[0];
+                        neighbour_nodes[1][main_node_sel] = neighbour_nodes_temp[1];
+                        neighbour_nodes[2][main_node_sel] = neighbour_nodes_temp[2];
+                        neighbour_node_not_shared[main_node_sel] = notshared_node;
+
+                    }
+                        
+                }
+
+            }
+        } // elem_sel loop
+
+
+
+
         for (auto elem_sel = 0; elem_sel < mesh->GetNelements(); elem_sel++)
         {
+            // take each element of the mesh and check how many nodes are shared with this element
             int common_nodes[3] = {-1,-1,-1};
             int common_nodes_count = 0;
             for (auto node_sel = 0; node_sel < 3; node_sel++)
@@ -453,16 +531,16 @@ public:
                 {
                     if (mesh->GetElement(elem_sel)->GetNodeN(node_sel) == main_nodes[main_node_sel])
                     {
-                        // the element has at least a node in common
-                        if (mesh->GetElement(elem_sel).get() == this) // the element is being compared with itself!
-                            break;
-
-                        common_nodes[main_node_sel] = node_sel;
                         common_nodes_count++;
+                        common_nodes[main_node_sel] = node_sel;
+                        
                     }
                 }
             }
-            if (common_nodes_count > 1)
+
+            // if common_nodes_count <= 1 then the element shares at most one node: it is NOT a neighbour
+            // if common_nodes_count == 3 then the element that is found as a neighbour is is actually the element itself!!!
+            if (common_nodes_count == 2) // then the element is actually a neighbour
             {
                 // find the non shared node
                 for (auto main_node_sel = 0; main_node_sel < 3; main_node_sel++)
@@ -566,7 +644,6 @@ public:
     void GetStateBlock(ChMatrixDynamic<>& mD) override
     {
         mD.Resize(18, 1);
-        //TODO: what does this function?
         mD.PasteVector(this->main_nodes[0]->GetPos(), 0, 0);
         mD.PasteVector(this->main_nodes[1]->GetPos(), 3, 0);
         mD.PasteVector(this->main_nodes[2]->GetPos(), 6, 0);
@@ -586,7 +663,6 @@ public:
         const ChMatrix<>& displ,
         ChVector<>& u_displ,
         ChVector<>& u_rotaz) override {};
-
 
     void EvaluateSectionFrame(const double u,
         const double v,
