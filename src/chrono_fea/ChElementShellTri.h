@@ -34,20 +34,23 @@ namespace fea {
             m_rho(rho),
             m_E(E),
             m_nu(nu)
-        {            
+        {
+            UpdateConsitutiveMatrices();
         }
 
         /// Return the elasticity moduli
         double Get_E() const { return m_E; }
-        void Set_E(double E_in) { m_E = E_in; }
+        void Set_E(double E_in) { m_E = E_in; UpdateConsitutiveMatrices(); }
 
         /// Return the Poisson ratio
         double Get_nu() const { return m_nu; }
-        void Set_nu(double nu_in) { m_nu = nu_in; }
+        void Set_nu(double nu_in) { m_nu = nu_in; UpdateConsitutiveMatrices();
+        }
 
         /// Return the density
         double Get_rho() const { return m_rho; }
-        void Set_rho(double rho_in) { m_rho = rho_in; }
+        void Set_rho(double rho_in) { m_rho = rho_in; UpdateConsitutiveMatrices();
+        }
 
         void UpdateConsitutiveMatrices()
         {
@@ -81,29 +84,27 @@ namespace fea {
             Dbend(0, 1) = m_nu*Dbend_multiplier;
             Dbend(1, 0) = m_nu*Dbend_multiplier;
             Dbend(1, 1) = Dbend_multiplier;
-            Dbend(2,2) = Dbend_multiplier*(1-m_nu)/2;
+            Dbend(2, 2) = Dbend_multiplier*(1-m_nu)/2;
         }
 
         void updateDmembr()
         {
             double Dmembr_multiplier = m_E / (1 - m_nu*m_nu);
-            Dbend(0, 0) = Dmembr_multiplier;
-            Dbend(0, 1) = m_nu*Dmembr_multiplier;
-            Dbend(1, 0) = m_nu*Dmembr_multiplier;
-            Dbend(1, 1) = Dmembr_multiplier;
-            Dbend(2, 2) = Dmembr_multiplier*(1 - m_nu) / 2;
+            Dmembr(0, 0) = Dmembr_multiplier;
+            Dmembr(0, 1) = m_nu*Dmembr_multiplier;
+            Dmembr(1, 0) = m_nu*Dmembr_multiplier;
+            Dmembr(1, 1) = Dmembr_multiplier;
+            Dmembr(2, 2) = Dmembr_multiplier*(1 - m_nu) / 2;
         }
 
     private:
 
         ChMatrixNM<double, 3, 3> Dbend;
         ChMatrixNM<double, 3, 3> Dmembr;
-        double m_thickness = 0.1;             ///< thickness
-        double m_rho = 7850;                  ///< density
-        double m_E = 210e9;                      ///< elasticity moduli
-        double m_nu = 0.3;                     ///< Poisson ratio
+        double m_rho = 7850;    ///< density
+        double m_E = 210e9; ///< elasticity moduli
+        double m_nu = 0.3;  ///< Poisson ratio
     };
-
 
 
 
@@ -123,37 +124,9 @@ protected:
     std::vector<ChMatrixNM<double, 2, 1>> t_loc; ///< versors tangent to the edge that points inside the main triangle
     ChMatrix33<double> rotGL; ///< rotation matrix from Local to Global frame
 
-private:
-    double edge_length[3];
-    double element_area = 0;
-    double m_thickness = 0;
-    ChMatrixNM<double, 18, 18> stiffness_matrix;
-    ChMatrixNM<double, 18, 18> mass_matrix;
-    ChMatrixNM<double, 18, 18> damping_matrix;
-    ChMatrixNM<double, 18, 18> H_matrix;
-
-    
-
-    enum boundary_conditions
-    {
-        DEFAULT = 0,
-        CLAMPED = 1,
-        SUPPORTED = 2,
-        SYMMETRIC = 3
-    } edge_bc[3] = { DEFAULT, DEFAULT, DEFAULT };
-
-    std::vector<std::shared_ptr<ChElementShellTri>> neighbouring_elements; ///< neighbour elements
-    /// neighbour_node_not_shared[1] = 3 means that the node of the element attached to the 1st edge has its 3rd node that is not shared with this element
-    /// or, that is the same, that the element attached to the 1st edge is attached with its 3rd edge
-    int neighbour_node_not_shared[3]; 
-    std::shared_ptr<ChMaterialShellTri> m_material;
-    double thickness = 0;
-
-    ChMatrix33<double> shape_function;
-    ChMatrix33<double> rotLS; ///< rotation matrix from Side to Local frame
-
-
     void updateGeometry() {
+
+        updates_count++;
 
         // evaluate x' (x local axis) in global coordinates
         ChVector<double> x_loc;
@@ -164,7 +137,7 @@ private:
         ChVector<double> y_loc;
         y_loc = main_nodes[2]->GetPos() - main_nodes[0]->GetPos();
         double proj_y_on_x = y_loc.Dot(x_loc);
-        y_loc.Sub(y_loc, proj_y_on_x*x_loc );
+        y_loc.Sub(y_loc, proj_y_on_x*x_loc);
         y_loc.Normalize();
         rotGL.PasteVector(y_loc, 0, 1);
         // evaluate z' (z local axis) in global coordinates
@@ -182,19 +155,18 @@ private:
         ChMatrix33<double> temp_shape;
         std::vector<ChMatrixNM<double, 2, 1>> nodes_pos_loc;
         nodes_pos_loc.resize(3);
-        for (size_t node_sel = 0; node_sel < 3; node_sel++)
+        ChVector<double> temp_vect;
+        for (auto node_sel = 0; node_sel < 3; node_sel++)
         {
-            ChVector<double> temp_vect;
             temp_vect = rotLG*main_nodes[node_sel]->GetPos();
             temp_shape(node_sel, 0) = 1;
-            temp_shape(node_sel, 1) = temp_vect(1);
-            temp_shape(node_sel, 2) = temp_vect(2);
-            nodes_pos_loc[node_sel](0, 0) = temp_vect(1);
-            nodes_pos_loc[node_sel](1, 0) = temp_vect(2);
-
+            temp_shape(node_sel, 1) = temp_vect(0);
+            temp_shape(node_sel, 2) = temp_vect(1);
+            nodes_pos_loc[node_sel](0, 0) = temp_vect(0);
+            nodes_pos_loc[node_sel](1, 0) = temp_vect(1);
         }
 
-        element_area = shape_function.FastInvert(&temp_shape)/2;
+        element_area = temp_shape.FastInvert(&shape_function) / 2;
 
         // compute the directions of the edges (not normalized yet)
         s_loc[0] = nodes_pos_loc[2] - nodes_pos_loc[1]; // edge1 goes from 2 to 3
@@ -202,7 +174,7 @@ private:
         s_loc[2] = nodes_pos_loc[1] - nodes_pos_loc[0]; // edge3 goes from 1 to 2
 
         // normalize the 's' vectors and build 't' versors
-        for (size_t edge_sel = 0; edge_sel < 3; edge_sel++)
+        for (auto edge_sel = 0; edge_sel < 3; edge_sel++)
         {
             edge_length[edge_sel] = s_loc[edge_sel].NormTwo();
             s_loc[edge_sel].MatrDivScale(edge_length[edge_sel]);
@@ -214,15 +186,53 @@ private:
     }
 
 
+private:
+    double edge_length[3];
+    double element_area = 0;
+    double thickness = 0;
+    ChMatrixNM<double, 18, 18> stiffness_matrix;
+    ChMatrixNM<double, 18, 18> mass_matrix;
+    ChMatrixNM<double, 18, 18> damping_matrix;
+    ChMatrixNM<double, 18, 18> H_matrix;
+
+    size_t updates_count = 0;
+
+    enum boundary_conditions
+    {
+        DEFAULT = 0,
+        CLAMPED = 1,
+        SUPPORTED = 2,
+        SYMMETRIC = 3
+    } edge_bc[3] = { DEFAULT, DEFAULT, DEFAULT };
+
+    std::vector<std::shared_ptr<ChElementShellTri>> neighbouring_elements; ///< neighbour elements
+    /// neighbour_node_not_shared[1] = 3 means that the node of the element attached to the 1st edge has its 3rd node that is not shared with this element
+    /// or, that is the same, that the element attached to the 1st edge is attached with its 3rd edge
+    int neighbour_node_not_shared[3]; 
+    std::shared_ptr<ChMaterialShellTri> m_material;
+
+    ChMatrix33<double> shape_function;
+
+    
+
     void updateStructural()
     {
-        ///////////////////// Bending stiffness //////////////////////////
-        ChMatrixNM<double, 3, 12> Bll; ///< Curvature Matrix (that takes local displacements and returns local curvatures)
+        // TODO: might be better to evaluate s_loc of neighbours
 
-        for (size_t edge_sel = 0; edge_sel < 3; edge_sel++)
+        for (auto neigh_sel = 0; neigh_sel < 3; neigh_sel++)
         {
-            ChMatrixNM<double, 2, 12> J;
-            
+            if (neighbouring_elements[neigh_sel].get() != nullptr && neighbouring_elements[neigh_sel]->updates_count < updates_count)
+                neighbouring_elements[neigh_sel]->updateGeometry();
+        }
+
+        ///////////////////// Bending stiffness //////////////////////////
+        ChMatrixNM<double, 3, 12> Bll_bend; ///< Curvature Matrix (that takes local displacements and returns local curvatures)
+        ChMatrixNM<double, 2, 12> J;
+
+        for (auto edge_sel = 0; edge_sel < 3; edge_sel++)
+        {
+            J.FillElem(0);
+
             // theta_s part
             if (!(edge_bc[edge_sel] == CLAMPED || edge_bc[edge_sel] == SYMMETRIC))
             {
@@ -231,7 +241,7 @@ private:
                 // with the 'edge_sel' of the current element
                 if (neighbouring_elements[edge_sel].get()!=nullptr)
                 {
-                    for (size_t neigh_edge_sel = 0; neigh_edge_sel<3; neigh_edge_sel++)
+                    for (auto neigh_edge_sel = 0; neigh_edge_sel<3; neigh_edge_sel++)
                     {
                         auto it = std::find(main_nodes.begin(), main_nodes.end(), neighbouring_elements[edge_sel]->main_nodes[neigh_edge_sel]);
                         if (it == main_nodes.end())
@@ -242,25 +252,25 @@ private:
                     }
 
                     // fixed part of theta_s
-                    for (size_t col_sel = 0; col_sel<3; col_sel++)
+                    for (auto col_sel = 0; col_sel<3; col_sel++)
                         J(0, col_sel) = 0.5 * (t_loc[edge_sel](0) * shape_function(1, col_sel) + t_loc[edge_sel](1) * shape_function(2, col_sel));
 
                     // moving part of theta_s
-                    for (size_t col_sel = 0; col_sel<3; col_sel++)
+                    for (auto col_sel = 0; col_sel<3; col_sel++)
                         J(0, (edge_sel+1)*3+col_sel) = -0.5 * (neighbouring_elements[edge_sel]->t_loc[neighbour_node_not_shared[edge_sel]](0) * neighbouring_elements[edge_sel]->shape_function(1, col_sel)
                                                              + neighbouring_elements[edge_sel]->t_loc[neighbour_node_not_shared[edge_sel]](1) * neighbouring_elements[edge_sel]->shape_function(2, col_sel));
                 }
                 else
                 {
                     // fixed part of theta_s
-                    for (size_t col_sel = 0; col_sel<3; col_sel++)
+                    for (auto col_sel = 0; col_sel<3; col_sel++)
                         J(0, col_sel) = 1 * (t_loc[edge_sel](0) * shape_function(1, col_sel) + t_loc[edge_sel](1) * shape_function(2, col_sel));
                 }
             }
                 
 
             // theta_t part
-            if ( edge_bc[edge_sel]==CLAMPED || edge_bc[edge_sel] == SUPPORTED )
+            if (!( edge_bc[edge_sel]==CLAMPED || edge_bc[edge_sel] == SUPPORTED ))
             {
                 switch (edge_sel)
                 {
@@ -287,18 +297,19 @@ private:
             rot_temp(0, 0) = -s_loc[edge_sel](1)*s_loc[edge_sel](1);
             rot_temp(0, 1) = -s_loc[edge_sel](0)*s_loc[edge_sel](1);
             rot_temp(1, 0) = -s_loc[edge_sel](0)*s_loc[edge_sel](0);
-            rot_temp(1, 1) = +s_loc[edge_sel](0)*s_loc[edge_sel](1);
-            rot_temp(2, 1) = - rot_temp(0, 0) - rot_temp(1, 0);
+            rot_temp(1, 1) = -rot_temp(0, 1);
+            rot_temp(2, 0) = 2 * rot_temp(1, 1);
+            rot_temp(2, 1) = rot_temp(0, 0) - rot_temp(1, 0);
 
             // Update the Curvature Matrix 'Bll'
             ChMatrixNM<double, 3, 12> Bll_temp;
             Bll_temp.MatrMultiply(rot_temp, J);
             Bll_temp.MatrScale(edge_length[edge_sel]);
-            Bll.PasteSumMatrix(&Bll_temp,0,0);
+            Bll_bend.PasteSumMatrix(&Bll_temp,0,0);
 
         }
 
-        Bll.MatrDivScale(element_area);
+        Bll_bend.MatrDivScale(element_area);
         
         // oh man, now we have to compute the rotation matrix for the 'w' displacements; finger crossed...
         ChMatrixNM<double, 18, 12> rotLGw_transp;
@@ -306,9 +317,12 @@ private:
         rotLGw_transp.PasteClippedMatrix(&rotGL, 0, 2, 3, 1, 0, 0);
         rotLGw_transp.PasteClippedMatrix(&rotGL, 0, 2, 3, 1, 3, 1);
         rotLGw_transp.PasteClippedMatrix(&rotGL, 0, 2, 3, 1, 6, 2);
-        for (size_t neigh_elem_sel = 0; neigh_elem_sel < 3; neigh_elem_sel++)
+        for (auto neigh_elem_sel = 0; neigh_elem_sel < 3; neigh_elem_sel++)
         {
-            for (size_t neigh_node_sel = 0; neigh_elem_sel < 3; neigh_elem_sel++)
+            if (neighbouring_elements[neigh_elem_sel].get() == nullptr)
+                continue;
+
+            for (auto neigh_node_sel = 0; neigh_node_sel < 3; neigh_node_sel++)
             {
                 // in this loop the algorithm do the following:
                 // - takes each node of the selected neighbour element
@@ -319,11 +333,12 @@ private:
                 {
                     if (main_nodes[node_sel]==neighbouring_elements[neigh_elem_sel]->main_nodes[neigh_node_sel])
                     {
+                        // in node_sel there should be the row of rotLGw_transp in which the rotGL matrix of the current neigh_elem_sel element should be stored
+                        rotLGw_transp.PasteClippedMatrix(&(neighbouring_elements[neigh_elem_sel]->rotGL), 0, 2, 3, 1, 3 * node_sel, 3 * (neigh_elem_sel + 1) + neigh_node_sel);
+
                         break;
                     }
                 }
-                // in node_sel there should be the row of rotLGw_transp in which the rotGL matrix of the current neigh_elem_sel element should be stored
-                rotLGw_transp.PasteClippedMatrix(&(neighbouring_elements[neigh_elem_sel]->rotGL), 0, 2, 3, 1, 3*node_sel, 3*(neigh_elem_sel+1)+neigh_node_sel );
             }
 
             // - the remaining node is NOT shared with the current element
@@ -332,39 +347,43 @@ private:
             rotLGw_transp.PasteClippedMatrix(&neighbouring_elements[neigh_elem_sel]->rotGL, 0, 2, 3, 1, 3 * (neigh_elem_sel+3), 3 * (neigh_elem_sel + 1) + neighbour_node_not_shared[neigh_elem_sel]);
         }
 
-        ChMatrixNM<double, 3, 12> Blg;
+        ChMatrixNM<double, 3, 18> Blg_bend;
         // Update the Curvature Matrix that takes Global displacements and returns Local curvatures
-        Blg.MatrMultiplyT(Bll, rotLGw_transp);
+        Blg_bend.MatrMultiplyT(Bll_bend, rotLGw_transp);
 
         // Update bending stiffness matrix
         ChMatrixNM<double, 18, 18> K_bend;
-        K_bend.MatrTMultiply(Blg, m_material->GetConsitutiveMatrixBending());
-        K_bend.MatrScale(pow(thickness, 3));
-        K_bend.MatrMultiply(K_bend, Blg);
+        ChMatrixNM<double, 18, 3> mat_temp;
+        ChMatrixNM<double, 3, 3> test = m_material->GetConsitutiveMatrixBending();
+        mat_temp.MatrTMultiply(Blg_bend, test);
+        mat_temp.MatrScale(pow(thickness, 3)*element_area);
+        K_bend.MatrMultiply(mat_temp, Blg_bend);
 
         ///////////////////// Membrane stiffness //////////////////////////
-        ChMatrixNM<double, 3, 18> Blg_membr_transp;
+        ChMatrixNM<double, 18, 3> Blg_membr_transp;
         
         ChVector<double> temp = rotGL.ClipVector(0, 0);
-        for (size_t col_sel = 0; col_sel < 3; col_sel++)
+        for (auto col_sel = 0; col_sel < 3; col_sel++)
         {
-            Blg_membr_transp.PasteVector(temp*shape_function(1, col_sel), col_sel*3, 0);
-            Blg_membr_transp.PasteSumClippedMatrix(&Blg_membr_transp, col_sel * 3, 0, 3, 1, col_sel * 3, 2);
+            Blg_membr_transp.PasteVector(temp*shape_function(1, col_sel), col_sel * 3, 0);
+            Blg_membr_transp.PasteSumVector(temp*shape_function(2, col_sel), col_sel * 3, 2);
         }
 
         temp = rotGL.ClipVector(0, 1);
-        for (size_t col_sel = 0; col_sel < 3; col_sel++)
+        for (auto col_sel = 0; col_sel < 3; col_sel++)
         {
             Blg_membr_transp.PasteVector(temp*shape_function(2, col_sel), col_sel * 3, 1);
-            Blg_membr_transp.PasteSumClippedMatrix(&Blg_membr_transp, col_sel * 3, 1, 3, 1, col_sel * 3, 2);
+            Blg_membr_transp.PasteSumVector(temp*shape_function(1, col_sel), col_sel * 3, 2);
         }
 
         ChMatrixNM<double, 18, 18> K_membr;
-        K_membr.MatrMultiply(Blg_membr_transp, m_material->GetConsitutiveMatrixMembrane());
-        K_membr.MatrMultiplyT(K_membr, Blg_membr_transp);
+        mat_temp.MatrMultiply(Blg_membr_transp, m_material->GetConsitutiveMatrixMembrane());
+        mat_temp.MatrScale(thickness*element_area);
+        K_membr.MatrMultiplyT(mat_temp, Blg_membr_transp);
 
+
+        // Compose stiffness matrix
         stiffness_matrix.MatrAdd(K_membr, K_bend);
-        stiffness_matrix.MatrScale(element_area*thickness);
 
 
     }
@@ -372,13 +391,13 @@ private:
     void updateBC() //TODO: find other ways to implement boundary conditions
     {
         if (main_nodes[0]->GetFixed() && main_nodes[1]->GetFixed())
-            edge_bc[2] == CLAMPED;
+            edge_bc[2] = CLAMPED;
 
         if (main_nodes[1]->GetFixed() && main_nodes[2]->GetFixed())
-            edge_bc[0] == CLAMPED;
+            edge_bc[0] = CLAMPED;
 
         if (main_nodes[2]->GetFixed() && main_nodes[0]->GetFixed())
-            edge_bc[1] == CLAMPED;
+            edge_bc[1] = CLAMPED;
     }
 
     void updateK()
@@ -389,8 +408,8 @@ private:
 
     void updateM()
     {
-        mass = element_area * m_thickness * m_material->Get_rho();
-        for (size_t diag_sel = 0; diag_sel < 3; diag_sel++)
+        mass = element_area * thickness * m_material->Get_rho();
+        for (auto diag_sel = 0; diag_sel < 3; diag_sel++)
         {
             mass_matrix(diag_sel * 3    , diag_sel * 3    ) = mass / 3;
             mass_matrix(diag_sel * 3 + 1, diag_sel * 3 + 1) = mass / 3;
@@ -401,7 +420,7 @@ private:
     void updateR()
     {
         double damp_temp = 1e-3;
-        for (size_t diag_sel = 0; diag_sel < 18; diag_sel++)
+        for (auto diag_sel = 0; diag_sel < 18; diag_sel++)
         {
             damping_matrix(diag_sel, diag_sel) = damp_temp;
         }
@@ -419,8 +438,8 @@ public:
     }
 
     /// Return the thickness
-    double Get_thickness() const { return m_thickness; }
-    void Set_thickness(double thickness_in) { m_thickness = thickness_in; }
+    double Get_thickness() const { return thickness; }
+    void Set_thickness(double thickness_in) { thickness = thickness_in; }
 
     void SetNodes(std::shared_ptr<ChNodeFEAxyz> nodeA,
                   std::shared_ptr<ChNodeFEAxyz> nodeB,
@@ -439,13 +458,13 @@ public:
     void UpdateConnectivity(std::shared_ptr<ChMesh> mesh)
     {
          
-        for (size_t elem_sel = 0; elem_sel < mesh->GetNelements(); elem_sel++)
+        for (auto elem_sel = 0; elem_sel < mesh->GetNelements(); elem_sel++)
         {
             int common_nodes[3] = {-1,-1,-1};
             int common_nodes_count = 0;
-            for (size_t node_sel = 0; node_sel < 3; node_sel++)
+            for (auto node_sel = 0; node_sel < 3; node_sel++)
             {
-                for (size_t main_node_sel = 0; main_node_sel < 3; main_node_sel++)
+                for (auto main_node_sel = 0; main_node_sel < 3; main_node_sel++)
                 {
                     if (mesh->GetElement(elem_sel)->GetNodeN(node_sel) == main_nodes[main_node_sel])
                     {
@@ -463,7 +482,7 @@ public:
             if (common_nodes_count > 1)
             {
                 // find the non shared node
-                for (size_t main_node_sel = 0; main_node_sel < 3; main_node_sel++)
+                for (auto main_node_sel = 0; main_node_sel < 3; main_node_sel++)
                 {
                     if (common_nodes[main_node_sel] == -1) // look for not shared node within the main_nodes
                     {
@@ -472,7 +491,7 @@ public:
                         neighbouring_elements[main_node_sel] = std::dynamic_pointer_cast<ChElementShellTri>(mesh->GetElement(elem_sel));
                         // look which node of the neighbour is not linked to the current element
                         // if it is not linked the number won't be in common_nodes[...]
-                        for (size_t missing_number = 0; missing_number<3; ++missing_number)  // look for node number 0, 1 and 2
+                        for (auto missing_number = 0; missing_number<3; ++missing_number)  // look for node number 0, 1 and 2
                         {
                             size_t main_node_sel2;
                             for (main_node_sel2=0; main_node_sel2<3; ++main_node_sel2)
@@ -504,7 +523,7 @@ public:
     {
         edge_bc[0] = static_cast<boundary_conditions>(BC_on_edge1);
         edge_bc[1] = static_cast<boundary_conditions>(BC_on_edge2);
-        edge_bc[3] = static_cast<boundary_conditions>(BC_on_edge3);
+        edge_bc[2] = static_cast<boundary_conditions>(BC_on_edge3);
     }
 
     ChMatrixNM<double, 3, 3>& GetShapeFunction() { return shape_function; }
@@ -524,11 +543,11 @@ public:
         
     }
 
-    void ComputeInternalForces(ChMatrixDynamic<>& Fi) override{
+    void ComputeInternalForces(ChMatrixDynamic<>& Fi) override {
         Fi.Resize(18,1); // also clears the vector
         ChMatrixNM<double, 18, 1> noder_pos_glob;
         ChMatrixNM<double, 3, 1> temp;
-        for (size_t node_sel = 0; node_sel<3; node_sel++)
+        for (auto node_sel = 0; node_sel<3; node_sel++)
         {
             noder_pos_glob.PasteVector(main_nodes[node_sel]->GetPos(), node_sel * 3, 0);
         }
@@ -544,6 +563,9 @@ public:
 
     void SetupInitial(ChSystem* system) override {
         m_material->UpdateConsitutiveMatrices();
+        //TODO: only clamped edge is supported
+        updateBC();
+
     }
 
     /// Gets the number of nodes used by this element.
