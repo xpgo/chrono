@@ -121,7 +121,6 @@ protected:
     /// s_loc[2] is of edge 2, that goes from 3 to 1
     /// s_loc[3] is of edge 3, that goes from 1 to 2
     std::vector<ChMatrixNM<double, 2, 1>> s_loc; 
-    std::vector<ChMatrixNM<double, 2, 1>> t_loc; ///< versors tangent to the edge that points inside the main triangle
     ChMatrix33<double> rotGL; ///< rotation matrix from Local to Global frame
 
     void updateGeometry() {
@@ -178,8 +177,6 @@ protected:
         {
             edge_length[edge_sel] = s_loc[edge_sel].NormTwo();
             s_loc[edge_sel].MatrDivScale(edge_length[edge_sel]);
-            t_loc[edge_sel](0) = -s_loc[edge_sel](1);
-            t_loc[edge_sel](1) = +s_loc[edge_sel](0);
         }
 
 
@@ -238,22 +235,20 @@ private:
             {
                 if (neighbouring_elements[edge_sel].get()!=nullptr)
                 {
-                    
-
                     // fixed part of theta_s
                     for (auto col_sel = 0; col_sel<3; col_sel++)
-                        J(0, col_sel) = 0.5 * (t_loc[edge_sel](0) * shape_function(1, col_sel) + t_loc[edge_sel](1) * shape_function(2, col_sel));
+                        J(0, col_sel) = 0.5 * (-s_loc[edge_sel](1) * shape_function(1, col_sel) + s_loc[edge_sel](0) * shape_function(2, col_sel));
 
                     // moving part of theta_s
                     for (auto col_sel = 0; col_sel<3; col_sel++)
-                        J(0, (edge_sel+1)*3+col_sel) = -0.5 * (neighbouring_elements[edge_sel]->t_loc[neighbour_node_not_shared[edge_sel]](0) * neighbouring_elements[edge_sel]->shape_function(1, col_sel)
-                                                             + neighbouring_elements[edge_sel]->t_loc[neighbour_node_not_shared[edge_sel]](1) * neighbouring_elements[edge_sel]->shape_function(2, col_sel));
+                        J(0, (edge_sel+1)*3+col_sel) = -0.5 * (-neighbouring_elements[edge_sel]->s_loc[neighbour_node_not_shared[edge_sel]](1) * neighbouring_elements[edge_sel]->shape_function(1, col_sel)
+                                                               +neighbouring_elements[edge_sel]->s_loc[neighbour_node_not_shared[edge_sel]](0) * neighbouring_elements[edge_sel]->shape_function(2, col_sel) );
                 }
                 else
                 {
                     // fixed part of theta_s
                     for (auto col_sel = 0; col_sel<3; col_sel++)
-                        J(0, col_sel) = 1 * (t_loc[edge_sel](0) * shape_function(1, col_sel) + t_loc[edge_sel](1) * shape_function(2, col_sel));
+                        J(0, col_sel) = 1 * (-s_loc[edge_sel](1) * shape_function(1, col_sel) + s_loc[edge_sel](0) * shape_function(2, col_sel));
                 }
             }
                 
@@ -311,6 +306,7 @@ private:
             if (neighbouring_elements[neigh_elem_sel].get() == nullptr)
                 continue;
 
+            // TODO: move this 'find' algorithm elsewhere
             for (auto neigh_node_sel = 0; neigh_node_sel < 3; neigh_node_sel++)
             {
                 // in this loop the algorithm do the following:
@@ -425,7 +421,6 @@ public:
         main_nodes.resize(3);
         neighbouring_elements.resize(3);
         s_loc.resize(3);
-        t_loc.resize(3);
     }
 
     /// Return the thickness
