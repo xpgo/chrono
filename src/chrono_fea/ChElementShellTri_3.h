@@ -236,20 +236,9 @@ private:
             // theta_s part
             if (!(edge_bc[edge_sel] == CLAMPED || edge_bc[edge_sel] == SYMMETRIC))
             {
-                // TODO: do only once at setup step
-                // find the edge number respect to the neighbouring element that is shared
-                // with the 'edge_sel' of the current element
                 if (neighbouring_elements[edge_sel].get()!=nullptr)
                 {
-                    for (auto neigh_edge_sel = 0; neigh_edge_sel<3; neigh_edge_sel++)
-                    {
-                        auto it = std::find(main_nodes.begin(), main_nodes.end(), neighbouring_elements[edge_sel]->main_nodes[neigh_edge_sel]);
-                        if (it == main_nodes.end())
-                        {
-                            neighbour_node_not_shared[edge_sel] = neigh_edge_sel;
-                            break;
-                        }
-                    }
+                    
 
                     // fixed part of theta_s
                     for (auto col_sel = 0; col_sel<3; col_sel++)
@@ -408,12 +397,14 @@ private:
 
     void updateM()
     {
-        mass = element_area * thickness * m_material->Get_rho();
+        mass = element_area * thickness * m_material->Get_rho() /3;
         for (auto diag_sel = 0; diag_sel < 3; diag_sel++)
         {
-            mass_matrix(diag_sel * 3    , diag_sel * 3    ) = mass / 3;
-            mass_matrix(diag_sel * 3 + 1, diag_sel * 3 + 1) = mass / 3;
-            mass_matrix(diag_sel * 3 + 2, diag_sel * 3 + 2) = mass / 3;
+            mass_matrix(diag_sel * 3    , diag_sel * 3    ) = mass;
+            mass_matrix(diag_sel * 3 + 1, diag_sel * 3 + 1) = mass;
+            mass_matrix(diag_sel * 3 + 2, diag_sel * 3 + 2) = mass;
+
+            main_nodes[diag_sel]->SetMass(mass);
         }
     }
 
@@ -457,7 +448,7 @@ public:
 
     void UpdateConnectivity(std::shared_ptr<ChMesh> mesh)
     {
-         
+        
         for (auto elem_sel = 0; elem_sel < mesh->GetNelements(); elem_sel++)
         {
             int common_nodes[3] = {-1,-1,-1};
@@ -469,13 +460,11 @@ public:
                     if (mesh->GetElement(elem_sel)->GetNodeN(node_sel) == main_nodes[main_node_sel])
                     {
                         // the element has at least a node in common
-
                         if (mesh->GetElement(elem_sel).get() == this) // the element is being compared with itself!
                             break;
 
                         common_nodes[main_node_sel] = node_sel;
                         common_nodes_count++;
-
                     }
                 }
             }
@@ -507,14 +496,10 @@ public:
                                 neighbour_node_not_shared[main_node_sel] = missing_number;
                                 break;
                             }
-                                
                         }
-                        
                     }
-                        
                 }
             }
-
         }
     }
     
