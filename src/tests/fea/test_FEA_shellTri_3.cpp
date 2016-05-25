@@ -16,7 +16,7 @@
 #include "chrono/physics/ChBodyEasy.h"
 #include "chrono/physics/ChSystem.h"
 #include "chrono/utils/ChUtilsInputOutput.h"
-#include "chrono_fea/ChElementShellTri.h"
+#include "chrono_fea/ChElementShellTri_3.h"
 #include "chrono_fea/ChLinkDirFrame.h"
 #include "chrono_fea/ChLinkPointFrame.h"
 #include "chrono_fea/ChMesh.h"
@@ -54,8 +54,8 @@ int main(int argc, char* argv[]) {
     * Beam creation
     ****************************************/
     // Input
-    int cols_x = 3;
-    int rows_y = 2;
+    size_t cols_x = 3;
+    size_t rows_y = 2;
     double length = 2;
     double width = 1;
 
@@ -113,14 +113,14 @@ int main(int argc, char* argv[]) {
 
 
     // create Elements
-    auto material = std::make_shared<ChMaterialShellTri>(210e9, 0.3, 7850);
+    auto material = std::make_shared<ChMaterialShellTri_3>(210e9, 0.3, 7850);
     for (size_t col_sel = 0; col_sel < cols_x - 1; col_sel++)
     {
         for (size_t row_sel = 0; row_sel < rows_y - 1; row_sel++)
         {
 
             auto prova = std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(0));
-            auto elementLEFTUP = std::make_shared<ChElementShellTri>();
+            auto elementLEFTUP = std::make_shared<ChElementShellTri_3>();
             elementLEFTUP->SetNodes(std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode( row_sel     *cols_x + col_sel    )),
                                     std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode((row_sel + 1)*cols_x + col_sel + 1)),
                                     std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode((row_sel + 1)*cols_x + col_sel    )));
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
             elementLEFTUP->SetMaterial(material);
             my_mesh->AddElement(elementLEFTUP);
 
-            auto elementBOTTOMRIGHT = std::make_shared<ChElementShellTri>();
+            auto elementBOTTOMRIGHT = std::make_shared<ChElementShellTri_3>();
             elementBOTTOMRIGHT->SetNodes(std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode( row_sel   *cols_x + col_sel   )),
                                          std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode((row_sel+1)*cols_x + col_sel+1 )),
                                          std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode( row_sel   *cols_x + col_sel+1 )));
@@ -166,7 +166,7 @@ int main(int argc, char* argv[]) {
     // TODO: ... instead I need to pass the ChMesh that contains a list of other elements within which search the neighbours
     for (size_t elem_sel = 0; elem_sel < my_mesh->GetNelements(); elem_sel++)
     {
-        std::dynamic_pointer_cast<ChElementShellTri>(my_mesh->GetElement(elem_sel))->UpdateConnectivity(my_mesh);
+        std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(elem_sel))->UpdateConnectivity(my_mesh);
     }
 
 

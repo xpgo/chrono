@@ -1,4 +1,4 @@
-#include "chrono_fea/ChElementShellTri.h"
+#include "chrono_fea/ChElementShellTri_3.h"
 
 namespace chrono {
 namespace fea {

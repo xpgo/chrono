@@ -24,10 +24,10 @@ namespace fea {
 /// @{
 
 /// Material definition.
-    class ChApiFea ChMaterialShellTri {
+    class ChApiFea ChMaterialShellTri_3 {
     public:
         /// Construct an isotropic material.
-        ChMaterialShellTri(double E,    ///< Young's modulus
+        ChMaterialShellTri_3(double E,    ///< Young's modulus
             double nu,   ///< Poisson ratio
             double rho
         ) :
@@ -112,7 +112,7 @@ namespace fea {
 
 /// Class for FEA elements of Onate shell type.
 /// This element has a linear displacement field.
-class ChApiFea ChElementShellTri : public ChElementShell {
+class ChApiFea ChElementShellTri_3 : public ChElementShell {
 protected:
     std::vector<std::shared_ptr<ChNodeFEAxyz>> main_nodes; ///< element nodes
 
@@ -205,11 +205,11 @@ private:
         SYMMETRIC = 3
     } edge_bc[3] = { DEFAULT, DEFAULT, DEFAULT };
 
-    std::vector<std::shared_ptr<ChElementShellTri>> neighbouring_elements; ///< neighbour elements
+    std::vector<std::shared_ptr<ChElementShellTri_3>> neighbouring_elements; ///< neighbour elements
     /// neighbour_node_not_shared[1] = 3 means that the node of the element attached to the 1st edge has its 3rd node that is not shared with this element
     /// or, that is the same, that the element attached to the 1st edge is attached with its 3rd edge
     int neighbour_node_not_shared[3]; 
-    std::shared_ptr<ChMaterialShellTri> m_material;
+    std::shared_ptr<ChMaterialShellTri_3> m_material;
 
     ChMatrix33<double> shape_function;
 
@@ -430,7 +430,7 @@ private:
 
 
 public:
-    ChElementShellTri() {
+    ChElementShellTri_3() {
         main_nodes.resize(3);
         neighbouring_elements.resize(3);
         s_loc.resize(3);
@@ -488,7 +488,7 @@ public:
                     {
                         // 'main_node_sel' points at the node that it is not shared;
                         // 'main_node_sel' is also the edge on which the element is attached
-                        neighbouring_elements[main_node_sel] = std::dynamic_pointer_cast<ChElementShellTri>(mesh->GetElement(elem_sel));
+                        neighbouring_elements[main_node_sel] = std::dynamic_pointer_cast<ChElementShellTri_3>(mesh->GetElement(elem_sel));
                         // look which node of the neighbour is not linked to the current element
                         // if it is not linked the number won't be in common_nodes[...]
                         for (auto missing_number = 0; missing_number<3; ++missing_number)  // look for node number 0, 1 and 2
@@ -556,7 +556,7 @@ public:
 
     }
 
-    void SetMaterial(std::shared_ptr<ChMaterialShellTri> material)
+    void SetMaterial(std::shared_ptr<ChMaterialShellTri_3> material)
     {
         m_material = material;
     }
