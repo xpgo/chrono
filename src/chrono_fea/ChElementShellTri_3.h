@@ -567,7 +567,13 @@ public:
     {
         mD.Resize(18, 1);
         //TODO: what does this function?
-    };
+        mD.PasteVector(this->main_nodes[0]->GetPos(), 0, 0);
+        mD.PasteVector(this->main_nodes[1]->GetPos(), 3, 0);
+        mD.PasteVector(this->main_nodes[2]->GetPos(), 6, 0);
+        mD.PasteVector(this->neighbouring_elements[0]->main_nodes[neighbour_node_not_shared[0]]->GetPos(), 9, 0);
+        mD.PasteVector(this->neighbouring_elements[1]->main_nodes[neighbour_node_not_shared[1]]->GetPos(), 12, 0);
+        mD.PasteVector(this->neighbouring_elements[2]->main_nodes[neighbour_node_not_shared[2]]->GetPos(), 15, 0);
+    }
 
     void ComputeMmatrixGlobal(ChMatrix<>& M) override {
         M = static_cast<ChMatrix<double>>(mass_matrix);
@@ -592,6 +598,7 @@ public:
         const double v,
         const ChMatrix<>& displ,
         ChVector<>& point) override {};
+
     void EvaluateSectionVelNorm(double U, double V, ChVector<> &Result) override {};
 
 };

@@ -9,33 +9,14 @@
 // and at http://projectchrono.org/license-chrono.txt.
 //
 
-#include "chrono/ChConfig.h"
-#include "chrono/core/ChFileutils.h"
-#include "chrono/core/ChTimer.h"
-#include "chrono/solver/ChSolverMINRES.h"
-#include "chrono/physics/ChBodyEasy.h"
 #include "chrono/physics/ChSystem.h"
 #include "chrono/utils/ChUtilsInputOutput.h"
 #include "chrono_fea/ChElementShellTri_3.h"
-#include "chrono_fea/ChLinkDirFrame.h"
 #include "chrono_fea/ChLinkPointFrame.h"
 #include "chrono_fea/ChMesh.h"
 
 // basic file operations
-#include <iostream>
 #include <fstream>
-#include <chrono_fea/ChElementShellANCF.h>
-
-#ifdef CHRONO_MKL
-#include "chrono_mkl/ChSolverMKL.h"
-////#define USE_MKL
-#else
-#undef USE_MKL
-#endif
-
-#ifdef CHRONO_OPENMP_ENABLED
-#include <omp.h>
-#endif
 
 #define DUMP_LISTS true
 
