@@ -163,6 +163,7 @@ private:
     std::shared_ptr<ChMaterialShellTri_3> m_material;
 
     ChMatrix33<double> shape_function;
+    ChMatrixNM<double, 9, 1> minus_pos_init; ///< stores the initial position of the three main nodes, sign changed
 
     int countNeighbours() const
     {
@@ -623,7 +624,7 @@ public:
 
     void ComputeInternalForces(ChMatrixDynamic<>& Fi) override {
 
-        ChMatrixNM<double, 18, 1> noder_pos_glob;
+        ChMatrixNM<double, 18, 1> disp_glob;
         ChMatrixNM<double, 18, 1> Fi_temp;
 
 
@@ -633,29 +634,38 @@ public:
         // paste main_nodes position vectors
         for (auto node_sel = 0; node_sel<3; node_sel++)
         {
-            noder_pos_glob.PasteVector(main_nodes[node_sel]->GetPos(), node_sel * 3, 0);
+            disp_glob.PasteVector(main_nodes[node_sel]->GetPos(), node_sel * 3, 0);
         }
+
+        disp_glob.PasteSumMatrix(&minus_pos_init, 0, 0);
 
         // paste neighbour not-shared node position vectors
         for (auto neigh_elem_sel = 0; neigh_elem_sel<3; neigh_elem_sel++)
         {
             if (neighbouring_elements[neigh_elem_sel].get() == nullptr)
             {
-                noder_pos_glob((neigh_elem_sel + 3) * 3     ) = 0;
-                noder_pos_glob((neigh_elem_sel + 3) * 3 + 1 ) = 0;
-                noder_pos_glob((neigh_elem_sel + 3) * 3 + 2 ) = 0;
+                disp_glob((neigh_elem_sel + 3) * 3     ) = 0;
+                disp_glob((neigh_elem_sel + 3) * 3 + 1 ) = 0;
+                disp_glob((neigh_elem_sel + 3) * 3 + 2 ) = 0;
             }
             else
-                noder_pos_glob.PasteVector(neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]]->GetPos(), (neigh_elem_sel+3) * 3, 0);
+            {
+                disp_glob.PasteVector(neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]]->GetPos(), (neigh_elem_sel + 3) * 3, 0);
+                disp_glob.PasteSumClippedMatrix(&neighbouring_elements[neigh_elem_sel]->minus_pos_init, neighbour_node_not_shared[neigh_elem_sel] * 3, 0, 3, 1, (neigh_elem_sel + 3) * 3, 0);
+            }
+                
         }
+
+
+        
 
         if (GetNdofs()==18)
         {
-            Fi.MatrMultiply(stiffness_matrix, noder_pos_glob);
+            Fi.MatrMultiply(stiffness_matrix, disp_glob);
         }
         else
         {
-            Fi_temp.MatrMultiply(stiffness_matrix, noder_pos_glob);
+            Fi_temp.MatrMultiply(stiffness_matrix, disp_glob);
 
             // paste result into Fi
             Fi.Resize(GetNdofs(), 1);
@@ -686,7 +696,7 @@ public:
 
         updateBC();
 
-        // Inform the 
+        // Inform the system about which nodes take part to the computation
         std::vector<ChVariables*> vars;
         vars.push_back(&main_nodes[0]->Variables());
         vars.push_back(&main_nodes[1]->Variables());
@@ -701,6 +711,11 @@ public:
         }
 
         Kmatr.SetVariables(vars);
+
+        // Store the initial global position of nodes;
+        minus_pos_init.PasteVector(-main_nodes[0]->GetPos(),0,0);
+        minus_pos_init.PasteVector(-main_nodes[1]->GetPos(),0,0);
+        minus_pos_init.PasteVector(-main_nodes[2]->GetPos(),0,0);
 
     }
 

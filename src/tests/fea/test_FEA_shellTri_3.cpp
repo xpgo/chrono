@@ -167,7 +167,14 @@ int main(int argc, char* argv[]) {
     mystepper->SetScaling(true);
     //// mystepper->SetVerbose(true);
 
+    for (auto cont = 0; cont < my_mesh->GetNnodes(); cont++)
+    {
+        std::cout << my_mesh->GetElement(0)->GetNodeN(cont) << std::endl;
+    }
+
     ChMatrixDynamic<double> H;
+    ChMatrixDynamic<double> Fi;
+    my_mesh->GetElement(0)->ComputeInternalForces(Fi);
     my_mesh->GetElement(0)->ComputeKRMmatricesGlobal(H, 1, 0, 0);
 
     int num_steps = 2;
