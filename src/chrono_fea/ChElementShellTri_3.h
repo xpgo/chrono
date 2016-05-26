@@ -163,7 +163,7 @@ private:
     std::shared_ptr<ChMaterialShellTri_3> m_material;
 
     ChMatrix33<double> shape_function;
-    ChMatrixNM<double, 9, 1> minus_pos_init; ///< stores the initial position of the three main nodes, sign changed
+
 
     int countNeighbours() const
     {
@@ -389,12 +389,6 @@ private:
             edge_bc[1] = CLAMPED;
     }
 
-    void updateK()
-    {
-        updateGeometry();
-        updateStructural();
-    }
-
     void updateElementMass(int node_sel)
     {
         mass = element_area * thickness * m_material->Get_rho();
@@ -456,7 +450,8 @@ private:
 
 
 public:
-    ChElementShellTri_3() {
+    ChElementShellTri_3()
+    {
         main_nodes.resize(3);
         neighbouring_elements.resize(3);
         s_loc.resize(3);
@@ -627,17 +622,15 @@ public:
         ChMatrixNM<double, 18, 1> disp_glob;
         ChMatrixNM<double, 18, 1> Fi_temp;
 
-
-        updateK();
+        // TODO: it shouldn't be necessary since K it is updated during Update() call
+        Update();
 
 
         // paste main_nodes position vectors
         for (auto node_sel = 0; node_sel<3; node_sel++)
         {
-            disp_glob.PasteVector(main_nodes[node_sel]->GetPos(), node_sel * 3, 0);
+            disp_glob.PasteVector( main_nodes[node_sel]->GetPos() - main_nodes[node_sel]->GetX0(), node_sel * 3, 0);
         }
-
-        disp_glob.PasteSumMatrix(&minus_pos_init, 0, 0);
 
         // paste neighbour not-shared node position vectors
         for (auto neigh_elem_sel = 0; neigh_elem_sel<3; neigh_elem_sel++)
@@ -650,8 +643,8 @@ public:
             }
             else
             {
-                disp_glob.PasteVector(neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]]->GetPos(), (neigh_elem_sel + 3) * 3, 0);
-                disp_glob.PasteSumClippedMatrix(&neighbouring_elements[neigh_elem_sel]->minus_pos_init, neighbour_node_not_shared[neigh_elem_sel] * 3, 0, 3, 1, (neigh_elem_sel + 3) * 3, 0);
+                disp_glob.PasteVector(neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]]->GetPos()
+                                      - neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]]->GetX0(), (neigh_elem_sel + 3) * 3, 0);
             }
                 
         }
@@ -712,11 +705,6 @@ public:
 
         Kmatr.SetVariables(vars);
 
-        // Store the initial global position of nodes;
-        minus_pos_init.PasteVector(-main_nodes[0]->GetPos(),0,0);
-        minus_pos_init.PasteVector(-main_nodes[1]->GetPos(),0,0);
-        minus_pos_init.PasteVector(-main_nodes[2]->GetPos(),0,0);
-
     }
 
     /// Gets the number of nodes used by this element.
@@ -759,7 +747,7 @@ public:
         mD.PasteVector(this->main_nodes[2]->GetPos(), 6, 0);
 
         int offset_row = 0;
-        for (auto neigh_elem_sel =0; neigh_elem_sel<3; neigh_elem_sel++)
+        for (auto neigh_elem_sel = 0; neigh_elem_sel<3; neigh_elem_sel++)
         {
             if (neighbouring_elements[neigh_elem_sel] != nullptr)
             {
@@ -775,7 +763,7 @@ public:
     }
 
 
-    //TODO: temporary definition of abstract functions
+    //TODO: temporary definition of abstract functions. Needed since we are inheriting from ChElementShell
     void EvaluateSectionDisplacement(const double u,
         const double v,
         const ChMatrix<>& displ,
