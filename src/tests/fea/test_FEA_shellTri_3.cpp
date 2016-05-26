@@ -167,6 +167,9 @@ int main(int argc, char* argv[]) {
     mystepper->SetScaling(true);
     //// mystepper->SetVerbose(true);
 
+    ChMatrixDynamic<double> H;
+    my_mesh->GetElement(0)->ComputeKRMmatricesGlobal(H, 1, 0, 0);
+
     int num_steps = 2;
     double step_size = 0.01;
     for (int istep = 0; istep < num_steps; istep++) {

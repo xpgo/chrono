@@ -121,9 +121,6 @@ private:
     double element_area = 0;
     double thickness = 0;
     ChMatrixNM<double, 18, 18> stiffness_matrix;
-    ChMatrixNM<double, 18, 18> mass_matrix;
-    ChMatrixNM<double, 18, 18> damping_matrix;
-    ChMatrixNM<double, 18, 18> H_matrix;
 
     size_t updates_count = 0;
 
@@ -166,6 +163,17 @@ private:
     std::shared_ptr<ChMaterialShellTri_3> m_material;
 
     ChMatrix33<double> shape_function;
+
+    int countNeighbours() const
+    {
+        int neighbours_count = 0;;
+        for (auto neigh_node_sel = 0; neigh_node_sel < 3; neigh_node_sel++)
+        {
+            if (neighbour_node_not_shared[neigh_node_sel] != -1)
+                neighbours_count++;
+        }
+        return neighbours_count;
+    }
 
     void updateGeometry() {
 
@@ -226,9 +234,6 @@ private:
 
     }
 
-
-
-    
 
     void updateStructural()
     {
@@ -389,29 +394,64 @@ private:
         updateStructural();
     }
 
-    void updateM()
+    void updateElementMass(int node_sel)
     {
-        mass = element_area * thickness * m_material->Get_rho() /3;
+        mass = element_area * thickness * m_material->Get_rho();
         for (auto diag_sel = 0; diag_sel < 3; diag_sel++)
         {
-            mass_matrix(diag_sel * 3    , diag_sel * 3    ) = mass;
-            mass_matrix(diag_sel * 3 + 1, diag_sel * 3 + 1) = mass;
-            mass_matrix(diag_sel * 3 + 2, diag_sel * 3 + 2) = mass;
-
-            main_nodes[diag_sel]->SetMass(mass);
+            main_nodes[diag_sel]->SetMass(mass/3);
         }
     }
 
-    void updateR()
+    void getNodeM(ChMatrix<double>& node_mass, int node_sel, double factor = 1.0)
     {
-        double damp_temp = 1e-3;
-        for (auto diag_sel = 0; diag_sel < 18; diag_sel++)
-        {
-            damping_matrix(diag_sel, diag_sel) = damp_temp;
-        }
+        if (node_mass.GetColumns() != 3 || node_mass.GetRows() != 3)
+            node_mass.Resize(3, 3);
+
+        updateElementMass(node_sel);
+        node_mass.FillDiag(main_nodes[node_sel]->GetMass()*factor);
+
     }
 
+    void getNodeK(ChMatrix<double>& node_damp, int node_sel, double factor = 1.0)
+    {
+        if (node_damp.GetColumns() != 3 || node_damp.GetRows() != 3)
+            node_damp.Resize(3, 3);
 
+        node_damp.FillDiag(1e-3);
+
+    }
+
+    void getElementMR(ChMatrix<>& H, double Mfactor, double Kfactor)
+    {
+         H.Resize(GetNdofs(), GetNdofs());
+
+        // Fill the H matrix with damping and mass; K and M supposed diagonal-block
+        ChMatrix33<double> node_mat;
+        for (auto main_node_sel = 0; main_node_sel<3; main_node_sel++)
+        {
+            getNodeK(node_mat, main_node_sel, Kfactor);
+            H.PasteSumMatrix(&node_mat, main_node_sel * 3, main_node_sel * 3);
+            getNodeM(node_mat, main_node_sel, Mfactor);
+            H.PasteSumMatrix(&node_mat, main_node_sel * 3, main_node_sel * 3);
+        }
+
+        int offset_diag = 0;
+        for (auto diag_sel = 0; diag_sel<3; ++diag_sel)
+        {
+            if (neighbouring_elements[diag_sel].get() == nullptr)
+            {
+                offset_diag++;
+                continue;
+            }
+
+            neighbouring_elements[diag_sel]->getNodeK(node_mat, neighbour_node_not_shared[diag_sel], Kfactor);
+            H.PasteSumMatrix(&node_mat, (diag_sel + 3 - offset_diag) * 3, (diag_sel + 3 - offset_diag) * 3);
+            neighbouring_elements[diag_sel]->getNodeM(node_mat, neighbour_node_not_shared[diag_sel], Mfactor);
+            H.PasteSumMatrix(&node_mat, (diag_sel + 3 - offset_diag) * 3, (diag_sel + 3 - offset_diag) * 3);
+        }
+
+    }
 
 
 public:
@@ -523,62 +563,6 @@ public:
             }
         } // elem_sel loop
 
-
-
-
-        for (auto elem_sel = 0; elem_sel < mesh->GetNelements(); elem_sel++)
-        {
-            // take each element of the mesh and check how many nodes are shared with this element
-            int common_nodes[3] = {-1,-1,-1};
-            int common_nodes_count = 0;
-            for (auto node_sel = 0; node_sel < 3; node_sel++)
-            {
-                for (auto main_node_sel = 0; main_node_sel < 3; main_node_sel++)
-                {
-                    if (mesh->GetElement(elem_sel)->GetNodeN(node_sel) == main_nodes[main_node_sel])
-                    {
-                        common_nodes_count++;
-                        common_nodes[main_node_sel] = node_sel;
-                        
-                    }
-                }
-            }
-
-            // if common_nodes_count <= 1 then the element shares at most one node: it is NOT a neighbour
-            // if common_nodes_count == 3 then the element that is found as a neighbour is is actually the element itself!!!
-            if (common_nodes_count == 2) // then the element is actually a neighbour
-            {
-                // find the non shared node
-                for (auto main_node_sel = 0; main_node_sel < 3; main_node_sel++)
-                {
-                    if (common_nodes[main_node_sel] == -1) // look for not shared node within the main_nodes
-                    {
-                        // 'main_node_sel' points at the node that it is not shared;
-                        // 'main_node_sel' is also the edge on which the element is attached
-                        neighbouring_elements[main_node_sel] = std::dynamic_pointer_cast<ChElementShellTri_3>(mesh->GetElement(elem_sel));
-                        // look which node of the neighbour is not linked to the current element
-                        // if it is not linked the number won't be in common_nodes[...]
-                        for (auto missing_number = 0; missing_number<3; ++missing_number)  // look for node number 0, 1 and 2
-                        {
-                            size_t main_node_sel2;
-                            for (main_node_sel2=0; main_node_sel2<3; ++main_node_sel2)
-                            {
-                                // look if in common_nodes[main_node_sel2] there is the 'missing_number-th' node of the selected element
-                                if (common_nodes[main_node_sel2] == missing_number)
-                                    break; // if there is then 'missing_number' is not missing;
-                            }
-
-                            // if 'missing_number' is not missing then main_node_sel2 will be less than 3
-                            if (main_node_sel2 == 3) 
-                            {
-                                neighbour_node_not_shared[main_node_sel] = missing_number;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
     
     size_t GetUpdatesCount() const { return updates_count; }
@@ -593,31 +577,102 @@ public:
 
     ChMatrixNM<double, 3, 3>& GetShapeFunction() { return shape_function; }
 
-    void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor, double Mfactor) override {
-        H_matrix = stiffness_matrix;
-        H_matrix.MatrScale(Kfactor);
-        
-        ChMatrixNM<double, 18, 18> temp_mat;
-        temp_mat = mass_matrix;
-        temp_mat.MatrScale(Mfactor);
-        H_matrix.PasteSumMatrix(&temp_mat, 0, 0);
 
-        temp_mat = damping_matrix;
-        temp_mat.MatrScale(Rfactor);
-        H_matrix.PasteSumMatrix(&temp_mat, 0, 0);
+    
+
+    void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor, double Mfactor) override {
+        
+        // WARNING: the stiffness matrix is supposed to be already updated since ComputeInternalForces()
+        // should have been called previously
+
+        H.Resize(GetNdofs(), GetNdofs());
+
+        // the N-W corner is always present
+        H.PasteClippedMatrix(&stiffness_matrix, 0, 0, 9, 9, 0, 0);
+        
+        // TODO: check if the stiffness matrix is symmetric? I think it isn't...
+        int offset_row = 0;
+        int offset_col;
+        for (auto row_sel = 0; row_sel < 3; row_sel++)
+        {
+            if (neighbouring_elements[row_sel].get() == nullptr)
+            {
+                offset_row++;
+                continue;
+            }
+            
+            offset_col = 0;
+            for (auto col_sel = 0; col_sel < 3; col_sel++)
+            {
+                if (neighbouring_elements[row_sel].get() == nullptr)
+                {
+                    offset_col++;
+                    continue;
+                }
+                
+                H.PasteClippedMatrix(&stiffness_matrix, row_sel * 3, col_sel * 3, 3, 3, (row_sel - offset_row) * 3, (col_sel - offset_col) * 3);
+            }
+        }
+        
+        H.MatrScale(Kfactor);
+
+        getElementMR(H, Mfactor, Kfactor);
+
         
     }
 
     void ComputeInternalForces(ChMatrixDynamic<>& Fi) override {
-        Fi.Resize(18,1); // also clears the vector
+
         ChMatrixNM<double, 18, 1> noder_pos_glob;
-        ChMatrixNM<double, 3, 1> temp;
+        ChMatrixNM<double, 18, 1> Fi_temp;
+
+
+        updateK();
+
+
+        // paste main_nodes position vectors
         for (auto node_sel = 0; node_sel<3; node_sel++)
         {
             noder_pos_glob.PasteVector(main_nodes[node_sel]->GetPos(), node_sel * 3, 0);
         }
 
-        Fi.MatrMultiply(stiffness_matrix, noder_pos_glob);
+        // paste neighbour not-shared node position vectors
+        for (auto neigh_elem_sel = 0; neigh_elem_sel<3; neigh_elem_sel++)
+        {
+            if (neighbouring_elements[neigh_elem_sel].get() == nullptr)
+            {
+                noder_pos_glob((neigh_elem_sel + 3) * 3     ) = 0;
+                noder_pos_glob((neigh_elem_sel + 3) * 3 + 1 ) = 0;
+                noder_pos_glob((neigh_elem_sel + 3) * 3 + 2 ) = 0;
+            }
+            else
+                noder_pos_glob.PasteVector(neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]]->GetPos(), (neigh_elem_sel+3) * 3, 0);
+        }
+
+        if (GetNdofs()==18)
+        {
+            Fi.MatrMultiply(stiffness_matrix, noder_pos_glob);
+        }
+        else
+        {
+            Fi_temp.MatrMultiply(stiffness_matrix, noder_pos_glob);
+
+            // paste result into Fi
+            Fi.Resize(GetNdofs(), 1);
+            Fi.PasteClippedMatrix(&Fi_temp, 0, 0, 9, 1, 0, 0);
+
+            int offset_row = 0;
+            for (auto neigh_elem_sel = 0; neigh_elem_sel<3; neigh_elem_sel++)
+            {
+                if (neighbouring_elements[neigh_elem_sel].get() != nullptr)
+                {
+                    Fi.PasteClippedMatrix(&Fi_temp, (neigh_elem_sel + 3) * 3, 0, 3, 1, (neigh_elem_sel + 3 - offset_row) * 3, 0);
+                }
+                else
+                    offset_row++;
+            }
+        }
+        
 
     }
 
@@ -628,16 +683,33 @@ public:
 
     void SetupInitial(ChSystem* system) override {
         m_material->UpdateConsitutiveMatrices();
-        //TODO: only clamped edge is supported
+
         updateBC();
+
+        // Inform the 
+        std::vector<ChVariables*> vars;
+        vars.push_back(&main_nodes[0]->Variables());
+        vars.push_back(&main_nodes[1]->Variables());
+        vars.push_back(&main_nodes[2]->Variables());
+
+        for (auto neigh_elem_sel = 0; neigh_elem_sel < 3; ++neigh_elem_sel)
+        {
+            if (neighbouring_elements[neigh_elem_sel].get()!=nullptr)
+            {
+                vars.push_back(&neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]]->Variables());
+            }
+        }
+
+        Kmatr.SetVariables(vars);
+
     }
 
     /// Gets the number of nodes used by this element.
-    int GetNnodes() override { return 3; }
+    int GetNnodes() override { return 3+countNeighbours(); }
 
     /// Gets the number of coordinates in the field used by the referenced nodes.
     /// This is for example the size (n.of rows/columns) of the local stiffness matrix.
-    int GetNdofs() override { return 18; }
+    int GetNdofs() override { return 3 * (3 + countNeighbours()); }
 
     /// Get the number of coordinates from the n-th node that are used by this element.
     /// Note that this may be different from the value returned by
@@ -645,21 +717,46 @@ public:
     int GetNodeNdofs(int n) override { return 3; }
 
     /// Access the nth node.
-    std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) override { return main_nodes[n]; }
+    std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) override {
+        if (n < 3) // the node belongs to this element
+            return main_nodes[n];
+        else // the node belongs to a neighbour
+        {
+            n = n - 3;
+            for (auto neigh_elem_sel = 0; neigh_elem_sel<3;neigh_elem_sel++)
+            {
+                if (neighbouring_elements[neigh_elem_sel]!=nullptr)
+                {
+                    if (n == 0)
+                        return neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]];
+                    n--;
+                }
+            }
+            return nullptr;
+        }
+    }
 
     void GetStateBlock(ChMatrixDynamic<>& mD) override
     {
-        mD.Resize(18, 1);
+        mD.Resize(GetNdofs(), 1);
         mD.PasteVector(this->main_nodes[0]->GetPos(), 0, 0);
         mD.PasteVector(this->main_nodes[1]->GetPos(), 3, 0);
         mD.PasteVector(this->main_nodes[2]->GetPos(), 6, 0);
-        mD.PasteVector(this->neighbouring_elements[0]->main_nodes[neighbour_node_not_shared[0]]->GetPos(), 9, 0);
-        mD.PasteVector(this->neighbouring_elements[1]->main_nodes[neighbour_node_not_shared[1]]->GetPos(), 12, 0);
-        mD.PasteVector(this->neighbouring_elements[2]->main_nodes[neighbour_node_not_shared[2]]->GetPos(), 15, 0);
+
+        int offset_row = 0;
+        for (auto neigh_elem_sel =0; neigh_elem_sel<3; neigh_elem_sel++)
+        {
+            if (neighbouring_elements[neigh_elem_sel] != nullptr)
+            {
+                mD.PasteVector(this->neighbouring_elements[0]->main_nodes[neighbour_node_not_shared[0]]->GetPos(), 3 * (neigh_elem_sel + 3 - offset_row), 0);
+            }
+            else
+                offset_row++;
+        }
     }
 
     void ComputeMmatrixGlobal(ChMatrix<>& M) override {
-        M = static_cast<ChMatrix<double>>(mass_matrix);
+        getElementMR(M, 1.0, 0.0);
     }
 
 
