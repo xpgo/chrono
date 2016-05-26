@@ -444,15 +444,19 @@ public:
         bool skip_this_element;
         int notshared_node;
         int neighbour_nodes_temp[3];
+        int neighbours_found = 0;
 
         for (auto elem_sel = 0; elem_sel < mesh->GetNelements(); elem_sel++) // pick one element from the list
         {
+            if (neighbours_found > 2)
+                break;
+
             auto candidate = std::dynamic_pointer_cast<ChElementShellTri_3>(mesh->GetElement(elem_sel));
             skip_this_element = false;
             notshared_node = -1;
-            neighbour_nodes_temp[0] = 0;
-            neighbour_nodes_temp[1] = 0;
-            neighbour_nodes_temp[2] = 0;
+            neighbour_nodes_temp[0] = -1;
+            neighbour_nodes_temp[1] = -1;
+            neighbour_nodes_temp[2] = -1;
 
             for (auto neigh_node_sel = 0; neigh_node_sel < 3; neigh_node_sel++) // pick one node of the candidate neighbour
             {
@@ -510,6 +514,8 @@ public:
                         neighbour_nodes[2][main_node_sel] = neighbour_nodes_temp[2];
                         neighbour_node_not_shared[main_node_sel] = notshared_node;
 
+                        neighbours_found++;
+                        break;
                     }
                         
                 }
