@@ -160,6 +160,9 @@ private:
     /// the neighbour attached to edge2 has node 5
     /// the neighbour attached to edge3 has node 6
     int neighbour_node_not_shared[3] = { -1,-1,-1 };
+
+    int neighbour_z_versor_direction[3] = { 0,0,0 };
+
     std::shared_ptr<ChMaterialShellTri_3> m_material;
 
     ChMatrix33<double> shape_function;
@@ -264,8 +267,8 @@ private:
 
                     // moving part of theta_s
                     for (auto col_sel = 0; col_sel<3; col_sel++)
-                        J(0, (edge_sel+1)*3+col_sel) = -0.5 * (-neighbouring_elements[edge_sel]->s_loc[neighbour_node_not_shared[edge_sel]](1) * neighbouring_elements[edge_sel]->shape_function(1, col_sel)
-                                                               +neighbouring_elements[edge_sel]->s_loc[neighbour_node_not_shared[edge_sel]](0) * neighbouring_elements[edge_sel]->shape_function(2, col_sel) );
+                        J(0, (edge_sel+1)*3+col_sel) = -0.5 * neighbour_z_versor_direction[edge_sel] * (-neighbouring_elements[edge_sel]->s_loc[neighbour_node_not_shared[edge_sel]](1) * neighbouring_elements[edge_sel]->shape_function(1, col_sel)
+                                                                                                        +neighbouring_elements[edge_sel]->s_loc[neighbour_node_not_shared[edge_sel]](0) * neighbouring_elements[edge_sel]->shape_function(2, col_sel) );
                 }
                 else
                 {
@@ -549,6 +552,25 @@ public:
                         neighbour_nodes[1][main_node_sel] = neighbour_nodes_temp[1];
                         neighbour_nodes[2][main_node_sel] = neighbour_nodes_temp[2];
                         neighbour_node_not_shared[main_node_sel] = notshared_node;
+
+                        int first_node_encountered = -1;
+                        for (auto neigh_node_sel = 0; neigh_node_sel < 3; neigh_node_sel++)
+                        {
+                            if (neighbour_nodes[neigh_node_sel][main_node_sel] <3)
+                            {
+                                if (first_node_encountered != -1)
+                                    first_node_encountered = neighbour_nodes[neigh_node_sel][main_node_sel];
+                                else
+                                {
+                                    if (first_node_encountered < neighbour_nodes[neigh_node_sel][main_node_sel])
+                                        neighbour_z_versor_direction[main_node_sel] = +1;
+                                    else
+                                        neighbour_z_versor_direction[main_node_sel] = -1;
+                                }
+                            }
+
+
+                        }
 
                         neighbours_found++;
                         break;
