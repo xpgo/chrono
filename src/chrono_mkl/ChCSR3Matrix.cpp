@@ -4,16 +4,7 @@
 
 namespace chrono {
 
-ChCSR3Matrix::ChCSR3Matrix(int insrow, int inscol, int nonzeros)
-    : reallocation_occurred(false),
-      array_alignment(64),
-      isCompressed(false),
-      max_shifts(std::numeric_limits<int>::max()),
-      rowIndex_lock(false),
-      colIndex_lock(false),
-      rowIndex_lock_broken(false),
-      colIndex_lock_broken(false),
-      symmetry(NO_SYMMETRY) {
+ChCSR3Matrix::ChCSR3Matrix(int insrow, int inscol, int nonzeros) {
     assert(insrow > 0 && inscol > 0 && nonzeros >= 0);
 
     rows = insrow;
@@ -31,23 +22,14 @@ ChCSR3Matrix::ChCSR3Matrix(int insrow, int inscol, int nonzeros)
     initialize();
 }
 
-ChCSR3Matrix::ChCSR3Matrix(int insrow, int inscol, int* nonzeros_vector)
-    : reallocation_occurred(false),
-      array_alignment(64),
-      isCompressed(false),
-      max_shifts(std::numeric_limits<int>::max()),
-      rowIndex_lock(false),
-      colIndex_lock(false),
-      rowIndex_lock_broken(false),
-      colIndex_lock_broken(false),
-      symmetry(NO_SYMMETRY) {
+ChCSR3Matrix::ChCSR3Matrix(int insrow, int inscol, int* nonzeros_vector) {
     assert(insrow > 0 && inscol > 0);
 
     rows = insrow;
     columns = inscol;
 
     colIndex_occupancy = 0;
-    for (int row_sel = 0; row_sel < rows; row_sel++) {
+    for (auto row_sel = 0; row_sel < rows; row_sel++) {
         colIndex_occupancy += nonzeros_vector[row_sel];
     }
 
