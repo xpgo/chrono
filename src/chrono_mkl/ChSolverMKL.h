@@ -16,6 +16,7 @@
 #include "chrono/solver/ChSolver.h"
 #include "chrono/solver/ChSystemDescriptor.h"
 #include "chrono_mkl/ChMklEngine.h"
+#include <core/ChTimer.h>
 
 namespace chrono {
 
@@ -34,7 +35,7 @@ class ChApiMkl ChSolverMKL : public ChSolver {
     CH_RTTI(ChSolverMKL, ChSolver);
 
   private:
-    size_t solver_call;
+    size_t solver_call = 0;
     ChCSR3Matrix matCSR3;
     ChMatrixDynamic<double> rhs;
     ChMatrixDynamic<double> sol;
@@ -42,6 +43,10 @@ class ChApiMkl ChSolverMKL : public ChSolver {
     ChMklEngine mkl_engine;
     size_t n;
     size_t nnz;
+
+    ChTimer<> timer_factorize;
+    ChTimer<> timer_solve;
+    ChTimer<> timer_buildmat;
 
     bool sparsity_pattern_lock;
     bool use_perm;
@@ -65,8 +70,11 @@ class ChApiMkl ChSolverMKL : public ChSolver {
     /// If \a on_off is set to \c true then ::Solve(ChSystemDescriptor&) call
     /// must be preceded by a ::Factorize(ChSystemDescriptor&) call.
     void SetManualFactorization(bool on_off) { manual_factorization = on_off; }
-    void SetMatrixNNZ(size_t nnz_input) { nnz = nnz_input; };
+    void SetMatrixNNZ(size_t nnz_input) { nnz = nnz_input; }
 
+    double GetTimingBuildMat() const { return timer_buildmat(); }
+    double GetTimingFactorize() const { return timer_factorize(); }
+    double GetTimingSolve() const { return timer_solve(); }
 
     /// Solve using the MKL Pardiso sparse direct solver.
     /// If ::manual_factorization is turned off (i.e. set to \c false) then

@@ -28,10 +28,14 @@ double ChSolverMKL::Solve(ChSystemDescriptor& sysd) {
     if (!manual_factorization)
         Factorize(sysd);
 
+    timer_buildmat.start();
     sysd.ConvertToMatrixForm(nullptr, &rhs);
+    timer_buildmat.stop();
 
     mkl_engine.SetProblem(matCSR3, rhs, sol);
+    timer_solve.start();
     int pardiso_message_phase33 = mkl_engine.PardisoCall(33, 0);
+    timer_solve.stop();
 
     solver_call++;
     if (pardiso_message_phase33) {
@@ -56,6 +60,7 @@ double ChSolverMKL::Solve(ChSystemDescriptor& sysd) {
 
 double ChSolverMKL::Factorize(ChSystemDescriptor& sysd) {
     // Initial resizing;
+	timer_buildmat.start();
     if (solver_call == 0)
     {
         // not mandatory, but it speeds up the first build of the matrix, guessing its sparsity; needs to stay BEFORE ConvertToMatrixForm()
@@ -109,11 +114,15 @@ double ChSolverMKL::Factorize(ChSystemDescriptor& sysd) {
     // the sparsity of rhs must be updated at every cycle (am I wrong?)
     if (use_rhs_sparsity && !use_perm)
         mkl_engine.UsePartialSolution(2);
+	
+	timer_buildmat.stop();
 
     // Solve with Pardiso Sparse Direct Solver
     // the problem size must be updated also in the Engine: this is done by SetProblem() itself.
     mkl_engine.SetProblem(matCSR3, rhs, sol);
+    timer_factorize.start();
     int pardiso_message_phase12 = mkl_engine.PardisoCall(12, 0);
+    timer_factorize.stop();
 
     if (pardiso_message_phase12) {
         GetLog() << "Pardiso analyze+reorder+factorize error code = " << pardiso_message_phase12 << "\n";
