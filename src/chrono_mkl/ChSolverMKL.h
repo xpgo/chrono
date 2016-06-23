@@ -16,6 +16,7 @@
 #include "chrono/solver/ChSolver.h"
 #include "chrono/solver/ChSystemDescriptor.h"
 #include "chrono_mkl/ChMklEngine.h"
+#include <core/ChTimer.h>
 
 namespace chrono {
 
@@ -34,22 +35,27 @@ class ChApiMkl ChSolverMKL : public ChSolver {
     CH_RTTI(ChSolverMKL, ChSolver);
 
   private:
-    size_t solver_call;
-    ChCSR3Matrix matCSR3;
+    size_t solve_phase_calls = 0;
+    size_t factorize_phase_calls = 0;
+    ChCSR3Matrix matCSR3{1,1,1};
     ChMatrixDynamic<double> rhs;
     ChMatrixDynamic<double> sol;
     ChMatrixDynamic<double> res;
-    ChMklEngine mkl_engine;
-    size_t n;
-    size_t nnz;
+    ChMklEngine mkl_engine{1,11};
+    size_t n = 0;
+    size_t nnz = 0;
 
-    bool sparsity_pattern_lock;
-    bool use_perm;
-    bool use_rhs_sparsity;
-    bool manual_factorization;
+    ChTimer<> timer_factorize;
+    ChTimer<> timer_solve;
+    ChTimer<> timer_buildmat;
+
+    bool sparsity_pattern_lock = false;
+    bool use_perm = false;
+    bool use_rhs_sparsity = false;
+    bool manual_factorization = false;
 
   public:
-    ChSolverMKL();
+    ChSolverMKL() {}
     virtual ~ChSolverMKL() {}
 
     ChMklEngine& GetMklEngine() { return mkl_engine; }
@@ -65,23 +71,26 @@ class ChApiMkl ChSolverMKL : public ChSolver {
     /// If \a on_off is set to \c true then ::Solve(ChSystemDescriptor&) call
     /// must be preceded by a ::Factorize(ChSystemDescriptor&) call.
     void SetManualFactorization(bool on_off) { manual_factorization = on_off; }
-    void SetMatrixNNZ(size_t nnz_input) { nnz = nnz_input; };
+    void SetMatrixNNZ(size_t nnz_input) { nnz = nnz_input; }
 
+    double GetTimingBuildMat() const { return timer_buildmat(); }
+    double GetTimingFactorize() const { return timer_factorize(); }
+    double GetTimingSolve() const { return timer_solve(); }
 
     /// Solve using the MKL Pardiso sparse direct solver.
     /// If ::manual_factorization is turned off (i.e. set to \c false) then
     /// it automatically calls ::Factorize(ChSystemDescriptor&) in order to perform analysis,
     /// reordering and factorization (MKL Pardiso phase 12).
     /// In any case a call to this function will end with a solve and refinement phase (Pardiso phase 33)
-    virtual double Solve(ChSystemDescriptor& sysd) override;
+    double Solve(ChSystemDescriptor& sysd) override;
     /// Performs a factorization of the system matrix.
-    virtual double Factorize(ChSystemDescriptor& sysd) override;
+    double Factorize(ChSystemDescriptor& sysd) override;
 
     //
     // SERIALIZATION
     //
 
-    virtual void ArchiveOUT(ChArchiveOut& marchive) override {
+    void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
         marchive.VersionWrite(1);
         // serialize parent class
@@ -94,7 +103,7 @@ class ChApiMkl ChSolverMKL : public ChSolver {
     }
 
     /// Method to allow de serialization of transient data from archives.
-    virtual void ArchiveIN(ChArchiveIn& marchive) override {
+    void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
         int version = marchive.VersionRead();
         // deserialize parent class

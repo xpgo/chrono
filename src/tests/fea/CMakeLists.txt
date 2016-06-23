@@ -7,6 +7,10 @@ set(FEA_TESTS
 	test_FEA_shellTri_3
 )
 
+set (COMMON_FILES
+    ../BaseTest.h
+ )
+
 set(COMPILER_FLAGS "${CH_CXX_FLAGS}")
 set(LINKER_FLAGS "${CH_LINKERFLAG_EXE}")
 list(APPEND LIBS "")
@@ -32,8 +36,9 @@ message(STATUS "Additional test programs for FEA module...")
 foreach(PROGRAM ${FEA_TESTS})
     message(STATUS "...add ${PROGRAM}")
 
-    add_executable(${PROGRAM}  "${PROGRAM}.cpp")
-    source_group(""  FILES  "${PROGRAM}.cpp")
+    set(PROGRAM_FILES "${PROGRAM}.cpp" ${COMMON_FILES})
+    add_executable(${PROGRAM}  ${PROGRAM_FILES})
+    source_group(""  FILES  ${PROGRAM_FILES})
 
     set_target_properties(${PROGRAM} PROPERTIES
         FOLDER tests

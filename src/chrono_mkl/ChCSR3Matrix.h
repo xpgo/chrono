@@ -59,30 +59,30 @@ arrays
 
 class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
   private:
-    bool reallocation_occurred;
-    const int array_alignment;
-    bool isCompressed;
-    int max_shifts;
+    bool reallocation_occurred = false;
+    const int array_alignment = 64;
+    bool isCompressed = false;
+    int max_shifts = std::numeric_limits<int>::max();
     double* values;
     int* colIndex;
     int* rowIndex;
-    int colIndex_occupancy;  ///< effective occupancy of \c values (and so of \c colIndex) arrays in memory;
+    int colIndex_occupancy = 0;  ///< effective occupancy of \c values (and so of \c colIndex) arrays in memory;
     ///< \c colIndex_occupancy differs from \c rowIndex[rows] when a \c Compress(), \c Reset() or \c Resize occurred
     ///without a \c Trim();
-    int rowIndex_occupancy;
+    int rowIndex_occupancy = 0;
     ///< \c rowIndex_occupancy differs from \c rowIndex[rows] when a \c Compress(), \c Reset() or \c Resize occurred
     ///without a \c Trim();
-    bool rowIndex_lock;  ///< TRUE if the matrix should always keep the same number of element for each row
-    bool colIndex_lock;  ///< TRUE if the matrix elements should keep always the same position
-    bool rowIndex_lock_broken;
-    bool colIndex_lock_broken;
+    bool rowIndex_lock = false;  ///< TRUE if the matrix should always keep the same number of element for each row
+    bool colIndex_lock = false;  ///< TRUE if the matrix elements should keep always the same position
+    bool rowIndex_lock_broken = false;
+    bool colIndex_lock_broken = false;
     enum symmetry_type {
         NO_SYMMETRY = 11,
         UPPER_SYMMETRY_POSDEF = 2,
         UPPER_SYMMETRY_INDEF = -2,
         LOWER_SYMMETRY = 20,
         STRUCTURAL_SYMMETRY = 1
-    } symmetry;
+    } symmetry = NO_SYMMETRY;
 
   protected:
     void insert(int insrow, int inscol, double insval, int& col_sel);
@@ -105,34 +105,34 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
     int* GetColIndexAddress() const { return colIndex; };
     int* GetRowIndexAddress() const { return rowIndex; };
 
-    virtual void SetElement(int insrow, int inscol, double insval, bool overwrite = true) override;
-    virtual double GetElement(int row, int col) override;
+    void SetElement(int insrow, int inscol, double insval, bool overwrite = true) override;
+    double GetElement(int row, int col) override;
     double& Element(int row, int col) override;
     double& operator()(int row, int col) { return Element(row, col); }
     double& operator()(int index) { return Element(index / GetColumns(), index % GetColumns()); }
 
-    virtual void PasteMatrix(ChMatrix<>* matra,
+    void PasteMatrix(ChMatrix<>* matra,
                              int insrow,
                              int inscol,
                              bool overwrite = true,
                              bool transp = false) override;
-    virtual void PasteMatrixFloat(ChMatrix<float>* matra,
+    void PasteMatrixFloat(ChMatrix<float>* matra,
                                   int insrow,
                                   int inscol,
                                   bool overwrite = true,
                                   bool transp = false) override;
-    virtual void PasteClippedMatrix(ChMatrix<>* matra,
-                                    int cliprow,
-                                    int clipcol,
-                                    int nrows,
-                                    int ncolumns,
-                                    int insrow,
-                                    int inscol,
-                                    bool overwrite = true) override;
+    void PasteClippedMatrix(ChMatrix<>* matra,
+                            int cliprow,
+                            int clipcol,
+                            int nrows,
+                            int ncolumns,
+                            int insrow,
+                            int inscol,
+                            bool overwrite = true) override;
 
     // Size manipulation
-    virtual void Reset(int nrows, int ncols, int nonzeros = 0) override;
-    virtual bool Resize(int nrows, int ncols, int nonzeros = 0) override;
+    void Reset(int nrows, int ncols, int nonzeros = 0) override;
+    bool Resize(int nrows, int ncols, int nonzeros = 0) override;
     void Compress();  // purge the matrix from all the unininitialized elements
     void Trim();      // trims the arrays so to have exactly the dimension needed, nothing more. (arrays are not moved)
     void Prune(double pruning_threshold = 0);

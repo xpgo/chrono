@@ -26,13 +26,15 @@ SET(ChronoEngine_FEA_SOURCES
     ChElementHexa_8.cpp
     ChElementHexa_20.cpp 
     ChElementShellANCF.cpp
-	  ChElementShellEANS4.cpp
+	ChElementShellReissner4.cpp
 	ChElementShellTri_3.cpp
     ChElementBrick.cpp
+    ChElementBrick_9.cpp
     ChNodeFEAxyz.cpp
     ChNodeFEAxyzrot.cpp
     ChNodeFEAxyzP.cpp
     ChNodeFEAxyzD.cpp
+    ChNodeFEAcurv.cpp
     ChGaussIntegrationRule.cpp
     ChGaussPoint.cpp
     ChMesh.cpp
@@ -50,6 +52,7 @@ SET(ChronoEngine_FEA_SOURCES
 	  ChContactSurfaceMesh.cpp
 	  ChMeshSurface.cpp
 	  ChLoadContactSurfaceMesh.cpp
+    ChMaterialShellReissner.cpp
 )
 
 SET(ChronoEngine_FEA_HEADERS
@@ -65,6 +68,7 @@ SET(ChronoEngine_FEA_HEADERS
     ChNodeFEAxyzrot.h
     ChNodeFEAxyzP.h 
     ChNodeFEAxyzD.h 
+    ChNodeFEAcurv.h
     ChElementBase.h
     ChElementGeneric.h
     ChElementCorotational.h
@@ -74,6 +78,7 @@ SET(ChronoEngine_FEA_HEADERS
     ChElementBeamEuler.h
     ChElementBeamANCF.h
     ChElementBrick.h 
+    ChElementBrick_9.h
     ChElement3D.h
     ChElementTetrahedron.h
     ChElementTetra_4.h
@@ -83,9 +88,10 @@ SET(ChronoEngine_FEA_HEADERS
     ChElementHexa_20.h
     ChElementShell.h
     ChElementShellANCF.h
-	  ChElementShellEANS4.h
+	ChElementShellReissner4.h
 	ChElementShellTri_3.h
 	  ChFaceTetra_4.h
+    ChFaceBrick_9.h
 	  ChLoadsBeam.h
     ChGaussIntegrationRule.h
     ChGaussPoint.h
@@ -106,6 +112,7 @@ SET(ChronoEngine_FEA_HEADERS
     ChUtilsFEA.h
 	  ChLoadContactSurfaceMesh.h
 	  ChRotUtils.h
+	ChMaterialShellReissner.h
 )
 
 SOURCE_GROUP("" FILES 
