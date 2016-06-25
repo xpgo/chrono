@@ -281,7 +281,7 @@ class ChVector {
     }
 
     /// Gives the dot product of the two vectors A and B:
-    Real Dot(const ChVector<Real>& A, const ChVector<Real>& B) const { return (A.x * B.x) + (A.y * B.y) + (A.z * B.z); }
+    Real static Dot(const ChVector<Real>& A, const ChVector<Real>& B) { return (A.x * B.x) + (A.y * B.y) + (A.z * B.z); }
 
     /// Gives the dot product with another vector: result=this*B
     Real Dot(const ChVector<Real>& B) const { return (x * B.x) + (y * B.y) + (z * B.z); }
@@ -298,6 +298,7 @@ class ChVector {
         x *= v;
         y *= v;
         z *= v;
+        return *this;
     }
 
     /// Computes the euclidean norm of the vector,
