@@ -210,7 +210,7 @@ private:
 
         //compute area of main element
         ChVector<double> vect_temp;    vect_temp.Cross(edge_versors0[0], edge_versors0[1]);
-        element_area0 = edge_length0[0]* edge_length0[1]*vect_temp.Length()/2; //TODO: check
+        element_area0 = edge_length0[0]* edge_length0[1]*vect_temp.Length()/2; //TODO: check if the area equation is correct
 
 
         //normal in-plane versors of the main element M (glob ref)
@@ -237,13 +237,18 @@ private:
     }
 
 
-    void updateCurvatureMatrix()
-    {
-        
-    }
 
     int countNeighbours() const
     {
+        int count = 0;
+        for (auto node_sel : all_nodes)
+        {
+            if (node_sel)
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     void updateBC() //TODO: find other ways to implement boundary conditions
@@ -347,6 +352,7 @@ public:
         all_nodes[5] = node5;
     }
 
+    
     void Update() override {
         /* ************** Compute the curvature matrix ************** */
         // compute r_i^M
@@ -397,37 +403,41 @@ public:
     /// To be called after that ALL the elements in the mesh have their main nodes set.
     void UpdateConnectivity(std::shared_ptr<ChMesh> mesh)
     {
-        for (auto elem_sel = 0; elem_sel<mesh->GetNelements(); ++elem_sel)
+        for (auto elem_sel = 0; elem_sel<mesh->GetNelements(); ++elem_sel) // pick an element in the list that is candidate to be a neighbour
         {
             int shared_nodes_counter = 0;
             ChNodeFEAbase* node_ptr = nullptr;
-            for (auto neigh_node_sel = 0; neigh_node_sel<3; ++neigh_node_sel)
+            for (auto neigh_node_sel = 0; neigh_node_sel<3; ++neigh_node_sel) // pick a node of the candidate element
             {
-                for (auto main_node_sel = 0; main_node_sel<3; ++main_node_sel)
+                for (auto main_node_sel = 0; main_node_sel<3; ++main_node_sel) // pick a node of the current element
                 {
-                    if (mesh->GetElement(elem_sel)->GetNodeN(neigh_node_sel) != all_nodes[main_node_sel])
+                    if (mesh->GetElement(elem_sel)->GetNodeN(neigh_node_sel) != all_nodes[main_node_sel]) // if the two nodes picked are different...
                     {
-                        if (!node_ptr)
+                        // the candidate can have at most ONE not-shared node
+                        if (!node_ptr) // if no other not-shared node has been stored, then store this node
                         {
                             node_ptr = mesh->GetElement(elem_sel)->GetNodeN(neigh_node_sel).get();
                         }
-                        else
+                        else // the candidate has already stored a not-shared node; exclude this candidate!
                         {
-                            neigh_node_sel = 6;
-                            break;
+                            neigh_node_sel = 8; // will exit from the neigh_node_sel loop
+                            break; // breaks the main_node_sel loop
                         }
                     }
                     else
                     {
-                        shared_nodes_counter++;
+                        shared_nodes_counter++; // counts how many shared nodes has been found
                     }
                 }
             }
 
-            if (!node_ptr && shared_nodes_counter==2)
+            if (!node_ptr && shared_nodes_counter==2) // exclude the case that the candidate and current elements coincide;
             {
-                int not_shared_node_sel;
-                for (not_shared_node_sel = 0; not_shared_node_sel<3; ++not_shared_node_sel)
+
+                // on which edge the just-found neighbour is attached?
+                int not_shared_node_sel; // the not_shared_node_sel will point to the node in all_nodes that is not shared
+                // --> it will be also the number of the edge on which it is attached
+                for (not_shared_node_sel = 0; not_shared_node_sel<3; ++not_shared_node_sel) 
                 {
                     if (all_nodes[not_shared_node_sel].get() != node_ptr)
                     {
@@ -435,7 +445,8 @@ public:
                     }
                 }
 
-                all_nodes[3 + not_shared_node_sel] = std::make_shared<ChNodeFEAxyz>(dynamic_cast<ChNodeFEAxyz*>(node_ptr));
+                all_nodes[3 + not_shared_node_sel] = std::make_shared<ChNodeFEAxyz>(*dynamic_cast<ChNodeFEAxyz*>(node_ptr));
+                neighbouring_elements[not_shared_node_sel] = std::dynamic_pointer_cast<ChElementShellTri_3>(mesh->GetElement(elem_sel));
             }
 
         }
@@ -503,9 +514,8 @@ public:
 
 
         // paste main_nodes position vectors
-        for (auto node_sel = 0; node_sel<3; node_sel++)
-        {
-            disp_glob.PasteVector( main_nodes[node_sel]->GetPos() - main_nodes[node_sel]->GetX0(), node_sel * 3, 0);
+        for (auto node_sel = 0; node_sel<3; node_sel++){
+            disp_glob.PasteVector( all_nodes[node_sel]->GetPos() - all_nodes[node_sel]->GetX0(), node_sel * 3, 0);
         }
 
         // paste neighbour not-shared node position vectors
@@ -519,8 +529,8 @@ public:
             }
             else
             {
-                disp_glob.PasteVector(neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]]->GetPos()
-                                      - neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]]->GetX0(), (neigh_elem_sel + 3) * 3, 0);
+                //disp_glob.PasteVector(neighbouring_elements[neigh_elem_sel]->all_nodes[neighbour_node_not_shared[neigh_elem_sel]]->GetPos()
+                //                      - neighbouring_elements[neigh_elem_sel]->all_nodes[neighbour_node_not_shared[neigh_elem_sel]]->GetX0(), (neigh_elem_sel + 3) * 3, 0);
             }
                 
         }
@@ -588,43 +598,24 @@ public:
     ///    GetNodeN(n)->Get_ndof_w();
     int GetNodeNdofs(int n) override { return 3; }
 
-    /// Access the nth node.
+    /// Access the nth node (it retrieves also the nodes that actually belongs to neighbours)
     std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) override {
-        if (n < 3) // the node belongs to this element
-            return main_nodes[n];
-        else // the node belongs to a neighbour
-        {
-            n = n - 3;
-            for (auto neigh_elem_sel = 0; neigh_elem_sel<3;neigh_elem_sel++)
-            {
-                if (neighbouring_elements[neigh_elem_sel]!=nullptr)
-                {
-                    if (n == 0)
-                        return neighbouring_elements[neigh_elem_sel]->main_nodes[neighbour_node_not_shared[neigh_elem_sel]];
-                    n--;
-                }
-            }
-            return nullptr;
-        }
+        return all_nodes[n];
     }
 
     void GetStateBlock(ChMatrixDynamic<>& mD) override
     {
         mD.Resize(GetNdofs(), 1);
-        mD.PasteVector(this->main_nodes[0]->GetPos(), 0, 0);
-        mD.PasteVector(this->main_nodes[1]->GetPos(), 3, 0);
-        mD.PasteVector(this->main_nodes[2]->GetPos(), 6, 0);
-
         int offset_row = 0;
-        for (auto neigh_elem_sel = 0; neigh_elem_sel<3; neigh_elem_sel++)
+        for (auto node_sel : all_nodes)
         {
-            if (neighbouring_elements[neigh_elem_sel] != nullptr)
+            if (node_sel)
             {
-                mD.PasteVector(this->neighbouring_elements[0]->main_nodes[neighbour_node_not_shared[0]]->GetPos(), 3 * (neigh_elem_sel + 3 - offset_row), 0);
+                mD.PasteVector(node_sel->GetPos(), offset_row, 0);
+                offset_row += 3;
             }
-            else
-                offset_row++;
         }
+
     }
 
     void ComputeMmatrixGlobal(ChMatrix<>& M) override {
@@ -637,20 +628,20 @@ public:
         const double v,
         const ChMatrix<>& displ,
         ChVector<>& u_displ,
-        ChVector<>& u_rotaz) override {};
+        ChVector<>& u_rotaz) override {}
 
     void EvaluateSectionFrame(const double u,
         const double v,
         const ChMatrix<>& displ,
         ChVector<>& point,
-        ChQuaternion<>& rot) override {};
+        ChQuaternion<>& rot) override {}
 
     void EvaluateSectionPoint(const double u,
         const double v,
         const ChMatrix<>& displ,
-        ChVector<>& point) override {};
+        ChVector<>& point) override {}
 
-    void EvaluateSectionVelNorm(double U, double V, ChVector<> &Result) override {};
+    void EvaluateSectionVelNorm(double U, double V, ChVector<> &Result) override {}
 
 };
 
