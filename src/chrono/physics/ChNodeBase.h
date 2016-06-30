@@ -30,17 +30,22 @@ namespace chrono {
 class ChApi ChNodeBase {
     // Chrono simulation of RTTI, needed for serialization
     CH_RTTI_ROOT(ChMaterialSurfaceBase);
-
+    
   protected:
+    
+    size_t nodeID;
     unsigned int offset_x;  ///< offset in vector of state (position part)
     unsigned int offset_w;  ///< offset in vector of state (speed part)
 
   public:
+    static size_t node_counter;
     ChNodeBase();
     ChNodeBase(const ChNodeBase& other);
     virtual ~ChNodeBase() {}
 
     ChNodeBase& operator=(const ChNodeBase& other);
+
+    size_t GetID() const { return nodeID; }
 
     //
     // Functions for interfacing to the state bookkeeping

@@ -293,12 +293,11 @@ class ChVector {
         z = A.z * v;
     }
 
-    /// The vector is multiplied by a scalar factor 's': this*=v
+    /// The vector is multiplied by a scalar factor 'v': this*=v
     void Scale(const Real v) {
         x *= v;
         y *= v;
         z *= v;
-        return *this;
     }
 
     /// Computes the euclidean norm of the vector,

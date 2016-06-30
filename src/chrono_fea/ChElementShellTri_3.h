@@ -115,13 +115,14 @@ namespace fea {
 /// This element has a linear displacement field.
 class ChApiFea ChElementShellTri_3 : public ChElementShell {
 private:
+public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     std::array<std::shared_ptr<ChNodeFEAxyz>,6> all_nodes; ///< it is just [main_nodes, neigh_nodes]
 
-    static constexpr std::array<std::array<double, 3>, 4> numeration = { {{0,1,2},{3,2,1},{4,0,2},{5,1,0}} };
-    static constexpr std::array<std::array<double, 4>, 4> edge_num = { {{1,2,0,1},{2,1,3,2},{0,2,4,0},{1,0,5,1}} };
+    static constexpr std::array<std::array<int, 3>, 4> numeration = { {{0,1,2},{3,2,1},{4,0,2},{5,1,0}} };
+    static constexpr std::array<std::array<int, 4>, 4> edge_num = { {{1,2,0,1},{2,1,3,2},{0,2,4,0},{1,0,5,1}} };
 
-    double element_area0 = 0;
-    double thickness = 0;
+    double element_area0 = -1;
+    double thickness = -1;
     ChMatrixNM<double, 18, 18> stiffness_matrix;
 
     enum boundary_conditions
@@ -132,14 +133,14 @@ private:
         SYMMETRIC = 3
     } edge_bc[3] = { DEFAULT, DEFAULT, DEFAULT };
 
-    std::vector<std::shared_ptr<ChElementShellTri_3>> neighbouring_elements; ///< neighbour elements
+    std::array<std::shared_ptr<ChElementShellTri_3>,3> neighbouring_elements; ///< neighbour elements
 
     std::shared_ptr<ChMaterialShellTri_3> m_material;
 
 
     double GetArea0()
     {
-        if (element_area0 == 0)
+        if (element_area0 < 0)
             initializeElement();
 
         return element_area0;
@@ -160,7 +161,7 @@ private:
         vect.Sub(all_nodes[GetNodeOfEdge(edge_sel, 1, elem_sel)]->GetPos(), all_nodes[GetNodeOfEdge(edge_sel, 0, elem_sel)]->GetPos());
     }
 
-    ChVector<double>& GetEdgeVector(int edge_sel, int elem_sel = 0) const
+    ChVector<double> GetEdgeVector(int edge_sel, int elem_sel = 0) const
     {
         ChVector<double> vect;
         vect.Sub(all_nodes[GetNodeOfEdge(edge_sel, 1, elem_sel)]->GetPos(), all_nodes[GetNodeOfEdge(edge_sel, 0, elem_sel)]->GetPos());
@@ -198,7 +199,7 @@ private:
 
     void initializeElement()
     {
-        if (element_area0 != 0)
+        if (element_area0 > 0)
             return;
 
         /* Stores variables to be used to compute the curvature matrix */
@@ -215,12 +216,12 @@ private:
 
         //normal in-plane versors of the main element M (glob ref)
         //project the triangle on the XY plane
-        //compute edge versors, rotate +90° around Z
+        //compute edge versors, rotate -90° around Z (outward normal)
         for (auto edge_sel = 0; edge_sel<3; ++edge_sel)
         {
             double norm_temp = edge_versors0[edge_sel](0)*edge_versors0[edge_sel](0) + edge_versors0[edge_sel](1)*edge_versors0[edge_sel](1);
-            ip_normal_mod[edge_sel](0) = -edge_versors0[edge_sel](1) / norm_temp * edge_length0[edge_sel] / 2 / element_area0;
-            ip_normal_mod[edge_sel](1) =  edge_versors0[edge_sel](0) / norm_temp * edge_length0[edge_sel] / 2 / element_area0;
+            ip_normal_mod[edge_sel](0) =  edge_versors0[edge_sel](1) / norm_temp * edge_length0[edge_sel] / 2 / element_area0;
+            ip_normal_mod[edge_sel](1) = -edge_versors0[edge_sel](0) / norm_temp * edge_length0[edge_sel] / 2 / element_area0;
         }
 
         // compute scale factors
@@ -229,7 +230,8 @@ private:
             for (auto col_sel = 0; col_sel<3; ++col_sel)
             {
                 J_source(edge_sel, col_sel) = edge_length0[col_sel] * ChVector<double>::Dot(edge_versors0[col_sel], edge_versors0[edge_sel]) / 2 / element_area0;
-                J_source(edge_sel, col_sel + 3) = - ChVector<double>::Dot( GetEdgeVector(col_sel, edge_sel), edge_versors0[edge_sel]) / 2 / neighbouring_elements[edge_sel]->GetArea0();
+                if (neighbouring_elements[edge_sel])
+                    J_source(edge_sel, col_sel + 3) = -ChVector<double>::Dot(GetEdgeVector(col_sel, edge_sel), edge_versors0[edge_sel]) / 2 / neighbouring_elements[edge_sel]->GetArea0();
             }
         }
         /* ********************************************************** */
@@ -359,15 +361,26 @@ public:
         std::array<double, 3> stiff_ratio;
         for (auto edge_sel = 0; edge_sel<3; ++edge_sel)
         {
-            stiff_ratio[edge_sel] = 1 / (1 + (m_material->Get_E() *pow(thickness, 3) * GetHeight(0, edge_sel)) / (neighbouring_elements[edge_sel]->m_material->Get_E() *pow(neighbouring_elements[edge_sel]->thickness, 3) * GetHeight(edge_sel, 0)));
+            if (neighbouring_elements[edge_sel])
+                stiff_ratio[edge_sel] = 1 / (1 + (m_material->Get_E() *pow(thickness, 3) * GetHeight(0, edge_sel)) / (neighbouring_elements[edge_sel]->m_material->Get_E() *pow(neighbouring_elements[edge_sel]->thickness, 3) * GetHeight(edge_sel, 0)));
+            else
+                if (edge_bc[edge_sel] == CLAMPED) // only clamped edge BC supported
+                    stiff_ratio[edge_sel] = 1;
+                else
+                    stiff_ratio[edge_sel] = 0;
+
         }
 
         // compute normal to plane
         std::array<ChVector<double>, 4> t;
         for (auto elem_sel = 0; elem_sel<4; ++elem_sel)
         {
-            t[elem_sel].Cross(GetEdgeVector(0, 0), GetEdgeVector(1, 0));
-            t[elem_sel].Normalize();
+            if (all_nodes[elem_sel+2]) // check if neighbour exists before trying to compute area
+            {
+                t[elem_sel].Cross(GetEdgeVector(0, elem_sel), GetEdgeVector(1, elem_sel));
+                t[elem_sel].Normalize();
+            }
+            
         }
 
         // compute J
@@ -380,9 +393,12 @@ public:
                 B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[0](col_sel)* J_source(edge_sel, col_sel)), 0, col_sel * 3 + 1);
                 B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[0](col_sel)* J_source(edge_sel, col_sel)), 0, col_sel * 3 + 2);
 
-                B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[edge_sel + 1](col_sel)* J_source(edge_sel, col_sel)), 0, col_sel * 3);
-                B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[edge_sel + 1](col_sel)* J_source(edge_sel, col_sel)), 0, col_sel * 3 + 1);
-                B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[edge_sel + 1](col_sel)* J_source(edge_sel, col_sel)), 0, col_sel * 3 + 2);
+                if (all_nodes[edge_sel + 3]) // check if neighbour exists before trying to compute area
+                {
+                    B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[edge_sel + 1](col_sel)* J_source(edge_sel, col_sel)), 0, col_sel * 3);
+                    B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[edge_sel + 1](col_sel)* J_source(edge_sel, col_sel)), 0, col_sel * 3 + 1);
+                    B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[edge_sel + 1](col_sel)* J_source(edge_sel, col_sel)), 0, col_sel * 3 + 2);
+                }
             }
         }
         /* ***************************************************** */
@@ -393,6 +409,7 @@ public:
         ChMatrixNM<double, 18, 3> mat_temp;
         ChMatrixNM<double, 3, 3> temp = m_material->GetConsitutiveMatrixBending();
         mat_temp.MatrTMultiply(B_bend, temp);
+        K_bend.MatrMultiply(mat_temp, B_bend);
 
         stiffness_matrix = K_bend;
 
@@ -403,35 +420,32 @@ public:
     /// To be called after that ALL the elements in the mesh have their main nodes set.
     void UpdateConnectivity(std::shared_ptr<ChMesh> mesh)
     {
-        for (auto elem_sel = 0; elem_sel<mesh->GetNelements(); ++elem_sel) // pick an element in the list that is candidate to be a neighbour
+        for (unsigned int elem_sel = 0; elem_sel<mesh->GetNelements(); ++elem_sel) // pick an element in the list that is candidate to be a neighbour
         {
             int shared_nodes_counter = 0;
-            ChNodeFEAbase* node_ptr = nullptr;
+            ChNodeFEAbase* not_shared_node_ptr = nullptr;
             for (auto neigh_node_sel = 0; neigh_node_sel<3; ++neigh_node_sel) // pick a node of the candidate element
             {
-                for (auto main_node_sel = 0; main_node_sel<3; ++main_node_sel) // pick a node of the current element
+                int main_node_sel;
+                for (main_node_sel = 0; main_node_sel<3; ++main_node_sel) // pick a node of the current element
                 {
-                    if (mesh->GetElement(elem_sel)->GetNodeN(neigh_node_sel) != all_nodes[main_node_sel]) // if the two nodes picked are different...
-                    {
-                        // the candidate can have at most ONE not-shared node
-                        if (!node_ptr) // if no other not-shared node has been stored, then store this node
-                        {
-                            node_ptr = mesh->GetElement(elem_sel)->GetNodeN(neigh_node_sel).get();
-                        }
-                        else // the candidate has already stored a not-shared node; exclude this candidate!
-                        {
-                            neigh_node_sel = 8; // will exit from the neigh_node_sel loop
-                            break; // breaks the main_node_sel loop
-                        }
-                    }
-                    else
+                    if (mesh->GetElement(elem_sel)->GetNodeN(neigh_node_sel) == all_nodes[main_node_sel]) // if the two nodes picked are different...
                     {
                         shared_nodes_counter++; // counts how many shared nodes has been found
+                        break;
                     }
+                }
+
+                if (main_node_sel==3)
+                {
+                    if (!not_shared_node_ptr)
+                        not_shared_node_ptr = mesh->GetElement(elem_sel)->GetNodeN(neigh_node_sel).get();
+                    else
+                        break;
                 }
             }
 
-            if (!node_ptr && shared_nodes_counter==2) // exclude the case that the candidate and current elements coincide;
+            if (!not_shared_node_ptr && shared_nodes_counter==2) // exclude the case that the candidate and current elements coincide;
             {
 
                 // on which edge the just-found neighbour is attached?
@@ -439,13 +453,13 @@ public:
                 // --> it will be also the number of the edge on which it is attached
                 for (not_shared_node_sel = 0; not_shared_node_sel<3; ++not_shared_node_sel) 
                 {
-                    if (all_nodes[not_shared_node_sel].get() != node_ptr)
+                    if (all_nodes[not_shared_node_sel].get() != not_shared_node_ptr)
                     {
                         break;
                     }
                 }
 
-                all_nodes[3 + not_shared_node_sel] = std::make_shared<ChNodeFEAxyz>(*dynamic_cast<ChNodeFEAxyz*>(node_ptr));
+                all_nodes[3 + not_shared_node_sel] = std::make_shared<ChNodeFEAxyz>(*dynamic_cast<ChNodeFEAxyz*>(not_shared_node_ptr));
                 neighbouring_elements[not_shared_node_sel] = std::dynamic_pointer_cast<ChElementShellTri_3>(mesh->GetElement(elem_sel));
             }
 
@@ -572,18 +586,19 @@ public:
 
     void SetupInitial(ChSystem* system) override {
         m_material->UpdateConsitutiveMatrices();
-
+        updateBC();
+        initializeElement();
 
         // Inform the system about which nodes take part to the computation
         //TODO: do I have to put also neighbouring nodes?
         std::vector<ChVariables*> vars;
-        for (auto node_sel = 0; node_sel<6; ++node_sel)
+        for (auto node_sel :all_nodes)
         {
-            vars.push_back(&all_nodes[node_sel]->Variables());
+            if (node_sel)
+                vars.push_back(&node_sel->Variables());
         }
 
         Kmatr.SetVariables(vars);
-
     }
 
     /// Gets the number of nodes used by this element.

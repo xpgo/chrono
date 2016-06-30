@@ -91,7 +91,17 @@ int main(int argc, char* argv[]) {
         nodes_list.close();
     }
 
-
+    for (auto cont = 0; cont < my_mesh->GetNnodes(); cont++)
+    {
+        std::cout << "Node: " << my_mesh->GetNode(cont)->GetID() << std::endl;
+        std::cout << "X0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(0);
+        std::cout << "; X: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(0) << std::endl;
+        std::cout << "Y0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(1);
+        std::cout << "; Y: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(1) << std::endl;
+        std::cout << "Z0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(2);
+        std::cout << "; Z: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(2) << std::endl;
+        std::cout << std::endl;
+    }
 
     // create Elements
     auto material = std::make_shared<ChMaterialShellTri_3>(210e9, 0.3, 7850);
@@ -150,6 +160,28 @@ int main(int argc, char* argv[]) {
         std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(elem_sel))->UpdateConnectivity(my_mesh);
     }
 
+    for (auto cont = 0; cont < my_mesh->GetNelements(); cont++)
+    {
+        auto elem_temp = std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(cont));
+        std::cout << "Elem: " << my_mesh->GetElement(cont) << std::endl;
+        std::cout << "Nodes: [";
+        for (auto node_sel = 0; node_sel<6; ++node_sel)
+        {
+            if (elem_temp->all_nodes[node_sel])
+                std::cout << elem_temp->all_nodes[node_sel]->GetID() << ", ";
+            else
+                std::cout << "nullptr" << ", ";
+        }
+        std::cout << "\b\b]" << std::endl;
+        std::cout << "Area0: " << elem_temp->GetArea0() << std::endl;
+        std::cout << "EdgeLength0: " << "{" << elem_temp->edge_length0[0]     << ", " << elem_temp->edge_length0[1]     << ", " << elem_temp->edge_length0[2]     << "}" << std::endl;
+        std::cout << "EdgeVers0_0: " << "{" << elem_temp->edge_versors0[0](0) << ", " << elem_temp->edge_versors0[0](1) << ", " << elem_temp->edge_versors0[0](2) << "}" << std::endl;
+        std::cout << "EdgeVers0_1: " << "{" << elem_temp->edge_versors0[1](0) << ", " << elem_temp->edge_versors0[1](1) << ", " << elem_temp->edge_versors0[1](2) << "}" << std::endl;
+        std::cout << "EdgeVers0_2: " << "{" << elem_temp->edge_versors0[2](0) << ", " << elem_temp->edge_versors0[2](1) << ", " << elem_temp->edge_versors0[2](2) << "}" << std::endl;
+        std::cout << "ElemNormal: "  << "{" << elem_temp->edge_versors0[2](0) << ", " << elem_temp->edge_versors0[2](1) << ", " << elem_temp->edge_versors0[2](2) << "}" << std::endl;
+        std::cout << std::endl;
+    }
+
 
     // Add mesh to the system
     ChSystem my_system;
@@ -167,10 +199,7 @@ int main(int argc, char* argv[]) {
     mystepper->SetScaling(true);
     //// mystepper->SetVerbose(true);
 
-    for (auto cont = 0; cont < my_mesh->GetNnodes(); cont++)
-    {
-        std::cout << my_mesh->GetElement(0)->GetNodeN(cont) << std::endl;
-    }
+
 
     ChMatrixDynamic<double> H;
     ChMatrixDynamic<double> Fi;
