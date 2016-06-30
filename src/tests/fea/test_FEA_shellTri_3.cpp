@@ -14,20 +14,36 @@
 #include "chrono_fea/ChElementShellTri_3.h"
 #include "chrono_fea/ChLinkPointFrame.h"
 #include "chrono_fea/ChMesh.h"
+#include "chrono_irrlicht/ChIrrApp.h"
 
 // basic file operations
 #include <fstream>
+#include <chrono_fea/ChVisualizationFEAmesh.h>
 
 #define DUMP_LISTS true
 
 using namespace chrono;
 using namespace chrono::fea;
-
+using namespace chrono::irrlicht;
+using namespace irr;
 
 int main(int argc, char* argv[]) {
     
     // Initialize
     auto my_mesh = std::make_shared<ChMesh>();
+
+    ChSystem my_system;
+    my_system.Set_G_acc(ChVector<>(0, 0, -9.8));
+
+    // Create the Irrlicht visualization (open the Irrlicht device, bind a simple user interface, etc.)
+    irrlicht::ChIrrApp application(&my_system, L"ANCF Shells", core::dimension2d<u32>(800, 600), false, true);
+
+    // Easy shortcuts to add camera, lights, logo and sky in Irrlicht scene:
+    application.AddTypicalLogo();
+    application.AddTypicalSky();
+    application.AddTypicalLights();
+    application.AddTypicalCamera(core::vector3df(1,1,1),  // camera location
+        core::vector3df(0.0f, 0.0f, 0.0f));  // "look at" location
 
 
 
@@ -139,10 +155,10 @@ int main(int argc, char* argv[]) {
         elem_list << "# Element list [ELEMENTID, NODE1, NODE2, NODE3]" << std::endl;
         for (size_t elem_sel = 0; elem_sel < my_mesh->GetNelements(); ++elem_sel)
         {
-            elem_list << elem_sel << ", "
-                << my_mesh->GetElement(elem_sel)->GetNodeN(0).get() << ", "
-                << my_mesh->GetElement(elem_sel)->GetNodeN(1).get() << ", "
-                << my_mesh->GetElement(elem_sel)->GetNodeN(2).get() << std::endl;
+            elem_list << std::dynamic_pointer_cast<ChElementGeneric>(my_mesh->GetElement(elem_sel))->GetID() << ", "
+                << my_mesh->GetElement(elem_sel)->GetNodeN(0)->GetID() << ", "
+                << my_mesh->GetElement(elem_sel)->GetNodeN(1)->GetID() << ", "
+                << my_mesh->GetElement(elem_sel)->GetNodeN(2)->GetID() << std::endl;
         }
 
         elem_list.close();
@@ -160,34 +176,70 @@ int main(int argc, char* argv[]) {
         std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(elem_sel))->UpdateConnectivity(my_mesh);
     }
 
-    for (auto cont = 0; cont < my_mesh->GetNelements(); cont++)
+    // Add mesh to the system
+    my_system.Add(my_mesh);
+    my_system.SetupInitial();
+
+    for (auto elem_sel = 0; elem_sel < my_mesh->GetNelements(); elem_sel++)
     {
-        auto elem_temp = std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(cont));
-        std::cout << "Elem: " << my_mesh->GetElement(cont) << std::endl;
+        auto elem_temp = std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(elem_sel));
+        std::cout << "Elem: " << elem_temp->GetID() << std::endl;
         std::cout << "Nodes: [";
         for (auto node_sel = 0; node_sel<6; ++node_sel)
         {
             if (elem_temp->all_nodes[node_sel])
                 std::cout << elem_temp->all_nodes[node_sel]->GetID() << ", ";
             else
-                std::cout << "nullptr" << ", ";
+                std::cout << "np" << ", ";
         }
         std::cout << "\b\b]" << std::endl;
         std::cout << "Area0: " << elem_temp->GetArea0() << std::endl;
-        std::cout << "EdgeLength0: " << "{" << elem_temp->edge_length0[0]     << ", " << elem_temp->edge_length0[1]     << ", " << elem_temp->edge_length0[2]     << "}" << std::endl;
+        std::cout << "EdgeLength0: " << "{" << elem_temp->edge_length0[0] << ", " << elem_temp->edge_length0[1] << ", " << elem_temp->edge_length0[2] << "}" << std::endl;
         std::cout << "EdgeVers0_0: " << "{" << elem_temp->edge_versors0[0](0) << ", " << elem_temp->edge_versors0[0](1) << ", " << elem_temp->edge_versors0[0](2) << "}" << std::endl;
         std::cout << "EdgeVers0_1: " << "{" << elem_temp->edge_versors0[1](0) << ", " << elem_temp->edge_versors0[1](1) << ", " << elem_temp->edge_versors0[1](2) << "}" << std::endl;
         std::cout << "EdgeVers0_2: " << "{" << elem_temp->edge_versors0[2](0) << ", " << elem_temp->edge_versors0[2](1) << ", " << elem_temp->edge_versors0[2](2) << "}" << std::endl;
-        std::cout << "ElemNormal: "  << "{" << elem_temp->edge_versors0[2](0) << ", " << elem_temp->edge_versors0[2](1) << ", " << elem_temp->edge_versors0[2](2) << "}" << std::endl;
+        std::cout << "ElemNormal: " << "{" << elem_temp->edge_versors0[2](0) << ", " << elem_temp->edge_versors0[2](1) << ", " << elem_temp->edge_versors0[2](2) << "}" << std::endl;
         std::cout << std::endl;
     }
 
 
-    // Add mesh to the system
-    ChSystem my_system;
-    my_system.Add(my_mesh);
-    my_system.SetupInitial();
 
+
+
+    // -------------------------------------
+    // Options for visualization in irrlicht
+    // -------------------------------------
+
+    auto mvisualizemesh = std::make_shared<ChVisualizationFEAmesh>(*(my_mesh.get()));
+    mvisualizemesh->SetFEMdataType(ChVisualizationFEAmesh::E_PLOT_NODE_SPEED_NORM);
+    mvisualizemesh->SetColorscaleMinMax(0.0, 5.50);
+    mvisualizemesh->SetShrinkElements(true, 0.85);
+    mvisualizemesh->SetSmoothFaces(true);
+    my_mesh->AddAsset(mvisualizemesh);
+
+    auto mvisualizemeshref = std::make_shared<ChVisualizationFEAmesh>(*(my_mesh.get()));
+    mvisualizemeshref->SetFEMdataType(ChVisualizationFEAmesh::E_PLOT_SURFACE);
+    mvisualizemeshref->SetWireframe(true);
+    mvisualizemeshref->SetDrawInUndeformedReference(true);
+    my_mesh->AddAsset(mvisualizemeshref);
+
+    auto mvisualizemeshC = std::make_shared<ChVisualizationFEAmesh>(*(my_mesh.get()));
+    mvisualizemeshC->SetFEMglyphType(ChVisualizationFEAmesh::E_GLYPH_NODE_DOT_POS);
+    mvisualizemeshC->SetFEMdataType(ChVisualizationFEAmesh::E_PLOT_NONE);
+    mvisualizemeshC->SetSymbolsThickness(0.004);
+    my_mesh->AddAsset(mvisualizemeshC);
+
+    auto mvisualizemeshD = std::make_shared<ChVisualizationFEAmesh>(*(my_mesh.get()));
+    // mvisualizemeshD->SetFEMglyphType(ChVisualizationFEAmesh::E_GLYPH_NODE_VECT_SPEED);
+    mvisualizemeshD->SetFEMglyphType(ChVisualizationFEAmesh::E_GLYPH_ELEM_TENS_STRAIN);
+    mvisualizemeshD->SetFEMdataType(ChVisualizationFEAmesh::E_PLOT_NONE);
+    mvisualizemeshD->SetSymbolsScale(1);
+    mvisualizemeshD->SetColorscaleMinMax(-0.5, 5);
+    mvisualizemeshD->SetZbufferHide(false);
+    my_mesh->AddAsset(mvisualizemeshD);
+
+    application.AssetBindAll();
+    application.AssetUpdateAll();
     
     // Set up integrator
     my_system.SetIntegrationType(ChSystem::INT_HHT);
@@ -200,18 +252,34 @@ int main(int argc, char* argv[]) {
     //// mystepper->SetVerbose(true);
 
 
-
     ChMatrixDynamic<double> H;
     ChMatrixDynamic<double> Fi;
     my_mesh->GetElement(0)->ComputeInternalForces(Fi);
     my_mesh->GetElement(0)->ComputeKRMmatricesGlobal(H, 1, 0, 0);
 
-    int num_steps = 2;
-    double step_size = 0.01;
-    for (int istep = 0; istep < num_steps; istep++) {
-        my_system.DoStepDynamics(step_size);
+    GetLog() << H;
+
+    //int num_steps = 2;
+    //double step_size = 0.01;
+    //for (int istep = 0; istep < num_steps; istep++) {
+    //    my_system.DoStepDynamics(step_size);
+    //}
+
+    application.SetTimestep(0.001);
+    application.BeginScene();
+    application.DrawAll();
+    application.EndScene();
+
+    while (application.GetDevice()->run()) {
+        application.BeginScene();
+        application.DrawAll();
+        application.DoStep();
+        application.EndScene();
     }
 
     
     return 0;
 }
+
+
+
