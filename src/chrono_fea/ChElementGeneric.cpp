@@ -16,6 +16,8 @@
 namespace chrono {
 namespace fea {
 
+    size_t ChElementGeneric::elem_counter = 0;
+
 void ChElementGeneric::EleIntLoadResidual_F(ChVectorDynamic<>& R, const double c) {
     ChMatrixDynamic<> mFi(this->GetNdofs(), 1);
     this->ComputeInternalForces(mFi);

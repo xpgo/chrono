@@ -33,10 +33,13 @@ namespace fea {
 class ChApiFea ChElementGeneric : public ChElementBase {
   protected:
     ChKblockGeneric Kmatr;
-
+    size_t elemID;
   public:
-    ChElementGeneric(){};
-    virtual ~ChElementGeneric(){};
+      static size_t elem_counter;
+    ChElementGeneric(){ elem_counter++; elemID = elem_counter; }
+    virtual ~ChElementGeneric(){}
+
+    size_t GetID() const { return elemID; }
 
     /// Access the proxy to stiffness, for sparse solver
     ChKblockGeneric& Kstiffness() { return Kmatr; }
