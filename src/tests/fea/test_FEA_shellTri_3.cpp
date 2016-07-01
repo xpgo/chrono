@@ -87,6 +87,9 @@ int main(int argc, char* argv[]) {
             if (col_sel == 0) // fix the base nodes
                 node->SetFixed(true);
 
+            //if (col_sel == cols_x-1)
+            //    node->SetPos(ChVector<>(loc_x_generator(col_sel), loc_y_generator(row_sel), -0.1));
+
             my_mesh->AddNode(node);
         }
     }
@@ -203,11 +206,10 @@ int main(int argc, char* argv[]) {
     }
 
 
-
-
+    
 
     // -------------------------------------
-    // Options for visualization in irrlicht
+    // Irrlicht options
     // -------------------------------------
 
     auto mvisualizemesh = std::make_shared<ChVisualizationFEAmesh>(*(my_mesh.get()));
@@ -249,7 +251,7 @@ int main(int argc, char* argv[]) {
     mystepper->SetAbsTolerances(1e-5);
     mystepper->SetMode(ChTimestepperHHT::POSITION);
     mystepper->SetScaling(true);
-    //// mystepper->SetVerbose(true);
+    mystepper->SetVerbose(true);
 
 
     ChMatrixDynamic<double> H;
@@ -257,7 +259,8 @@ int main(int argc, char* argv[]) {
     my_mesh->GetElement(0)->ComputeInternalForces(Fi);
     my_mesh->GetElement(0)->ComputeKRMmatricesGlobal(H, 1, 0, 0);
 
-    GetLog() << H;
+    GetLog() << H << "\n";
+    GetLog() << Fi;
 
     //int num_steps = 2;
     //double step_size = 0.01;

@@ -127,12 +127,13 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     /// - the j-th column refers to the node number in the neighbours' local numeration
     /// - neigh_to_local_numbering[i][j] tells in which position in 'all_nodes' we can find the j-th node of the i-th element
     static constexpr std::array<std::array<int, 3>, 4> neigh_to_local_numbering = { {{0,1,2},{3,2,1},{4,0,2},{5,1,0}} };
+
     /// each row ('i') refers to an element; (0: main, 1: element0, 2: element1, 3: element2)
     /// the n-th edge goes of element 'i' goes from edge_num[i][n] to edge_num[i][n+1]
     static constexpr std::array<std::array<int, 4>, 4> edge_num = { {{1,2,0,1},{2,1,3,2},{0,2,4,0},{1,0,5,1}} };
 
     // Geometric variables
-    double element_area0 = -1; ///< area of the element in its undeformed configuration
+    double element_area0 = -1;
     double thickness = -1;
     std::array<ChVector<double>, 3> edge_versors0;
     std::array<double, 3> edge_length0;
@@ -140,8 +141,9 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     std::shared_ptr<ChMaterialShellTri_3> m_material;
 
     // internal use
-    std::array<ChVector<double>, 3> ip_normal_mod; ///< in-plane normals multiplied by a factor of edge_len/2/A
-    ChMatrixNM<double, 3, 6> J_source;
+    ChMatrixNM<double, 3, 3> L_block;
+    ChMatrixNM<double, 3, 3> main_projectors;
+    ChMatrixNM<double, 3, 3> neigh_projectors;
     ChMatrixNM<double, 18, 18> stiffness_matrix;
     enum boundary_conditions
     {
@@ -162,10 +164,11 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     double GetHeight(int edge_sel) const;
     double GetNeighbourHeight(int edge_sel) const;
     double GetArea() const;
-    double GetArea0() const;
+    double GetArea0();
 
     // internal functions
     void initializeElement(); ///< sets up all the constant intermediate variables that will be used throughout all the iterations
+    void computeLt(ChMatrix<double>& mat_temp, int elem_sel, std::array<ChVector<double>, 4>& t, double scale);
     int countNeighbours() const; ///< counts how many neighbours are actually connected to this element
     void updateBC(); //TODO: find other ways to implement boundary conditions
     void updateElementMass(int node_sel);
@@ -207,19 +210,7 @@ public:
     int GetNodeNdofs(int n) override { return 3; }
 
     /// Access the nth node (it retrieves also the nodes that actually belongs to neighbours)
-    std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) override {
-
-        int offset = 0;
-        for (auto node_sel = 0; node_sel<=n+offset; node_sel++)
-        {
-            if (!all_nodes[node_sel])
-                offset++;
-        }
-
-        return all_nodes[n + offset];
-
-
-    }
+    std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) override;
 
     void GetStateBlock(ChMatrixDynamic<>& mD) override;
 

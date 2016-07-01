@@ -4,17 +4,24 @@
 namespace chrono {
 namespace fea {
 
-    double ChElementShellTri_3::GetArea0() const
+    double ChElementShellTri_3::GetArea0()
     {
-        ChVector<double> vect_temp;
-        vect_temp.Cross(GetEdgeVector(0, 0), GetEdgeVector(1, 0));
-        return vect_temp.Length() / 2;
+        if (element_area0<0)
+        {
+            ChVector<double> vect_temp;
+            vect_temp.Cross(GetEdgeVector0(0, -1), GetEdgeVector0(1, -1));
+            element_area0 = vect_temp.Length() / 2;
+        }
+
+        std::cout << element_area0 << std::endl;
+        
+        return element_area0;
     }
 
     double ChElementShellTri_3::GetArea() const
     {
         ChVector<double> vect_temp;
-        vect_temp.Cross(GetEdgeVector(0, 0), GetEdgeVector(1, 0));
+        vect_temp.Cross(GetEdgeVector(0, -1), GetEdgeVector(1, -1));
         return vect_temp.Length() / 2;
     }
 
@@ -52,17 +59,17 @@ namespace fea {
 
     int ChElementShellTri_3::GetNodeOfEdge(int edge_sel, int node_sel, int elem_sel)
     {
-        return edge_num[elem_sel][edge_sel + node_sel];
+        return edge_num[elem_sel+1][edge_sel + node_sel];
     }
 
     double ChElementShellTri_3::GetHeight(int edge_sel) const
     {
-        return 2 * GetArea() / GetEdgeVector(edge_sel, 0).Length();
+        return 2 * GetArea() / GetEdgeVector(edge_sel, -1).Length();
     }
 
     double ChElementShellTri_3::GetNeighbourHeight(int edge_sel) const
     {
-        return 2 * neighbouring_elements[edge_sel]->GetArea() / GetEdgeVector(edge_sel, 0).Length();
+        return 2 * neighbouring_elements[edge_sel]->GetArea() / GetEdgeVector(edge_sel, -1).Length();
     }
 
 
@@ -71,35 +78,49 @@ namespace fea {
         // store edge versors
         for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
         {
-            edge_length0[edge_sel] = GetEdgeVersor0(edge_versors0[edge_sel], edge_sel, 0);
+            edge_length0[edge_sel] = GetEdgeVersor0(edge_versors0[edge_sel], edge_sel, -1);
         }
 
-        // compute area of main element
-        element_area0 = GetArea0();
+               
+        ChMatrixNM<double, 2, 3> shape_fun_der;
 
-
-        // normal in-plane versors of the main element M (glob ref)
-        // project the triangle on the XY plane
-        // compute edge versors, rotate -90° around Z (outward normal)
         for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
         {
+            // normal in-plane versors of the main element M (glob ref)
+            // project the triangle on the XY plane
+            // compute edge versors, rotate -90° around Z (outward normal)
             double norm_temp = edge_versors0[edge_sel](0) * edge_versors0[edge_sel](0) + edge_versors0[edge_sel](1) * edge_versors0[edge_sel](1);
-            ip_normal_mod[edge_sel](0) = edge_versors0[edge_sel](1) / norm_temp * edge_length0[edge_sel] / 2 / element_area0;
-            ip_normal_mod[edge_sel](1) = -edge_versors0[edge_sel](0) / norm_temp * edge_length0[edge_sel] / 2 / element_area0;
+            shape_fun_der(0, edge_sel) = edge_versors0[edge_sel](1) / norm_temp * edge_length0[edge_sel] / 2 / element_area0;
+            shape_fun_der(1, edge_sel) = -edge_versors0[edge_sel](0) / norm_temp * edge_length0[edge_sel] / 2 / element_area0;
+
+            L_block(0, edge_sel) = pow(shape_fun_der(0, edge_sel), 2);
+            L_block(1, edge_sel) = pow(shape_fun_der(1, edge_sel), 2);
+            L_block(2, edge_sel) = -2* shape_fun_der(0, edge_sel)*shape_fun_der(1, edge_sel);
         }
 
-        // compute scale factors
+        
+
+        // compute main projectors
         for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
         {
-            for (auto col_sel = 0; col_sel < 3; ++col_sel)
+            for (auto node_sel = 0; node_sel < 3; ++node_sel)
             {
-                J_source(edge_sel, col_sel) = edge_length0[col_sel] * ChVector<double>::Dot(edge_versors0[col_sel], edge_versors0[edge_sel]) / 2 / element_area0;
+                main_projectors(edge_sel, node_sel) = edge_length0[node_sel] * ChVector<double>::Dot(edge_versors0[node_sel], edge_versors0[edge_sel]) / 2 / element_area0;
+            }
+        }
+
+        // compute main projectors
+        for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
+        {
+            for (auto node_sel = 0; node_sel < 3; ++node_sel)
+            {
                 if (neighbouring_elements[edge_sel])
                 {
-                    J_source(edge_sel, col_sel + 3) = -ChVector<double>::Dot(GetEdgeVector0(col_sel, edge_sel+1), edge_versors0[edge_sel]) / 2 / neighbouring_elements[edge_sel]->GetArea0();
+                    neigh_projectors(edge_sel, node_sel) = -ChVector<double>::Dot(GetEdgeVector0(node_sel, edge_sel), edge_versors0[edge_sel]) / 2 / neighbouring_elements[edge_sel]->GetArea0();
                 }
             }
         }
+
 
     }
 
@@ -205,27 +226,22 @@ namespace fea {
         {
             if (all_nodes[elem_sel + 2]) // check if neighbour exists before trying to compute area
             {
-                t[elem_sel].Cross(GetEdgeVector(0, elem_sel), GetEdgeVector(1, elem_sel));
+                t[elem_sel].Cross(GetEdgeVector(0, elem_sel-1), GetEdgeVector(1, elem_sel-1));
                 t[elem_sel].Normalize();
             }
         }
 
         // compute J
         ChMatrixNM<double, 3, 18> B_bend;
+        ChMatrixNM<double, 3, 3> Lt_temp;
         for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
         {
-            for (auto col_sel = 0; col_sel < 3; ++col_sel)
+            for (auto node_sel = 0; node_sel < 3; ++node_sel)
             {
-                B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[0](col_sel) * J_source(edge_sel, col_sel)), 0, col_sel * 3);
-                B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[0](col_sel) * J_source(edge_sel, col_sel)), 0, col_sel * 3 + 1);
-                B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[0](col_sel) * J_source(edge_sel, col_sel)), 0, col_sel * 3 + 2);
-
-                if (all_nodes[edge_sel + 3]) // check if neighbour exists before trying to compute area
-                {
-                    B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[edge_sel + 1](col_sel) * J_source(edge_sel, col_sel)), 0, col_sel * 3);
-                    B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[edge_sel + 1](col_sel) * J_source(edge_sel, col_sel)), 0, col_sel * 3 + 1);
-                    B_bend.PasteSumVector(ip_normal_mod[edge_sel] * (stiff_ratio[edge_sel] * t[edge_sel + 1](col_sel) * J_source(edge_sel, col_sel)), 0, col_sel * 3 + 2);
-                }
+                computeLt(Lt_temp, -1, t, stiff_ratio[edge_sel] * main_projectors(edge_sel, node_sel));
+                B_bend.PasteSumMatrix(&Lt_temp, 0, node_sel * 3);
+                computeLt(Lt_temp, edge_sel, t, stiff_ratio[edge_sel] * neigh_projectors(edge_sel, node_sel));
+                B_bend.PasteSumMatrix(&Lt_temp, 0, neigh_to_local_numbering[edge_sel+1][node_sel] * 3);
             }
         }
 
@@ -241,6 +257,21 @@ namespace fea {
 
         stiffness_matrix = K_bend;
     }
+
+
+    void ChElementShellTri_3::computeLt(ChMatrix<double>& mat_temp, int elem_sel, std::array<ChVector<double>, 4>& t, double scale)
+    {
+        
+        //temporary calculation of L_block*t
+        for (auto row_sel = 0; row_sel<3; ++row_sel)
+        {
+            for (auto col_sel = 0; col_sel<3; ++col_sel)
+            {
+                mat_temp(row_sel, col_sel) = scale*L_block(row_sel, 0)*t[elem_sel+1](col_sel);
+            }
+        }
+    }
+
 
     void ChElementShellTri_3::UpdateConnectivity(std::shared_ptr<ChMesh> mesh)
     {
@@ -390,6 +421,7 @@ namespace fea {
     {
         m_material->UpdateConsitutiveMatrices();
         updateBC();
+        element_area0 = GetArea0();
         initializeElement();
 
         // Inform the system about which nodes take part to the computation
@@ -402,6 +434,18 @@ namespace fea {
         }
 
         Kmatr.SetVariables(vars);
+    }
+
+    std::shared_ptr<ChNodeFEAbase> ChElementShellTri_3::GetNodeN(int n)
+    {
+        int offset = 0;
+        for (auto node_sel = 0; node_sel <= n + offset; node_sel++)
+        {
+            if (!all_nodes[node_sel])
+                offset++;
+        }
+
+        return all_nodes[n + offset];
     }
 
     void ChElementShellTri_3::GetStateBlock(ChMatrixDynamic<>& mD)
