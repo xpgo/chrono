@@ -75,17 +75,19 @@ namespace fea {
 
     void ChElementShellTri_3::initializeElement()
     {
+
         // store edge versors
         for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
         {
             edge_length0[edge_sel] = GetEdgeVersor0(edge_versors0[edge_sel], edge_sel, -1);
         }
 
-               
+        
+        // Shape function derivatives
         ChMatrixNM<double, 2, 3> shape_fun_der;
-
         for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
         {
+            // TODO: this method is WRONG
             // normal in-plane versors of the main element M (glob ref)
             // project the triangle on the XY plane
             // compute edge versors, rotate -90° around Z (outward normal)
@@ -98,6 +100,25 @@ namespace fea {
             L_block(2, edge_sel) = -2* shape_fun_der(0, edge_sel)*shape_fun_der(1, edge_sel);
         }
 
+        // derivative of phi (considered constant)
+        ChMatrixNM<double, 3, 2> phi_der;
+        for (auto der_sel = 0; der_sel < 2; ++der_sel)
+        {
+            for (auto node_sel = 0; node_sel < 3; ++node_sel)
+            {
+                phi_der.PasteSumVector(all_nodes[node_sel]->GetPos() * shape_fun_der(der_sel, node_sel), 0, der_sel);
+            }
+        }
+
+        ChMatrixNM<double, 3, 18> Bmembr;
+        for (auto row_sel = 0; row_sel<3; ++row_sel)
+        {
+            ChMatrixNM<double, 3, 1> mat_temp{ phi_der };
+            for (auto col_sel = 0; col_sel<3; ++col_sel)
+            {
+            }
+        }
+        
         
 
         // compute main projectors
@@ -207,7 +228,7 @@ namespace fea {
 
     void ChElementShellTri_3::Update()
     {
-        /* ************** Compute the curvature matrix ************** */
+        /* ************** Compute the stiffness matrix ************** */
         // compute r_i^M
         std::array<double, 3> stiff_ratio;
         for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
@@ -245,15 +266,14 @@ namespace fea {
             }
         }
 
-        /* ***************************************************** */
-
-
         // Update bending stiffness matrix
         ChMatrixNM<double, 18, 18> K_bend;
         ChMatrixNM<double, 18, 3> mat_temp;
-        ChMatrixNM<double, 3, 3> temp = m_material->GetConsitutiveMatrixBending();
-        mat_temp.MatrTMultiply(B_bend, temp);
+        mat_temp.MatrTMultiply(B_bend, m_material->GetConsitutiveMatrixBending());
         K_bend.MatrMultiply(mat_temp, B_bend);
+
+        /* ************** Compute the membrane stiffness matrix ************** */
+        
 
         stiffness_matrix = K_bend;
     }
@@ -261,8 +281,6 @@ namespace fea {
 
     void ChElementShellTri_3::computeLt(ChMatrix<double>& mat_temp, int elem_sel, std::array<ChVector<double>, 4>& t, double scale)
     {
-        
-        //temporary calculation of L_block*t
         for (auto row_sel = 0; row_sel<3; ++row_sel)
         {
             for (auto col_sel = 0; col_sel<3; ++col_sel)
