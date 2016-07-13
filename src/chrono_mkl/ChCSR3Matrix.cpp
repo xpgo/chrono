@@ -267,8 +267,9 @@ void ChCSR3Matrix::insert(int insrow, int inscol, double insval, int& col_sel) {
         } else {
             // Actual reallocation
 
-            int storage_augmentation = 4;
-            m_capacity = m_capacity + storage_augmentation;
+            int m_capacity_new = ceil(1.75*m_capacity);
+            int storage_augmentation = m_capacity_new - m_capacity;
+            m_capacity = m_capacity_new;
 
             if (ALIGNMENT_REQUIRED) {
                 double* new_values = static_cast<double*>(mkl_malloc(m_capacity * sizeof(double), array_alignment));
@@ -707,7 +708,7 @@ void ChCSR3Matrix::Reset(int nrows, int ncols, int nonzeros) {
     assert(nrows > 0 && ncols > 0 && nonzeros >= 0);
 
     // if nonzeros are not specified then the current size is kept
-    int nonzeros_old = GetColIndexLength();
+    int nonzeros_old = GetColIndexCapacity();
     if (nonzeros == 0)
         nonzeros = nonzeros_old;
 
@@ -822,7 +823,7 @@ void ChCSR3Matrix::ExportToDatFile(std::string filepath, int precision) const {
     ia_file << std::scientific << std::setprecision(precision);
 
     for (int col_sel = 0; col_sel < rowIndex[m_num_rows]; col_sel++) {
-        a_file << rowIndex[col_sel] << "\n";
+        a_file << values[col_sel] << "\n";
         ja_file << colIndex[col_sel] << "\n";
     }
 

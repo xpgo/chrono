@@ -97,10 +97,10 @@ bool ChSolverMKL::Setup(ChSystemDescriptor& sysd) {
 
     // Set up the locks;
     // after the first build the sparsity pattern is eventually locked; needs to stay AFTER ConvertToMatrixForm()
-    if (solver_call == 0) {
+    //if (solver_call == 0) {
         matCSR3.SetRowIndexLock(sparsity_pattern_lock);
         matCSR3.SetColIndexLock(sparsity_pattern_lock);
-    }
+    //}
 
     // remember: the matrix is constructed with broken locks; so for solver_call==0 they are broken!
     if (!sparsity_pattern_lock || matCSR3.IsRowIndexLockBroken() || matCSR3.IsColIndexLockBroken()) {

@@ -14,6 +14,9 @@
 
 #ifndef CHCSR3MATRIX_H
 #define CHCSR3MATRIX_H
+#include <core/ChTimer.h>
+
+
 
 #include <limits>
 #include <string>
