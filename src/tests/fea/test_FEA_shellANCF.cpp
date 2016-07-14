@@ -52,7 +52,7 @@ int numDiv_z = 1;   // mesh divisions in Z direction
 
 std::string out_dir = "../TEST_SHELL_ANCF";  // name of output directory
 bool output = true;                         // generate output file?
-bool verbose = false;                        // verbose output?
+bool verbose = true;                        // verbose output?
 
 // -----------------------------------------------------------------------------
 
@@ -242,8 +242,8 @@ void RunModel(bool use_mkl,              // use MKL solver (if available)
 
         if (istep==3 && use_mkl)
         {
-            //mkl_solver_speed->SetSparsityPatternLock(true);
-            //mkl_solver_stab->SetSparsityPatternLock(true);
+            mkl_solver_speed->SetSparsityPatternLock(true);
+            mkl_solver_stab->SetSparsityPatternLock(true);
         }
 
         if (istep == skip_steps) {
