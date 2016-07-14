@@ -134,7 +134,8 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
     void Prune(double pruning_threshold = 0);
 
     // Auxiliary functions
-    int GetColIndexLength() const { return rowIndex_vect.back(); }
+    //int GetColIndexLength() const { return rowIndex_vect.back(); }
+    int GetColIndexLength() const { return rowIndex_vect[m_num_rows]; }
     int GetColIndexCapacity() const { return colIndex_vect.capacity(); }
     void GetNonZerosDistribution(int* nonzeros_vector) const;
     void SetMaxShifts(int max_shifts_new = std::numeric_limits<int>::max()) { max_shifts = max_shifts_new; }

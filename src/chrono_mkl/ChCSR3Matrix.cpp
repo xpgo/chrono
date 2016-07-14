@@ -362,12 +362,12 @@ void ChCSR3Matrix::initialize(int colIndex_length) {
 
 void ChCSR3Matrix::initialize_ValuesColIndex() {
     if (colIndex_lock && !colIndex_lock_broken)
-        for (int col_sel = 0; col_sel < GetColIndexLength(); col_sel++)
+        for (int col_sel = 0; col_sel < rowIndex_vect[m_num_rows]; col_sel++)
             values_vect[col_sel] = 0;
 
     else {
         // colIndex_vect is initialized with -1; it means that the cell has been stored but contains an uninitialized value
-        for (int col_sel = 0; col_sel < GetColIndexLength(); col_sel++)
+        for (int col_sel = 0; col_sel < rowIndex_vect[m_num_rows]; col_sel++)
             colIndex_vect[col_sel] = -1;
 
         isCompressed = false;
