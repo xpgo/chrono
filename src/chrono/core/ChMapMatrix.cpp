@@ -18,7 +18,7 @@
 
 namespace chrono {
 
-ChMapMatrix::ChMapMatrix(int nrows = 1, int ncols = 1) : ChSparseMatrix(nrows, ncols), m_nnz(0), m_CSR_current(false) {
+ChMapMatrix::ChMapMatrix(int nrows = 1, int ncols = 1) : ChSparseMatrix(nrows, ncols), m_CSR_current(false) {
     m_rows.resize(nrows);
 }
 
@@ -37,10 +37,7 @@ ChMapMatrix::ChMapMatrix(const ChMatrix<>& mat) {
     m_CSR_current = false;
 }
 
-ChMapMatrix::ChMapMatrix(const ChMapMatrix& other) {
-    m_num_rows = other.m_num_rows;
-    m_num_cols = other.m_num_cols;
-    m_nnz = other.m_nnz;
+ChMapMatrix::ChMapMatrix(const ChMapMatrix& other) : ChSparseMatrix(other) {
     m_rows = other.m_rows;
     m_CSR_current = false;
 }
@@ -65,13 +62,17 @@ void ChMapMatrix::Reset(int nrows, int ncols, int nonzeros) {
 }
 
 void ChMapMatrix::SetElement(int row, int col, double elem, bool overwrite) {
-    // Check if an element at this column already exists
+    // Check if an element at this column already exists.
     auto my_elem = m_rows[row].m_data.find(col);
     if (my_elem == m_rows[row].m_data.end()) {
-        m_rows[row].m_data.insert(std::make_pair(col, elem));
-        m_rows[row].m_nnz++;
-        m_nnz++;
+        // The element did not exist. Only insert a non-zero value.
+        if (elem != 0) {
+            m_rows[row].m_data.insert(std::make_pair(col, elem));
+            m_rows[row].m_nnz++;
+            m_nnz++;
+        }
     } else {
+        // The element exists. Overwrite (zero element allowed) or increment.
         if (overwrite)
             my_elem->second = elem;
         else

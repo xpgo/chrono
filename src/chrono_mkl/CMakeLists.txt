@@ -77,7 +77,6 @@ SET(ChronoEngine_MKL_HEADERS
 )
 
 SET(ChronoEngine_MKL_SOURCES
-  ChSolverMKL.cpp
   ChMklEngine.cpp
   ChCSR3Matrix.cpp
 )

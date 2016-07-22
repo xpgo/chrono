@@ -75,10 +75,9 @@ arrays
 
 class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
   private:
-    bool reallocation_occurred;
-    const int array_alignment;
-    bool isCompressed;
-    int max_shifts;
+    const int array_alignment = 64;
+    bool isCompressed = false;
+    int max_shifts = std::numeric_limits<int>::max();
 
     // CSR matrix arrays.
     // Note that m_capacity may be larger than NNZ before a call to Trim()
@@ -87,10 +86,7 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
     std::vector<int, aligned_allocator<int, 64>> colIndex_vect;
     std::vector<int, aligned_allocator<int, 64>> rowIndex_vect;
 
-    bool rowIndex_lock;  ///< TRUE if the matrix should always keep the same number of element for each row
-    bool colIndex_lock;  ///< TRUE if the matrix elements should keep always the same position
-    bool rowIndex_lock_broken;
-    bool colIndex_lock_broken;
+    bool m_lock_broken = false;  ///< true if a modification was made that overrules m_lock
 
   protected:
     void insert(int insrow, int inscol, double insval, int& col_sel);
@@ -105,13 +101,14 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
               int shifts = 0);
 
   public:
-    ChCSR3Matrix(int nrows = 3, int ncols = 3, int nonzeros = 0);
+    ChCSR3Matrix(int nrows = 1, int ncols = 1, int nonzeros = 1);
     ChCSR3Matrix(int nrows, int ncols, int* nonzeros);
     virtual ~ChCSR3Matrix();
 
     virtual void SetElement(int insrow, int inscol, double insval, bool overwrite = true) override;
     virtual double GetElement(int row, int col) override;
 
+    //double& Element(int row, int col);
     double& Element(int row, int col);
     double& operator()(int row, int col) { return Element(row, col); }
     double& operator()(int index) { return Element(index / m_num_cols, index % m_num_cols); }
@@ -119,6 +116,9 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
     // Size manipulation
     virtual void Reset(int nrows, int ncols, int nonzeros = 0) override;
     virtual bool Resize(int nrows, int ncols, int nonzeros = 0) override;
+
+    /// Get the number of non-zero elements in this matrix.
+    virtual int GetNNZ() const override { return rowIndex[m_num_rows]; }
 
     /// Return the row index array in the CSR representation of this matrix.
     virtual int* GetCSR_RowIndexArray() const override { return const_cast<int*>(rowIndex_vect.data()); }
@@ -129,8 +129,12 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
     /// Return the array of matrix values in the CSR representation of this matrix.
     virtual double* GetCSR_ValueArray() const override { return const_cast<double*>(values_vect.data()); }
 
-    void Compress();  // purge the matrix from all the unininitialized elements
-    void Trim();      // trims the arrays so to have exactly the dimension needed, nothing more. (arrays are not moved)
+    /// Compress the internal arrays and purge all uninitialized elements.
+    virtual bool Compress() override;
+
+    /// Trims the internal arrays to have exactly the dimension needed, nothing more.
+    /// Data arrays are not moved.
+    void Trim();
     void Prune(double pruning_threshold = 0);
 
     // Auxiliary functions
@@ -139,11 +143,7 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
     int GetColIndexCapacity() const { return colIndex_vect.capacity(); }
     void GetNonZerosDistribution(int* nonzeros_vector) const;
     void SetMaxShifts(int max_shifts_new = std::numeric_limits<int>::max()) { max_shifts = max_shifts_new; }
-    void SetRowIndexLock(bool on_off) { rowIndex_lock = on_off; }
-    void SetColIndexLock(bool on_off) { colIndex_lock = on_off; }
     bool IsCompressed() const { return isCompressed; }
-    bool IsRowIndexLockBroken() const { return rowIndex_lock_broken; }
-    bool IsColIndexLockBroken() const { return colIndex_lock_broken; }
 
     // Testing functions
     void GetMemoryInfo() const;
@@ -156,6 +156,6 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
 
 /// @} mkl_module
 
-};  // END namespace chrono
+};  // end namespace chrono
 
 #endif
