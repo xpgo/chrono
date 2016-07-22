@@ -15,8 +15,6 @@
 #ifndef CHCSR3MATRIX_H
 #define CHCSR3MATRIX_H
 
-#define STDVECTORS true
-
 #include <limits>
 #include <string>
 
@@ -103,7 +101,7 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
   public:
     ChCSR3Matrix(int nrows = 1, int ncols = 1, int nonzeros = 1);
     ChCSR3Matrix(int nrows, int ncols, int* nonzeros);
-    virtual ~ChCSR3Matrix();
+    virtual ~ChCSR3Matrix(){};
 
     virtual void SetElement(int insrow, int inscol, double insval, bool overwrite = true) override;
     virtual double GetElement(int row, int col) override;
@@ -115,10 +113,13 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
 
     // Size manipulation
     virtual void Reset(int nrows, int ncols, int nonzeros = 0) override;
-    virtual bool Resize(int nrows, int ncols, int nonzeros = 0) override;
+    virtual bool Resize(int nrows, int ncols, int nonzeros = 0) override {
+        Reset(nrows, ncols, nonzeros);
+        return true;
+    };
 
     /// Get the number of non-zero elements in this matrix.
-    virtual int GetNNZ() const override { return rowIndex[m_num_rows]; }
+    virtual int GetNNZ() const override { return colIndex_vect.size(); }
 
     /// Return the row index array in the CSR representation of this matrix.
     virtual int* GetCSR_RowIndexArray() const override { return const_cast<int*>(rowIndex_vect.data()); }
@@ -142,6 +143,8 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
     int GetColIndexLength() const { return rowIndex_vect[m_num_rows]; }
     int GetColIndexCapacity() const { return colIndex_vect.capacity(); }
     void GetNonZerosDistribution(int* nonzeros_vector) const;
+    bool CheckArraysAlignment(int alignment) const;
+
     void SetMaxShifts(int max_shifts_new = std::numeric_limits<int>::max()) { max_shifts = max_shifts_new; }
     bool IsCompressed() const { return isCompressed; }
 
