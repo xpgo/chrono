@@ -35,6 +35,7 @@ set(ChronoEngine_core_SOURCES
     core/ChQuaternion.cpp
     core/ChCoordsys.cpp
     core/ChLinkedListMatrix.cpp
+    core/ChMapMatrix.cpp
     core/ChQuadrature.cpp
     core/ChBezierCurve.cpp
     core/ChCubicSpline.cpp
@@ -70,6 +71,7 @@ set(ChronoEngine_core_HEADERS
     core/ChVector2.h
     core/ChSparseMatrix.h
     core/ChLinkedListMatrix.h
+    core/ChMapMatrix.h
     core/ChWrapHashmap.h
     core/ChDistribution.h
     core/ChQuadrature.h
@@ -120,6 +122,7 @@ set(ChronoEngine_physics_SOURCES
     physics/ChLinkNumdiff.cpp
     physics/ChLinkLock.cpp
     physics/ChLinkBrake.cpp
+    physics/ChLinkBushing.cpp
     physics/ChLinkEngine.cpp
     physics/ChLinkGear.cpp
     physics/ChLinkPulley.cpp
@@ -207,6 +210,7 @@ set(ChronoEngine_physics_HEADERS
     physics/ChLinkBase.h
     physics/ChLink.h
     physics/ChLinkBrake.h
+    physics/ChLinkBushing.h
     physics/ChLinkDistance.h
     physics/ChLinkEngine.h
     physics/ChLinkForce.h
@@ -493,6 +497,7 @@ set(ChronoEngine_timestepper_SOURCES
     timestepper/ChIntegrable.cpp
     timestepper/ChTimestepper.cpp
     timestepper/ChTimestepperHHT.cpp
+    timestepper/ChAssemblyAnalysis.cpp
     )
 
 set(ChronoEngine_timestepper_HEADERS
@@ -635,14 +640,11 @@ set(ChronoEngine_solver_SOURCES
     solver/ChSolverBB.cpp
     solver/ChSolverPCG.cpp
     solver/ChSolverAPGD.cpp
-    solver/ChSolverSimplex.cpp
     solver/ChConstraint.cpp
     solver/ChConstraintTwo.cpp
     solver/ChConstraintTwoGeneric.cpp
     solver/ChConstraintTwoGenericBoxed.cpp
     solver/ChConstraintTwoBodies.cpp
-    solver/ChConstraintNodeFrictionT.cpp
-    solver/ChConstraintNodeContactN.cpp
     solver/ChConstraintThree.cpp
     solver/ChConstraintThreeGeneric.cpp
     solver/ChConstraintThreeBBShaft.cpp
@@ -660,8 +662,6 @@ set(ChronoEngine_solver_SOURCES
 
 set(ChronoEngine_solver_HEADERS
     solver/ChConstraint.h
-    solver/ChConstraintNodeContactN.h
-    solver/ChConstraintNodeFrictionT.h
     solver/ChConstraintThree.h
     solver/ChConstraintThreeBBShaft.h
     solver/ChConstraintThreeGeneric.h
@@ -686,7 +686,6 @@ set(ChronoEngine_solver_HEADERS
     solver/ChSolverSOR.h
     solver/ChSolverSORmultithread.h
     solver/ChSolverSymmSOR.h
-    solver/ChSolverSimplex.h
     solver/ChSystemDescriptor.h
     solver/ChVariables.h
     solver/ChVariablesBody.h

@@ -27,7 +27,7 @@ namespace chrono {
 /// Templates Ta and Tb are of ChVariableTupleCarrier_Nvars classes
 
 template <class Ta, class Tb>
-class ChApi ChConstraintTwoTuples : public ChConstraint {
+class ChConstraintTwoTuples : public ChConstraint {
     // CH_RTTI(ChConstraintTwoTuples, ChConstraint)
 
     typedef typename Ta::type_constraint_tuple type_constraint_tuple_a;
@@ -53,6 +53,7 @@ class ChApi ChConstraintTwoTuples : public ChConstraint {
     ChConstraintTwoTuples& operator=(const ChConstraintTwoTuples& other) {
         tuple_a = other.tuple_a;
         tuple_b = other.tuple_b;
+        return *this;
     }
 
     /// Access tuple a
@@ -115,8 +116,6 @@ class ChApi ChConstraintTwoTuples : public ChConstraint {
     /// where both portions of the jacobian are shifted in order to match the
     /// offset of the corresponding ChVariable.The same is done
     /// on the 'insrow' column, so that the sparse matrix is kept symmetric.
-    /// This is used only by the ChSolverSimplex solver (iterative solvers
-    /// don't need to know jacobians explicitly)
     virtual void Build_Cq(ChSparseMatrix& storage, int insrow) override {
         tuple_a.Build_Cq(storage, insrow);
         tuple_b.Build_Cq(storage, insrow);

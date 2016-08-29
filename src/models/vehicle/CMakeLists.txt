@@ -49,7 +49,17 @@ set(CVM_HMMWV_FILES
     hmmwv/HMMWV_Wheel.cpp
     hmmwv/HMMWV_Wheel.h
 )
-source_group("hmmwv" FILES ${CVM_HMMWV_FILES})
+if(ENABLE_MODULE_FEA)
+  set(CVM_HMMWV_FEA_FILES
+      hmmwv/HMMWV_ANCFTire.cpp
+      hmmwv/HMMWV_ANCFTire.h
+	  hmmwv/HMMWV_ReissnerTire.cpp
+      hmmwv/HMMWV_ReissnerTire.h
+  )
+else()
+  set(CVM_HMMWV_FEA_FILES "")
+endif()
+source_group("hmmwv" FILES ${CVM_HMMWV_FILES} ${CVM_HMMWV_FEA_FILES})
 
 set(CVM_M113_FILES
     m113/M113_BrakeSimple.h
@@ -105,6 +115,7 @@ endif()
 add_library(ChronoModels_vehicle SHARED
     ${CVM_COMMON_FILES}
     ${CVM_HMMWV_FILES}
+    ${CVM_HMMWV_FEA_FILES}
     ${CVM_M113_FILES}
  )
 

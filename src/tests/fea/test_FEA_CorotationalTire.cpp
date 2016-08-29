@@ -271,8 +271,8 @@ int main(int argc, char* argv[]) {
         case MKL: {
 #ifdef CHRONO_MKL
             GetLog() << "Using MKL solver\n";
-            ChSolverMKL* mkl_solver_stab = new ChSolverMKL;
-            ChSolverMKL* mkl_solver_speed = new ChSolverMKL;
+            ChSolverMKL<>* mkl_solver_stab = new ChSolverMKL<>;
+            ChSolverMKL<>* mkl_solver_speed = new ChSolverMKL<>;
             my_system.ChangeSolverStab(mkl_solver_stab);
             my_system.ChangeSolverSpeed(mkl_solver_speed);
             mkl_solver_speed->SetSparsityPatternLock(true);
@@ -347,10 +347,10 @@ int main(int argc, char* argv[]) {
         // Report run time.
         GetLog() << "Simulation time:  " << timer() << "\n";
         GetLog() << "Internal forces (" << my_mesh->GetNumCallsInternalForces()
-                 << "):  " << my_mesh->GetTimingInternalForces() << "\n";
-        GetLog() << "Jacobian (" << my_mesh->GetNumCallsJacobianLoad() << "):  " << my_mesh->GetTimingJacobianLoad()
+                 << "):  " << my_mesh->GetTimeInternalForces() << "\n";
+        GetLog() << "Jacobian (" << my_mesh->GetNumCallsJacobianLoad() << "):  " << my_mesh->GetTimeJacobianLoad()
                  << "\n";
-        GetLog() << "Extra time:  " << timer() - my_mesh->GetTimingInternalForces() - my_mesh->GetTimingJacobianLoad()
+        GetLog() << "Extra time:  " << timer() - my_mesh->GetTimeInternalForces() - my_mesh->GetTimeJacobianLoad()
                  << "\n";
     }
 

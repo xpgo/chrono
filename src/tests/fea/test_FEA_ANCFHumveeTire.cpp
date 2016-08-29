@@ -604,8 +604,8 @@ int main(int argc, char* argv[]) {
 // Set up solver
 #ifdef USE_MKL
     GetLog() << "Using MKL solver\n";
-    ChSolverMKL* mkl_solver_stab = new ChSolverMKL;
-    ChSolverMKL* mkl_solver_speed = new ChSolverMKL;
+    ChSolverMKL<>* mkl_solver_stab = new ChSolverMKL<>;
+    ChSolverMKL<>* mkl_solver_speed = new ChSolverMKL<>;
     my_system.ChangeSolverStab(mkl_solver_stab);
     my_system.ChangeSolverSpeed(mkl_solver_speed);
     mkl_solver_speed->SetSparsityPatternLock(true);
@@ -631,6 +631,7 @@ int main(int argc, char* argv[]) {
     mystepper->SetMaxiters(16);
     mystepper->SetAbsTolerances(6e-03, 0.8);
     mystepper->SetMode(ChTimestepperHHT::POSITION);
+    mystepper->SetModifiedNewton(false);
     mystepper->SetScaling(true);  //
     mystepper->SetVerbose(true);
     mystepper->SetRequiredSuccessfulSteps(2);
@@ -654,10 +655,10 @@ int main(int argc, char* argv[]) {
     GetLog() << "Number of iterations: " << num_iterations << "\n";
     GetLog() << "Simulation time:  " << timer() << "\n";
     GetLog() << "Internal forces (" << TireMesh1->GetNumCallsInternalForces()
-             << "):  " << TireMesh1->GetTimingInternalForces() << "\n";
-    GetLog() << "Jacobian (" << TireMesh1->GetNumCallsJacobianLoad() << "):  " << TireMesh1->GetTimingJacobianLoad()
+             << "):  " << TireMesh1->GetTimeInternalForces() << "\n";
+    GetLog() << "Jacobian (" << TireMesh1->GetNumCallsJacobianLoad() << "):  " << TireMesh1->GetTimeJacobianLoad()
              << "\n";
-    GetLog() << "Extra time:  " << timer() - TireMesh1->GetTimingInternalForces() - TireMesh1->GetTimingJacobianLoad()
+    GetLog() << "Extra time:  " << timer() - TireMesh1->GetTimeInternalForces() - TireMesh1->GetTimeJacobianLoad()
              << "\n";
     getchar();
 

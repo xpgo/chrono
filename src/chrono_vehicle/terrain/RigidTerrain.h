@@ -61,7 +61,11 @@ class CH_VEHICLE_API RigidTerrain : public ChTerrain {
     void SetContactMaterial(float friction_coefficient = 0.6f,    ///< [in] coefficient of friction
                             float restitution_coefficient = 0.1,  ///< [in] coefficient of restitution
                             float young_modulus = 2e5f,           ///< [in] Young's modulus of elasticity
-                            float poisson_ratio = 0.3f            ///< [in] Poisson ratio
+                            float poisson_ratio = 0.3f,           ///< [in] Poisson ratio
+                            float kn = 2.0e5f,                    ///< [in] normal contact stiffness
+                            float gn = 40.0f,                     ///< [in] normal contact damping
+                            float kt = 2.0e5f,                    ///< [in] tangential contact stiffness
+                            float gt = 20.0f                      ///< [in] tangential contact damping
                             );
 
     /// Set visualization color.
@@ -89,8 +93,9 @@ class CH_VEHICLE_API RigidTerrain : public ChTerrain {
 
     /// Initialize the terrain system (mesh).
     /// this version uses the specified mesh, for both visualization and contact.
-    void Initialize(const std::string& mesh_file,  ///< [in] filename of the input mesh (OBJ)
-                    const std::string& mesh_name   ///< [in] name of the mesh asset
+    void Initialize(const std::string& mesh_file,   ///< [in] filename of the input mesh (OBJ)
+                    const std::string& mesh_name,   ///< [in] name of the mesh asset
+                    double sweep_sphere_radius = 0  ///< [in] radius of sweep sphere
                     );
 
     /// Initialize the terrain system (height map).

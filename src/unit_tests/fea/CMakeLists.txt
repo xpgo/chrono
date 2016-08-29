@@ -18,6 +18,7 @@ SET(TESTS
 )
 
 MESSAGE(STATUS "Unit test programs for FEA module...")
+
 # A hack to set the working directory in which to execute the CTest
 # runs.  This is needed for tests that need to access the Chrono data
 # directory (since we use a relative path to it)
@@ -25,6 +26,17 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   set(MY_WORKING_DIR "${EXECUTABLE_OUTPUT_PATH}/$<CONFIGURATION>")
 else()
   set(MY_WORKING_DIR ${EXECUTABLE_OUTPUT_PATH})
+endif()
+
+set(COMPILER_FLAGS "${CH_CXX_FLAGS}")
+set(LINKER_FLAGS "${CH_LINKERFLAG_EXE}")
+list(APPEND LIBS "")
+
+if(ENABLE_MODULE_MKL)
+    include_directories(${CH_MKL_INCLUDES})
+    set(COMPILER_FLAGS "${COMPILER_FLAGS} ${CH_MKL_CXX_FLAGS}")
+    set(LINKER_FLAGS "${LINKER_FLAGS} ${CH_MKL_LINK_FLAGS}")
+    list(APPEND LIBS "ChronoEngine_mkl")
 endif()
 
 FOREACH(PROGRAM ${TESTS})
@@ -35,13 +47,12 @@ FOREACH(PROGRAM ${TESTS})
 
     SET_TARGET_PROPERTIES(${PROGRAM} PROPERTIES
         FOLDER demos
-        COMPILE_FLAGS "${CH_CXX_FLAGS}"
-        LINK_FLAGS "${CH_LINKERFLAG_EXE}"
+        COMPILE_FLAGS "${COMPILER_FLAGS}"
+        LINK_FLAGS "${LINKER_FLAGS}"
     )
 
-    TARGET_LINK_LIBRARIES(${PROGRAM} ${LIBRARIES})
-    ADD_DEPENDENCIES(${PROGRAM} ${LIBRARIES})
-
+    TARGET_LINK_LIBRARIES(${PROGRAM} ChronoEngine ChronoEngine_fea ${LIBS})
+ 
     INSTALL(TARGETS ${PROGRAM} DESTINATION bin)
 
     #ADD_TEST(NAME ${PROGRAM}
