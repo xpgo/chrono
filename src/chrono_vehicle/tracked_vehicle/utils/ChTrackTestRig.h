@@ -80,6 +80,9 @@ class CH_VEHICLE_API ChTrackTestRig : public ChVehicle {
     double GetActuatorForce();
     double GetActuatorMarkerDist();
 
+    /// Set maximum sprocket torque
+    void SetMaxTorque(double val) { m_max_torque = val; }
+
     /// Get the rig total mass.
     /// This is simply the mass of the track subsystem.
     virtual double GetVehicleMass() const override;
@@ -90,6 +93,9 @@ class CH_VEHICLE_API ChTrackTestRig : public ChVehicle {
     /// Get the local driver position and orientation.
     /// This is a coordinate system relative to the chassis reference frame.
     virtual ChCoordsys<> GetLocalDriverCoordsys() const override { return ChCoordsys<>(); }
+
+    /// Get the track assembly subsystem.
+    std::shared_ptr<ChTrackAssembly> GetTrackAssembly() const { return m_track; }
 
     /// Get a handle to the vehicle's driveshaft body.
     virtual std::shared_ptr<ChShaft> GetDriveshaft() const override { return m_dummy_shaft; }
@@ -111,6 +117,7 @@ class CH_VEHICLE_API ChTrackTestRig : public ChVehicle {
     /// steering between -1 and +1, and no force need be applied if using external actuation
     void Synchronize(double time,                        ///< [in] current time
                      double disp,                        ///< [in] post displacement
+                     double throttle,                    ///< [in] throttle input
                      const TrackShoeForces& shoe_forces  ///< [in] vector of track shoe forces
                      );
 
@@ -136,8 +143,9 @@ class CH_VEHICLE_API ChTrackTestRig : public ChVehicle {
     std::shared_ptr<ChLinkLockPointPlane> m_post_ptPlane;   ///< actuate track to a specified height
 
     std::shared_ptr<ChFunction> m_actuator;  ///< actuator function applied to post
+    double m_displ;                          ///< cached left post displacement
 
-    double m_displ;  ///< cached left post displacement
+    double m_max_torque;  ///< maximum torque applied to sprocket
 
     ChVector<> m_sprocketLoc;
     ChVector<> m_idlerLoc;

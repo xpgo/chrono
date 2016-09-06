@@ -116,7 +116,7 @@ class ChApiMkl ChCSR3Matrix : public ChSparseMatrix {
     virtual bool Resize(int nrows, int ncols, int nonzeros = 0) override {
         Reset(nrows, ncols, nonzeros);
         return true;
-    };
+    }
 
     /// Get the number of non-zero elements in this matrix.
     virtual int GetNNZ() const override { return colIndex_vect.size(); }
