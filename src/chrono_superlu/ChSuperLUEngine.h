@@ -34,7 +34,7 @@ namespace chrono {
 /// See demo_SUPERLU_Engine for the related demo.
 class ChApiSuperLU ChSuperLUEngine {
   public:
-    ChSuperLUEngine(int pb_size = 0);
+    ChSuperLUEngine();
     ~ChSuperLUEngine();
 
     /// Set problem dimension.
@@ -87,14 +87,14 @@ class ChApiSuperLU ChSuperLUEngine {
 	// Matrix in CSR3 format.
 	// Note that ChSuperLUEngine does not own this data.
 	//TODO: actually they are not needed...
-	double* m_a = nullptr;    ///< pointer to the CSR array of non-zero elements of the A
-	int* m_ia = nullptr;  ///< pointer to the CSR array of row indices
-	int* m_ja = nullptr;  ///< pointer to the CSR array of columns indices
+	//double* m_a = nullptr;    ///< pointer to the CSR array of non-zero elements of the A
+	//int* m_ia = nullptr;  ///< pointer to the CSR array of row indices
+	//int* m_ja = nullptr;  ///< pointer to the CSR array of columns indices
 
 	// Right-hand side and solution arrays.
 	// Note that ChSuperLUEngine does not own this data.
-	double* m_b = nullptr;  ///< rhs vector
-	double* m_x = nullptr;  ///< solution vector
+	//double* m_b = nullptr;  ///< rhs vector
+	//double* m_x = nullptr;  ///< solution vector
 
 				// Problem properties
 	int m_n = 0;     ///< (square) matrix size

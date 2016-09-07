@@ -25,9 +25,12 @@ namespace chrono {
 		SOLVE = 33,
 	};
 
-	ChSuperLUEngine::ChSuperLUEngine(int pb_size): m_n(pb_size)
+	ChSuperLUEngine::ChSuperLUEngine()
 	{
 		ResetSolver();
+		dCreate_Dense_Matrix(&m_sol_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
+		dCreate_Dense_Matrix(&m_rhs_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
+		dCreate_CompCol_Matrix(&m_mat_Super, 0, 0, 0, nullptr, nullptr, nullptr, SLU_NC, SLU_D, SLU_GE);
 	}
 
 	ChSuperLUEngine::~ChSuperLUEngine()
@@ -46,29 +49,20 @@ namespace chrono {
 	void ChSuperLUEngine::SetMatrix(ChSparseMatrix& Z)
 	{
 
-		// this function is identical to SetMatrix(int pb_size, double* values, int* rowIndex, int* colIndex)
-		// but it is here because the type of the matrix can be deduced in this case from Z
-		m_n = Z.GetNumRows();
-		m_a = Z.GetCSR_ValueArray();
-		m_ia = Z.GetCSR_TrailingIndexArray();
-		m_ja = Z.GetCSR_LeadingIndexArray();
-		dCreate_CompCol_Matrix(&m_mat_Super, m_n, m_n, Z.GetNNZ(), m_a, m_ia, m_ja, SLU_NC, SLU_D, SLU_GE);
-
-		etree.resize(m_n);
-		perm_r.resize(m_n);
-		perm_c.resize(m_n);
-
-		R.resize(m_mat_Super.nrow);
-		C.resize(m_mat_Super.ncol);
+		SetMatrix(Z.GetNumRows(), Z.GetCSR_ValueArray(), Z.GetCSR_TrailingIndexArray(), Z.GetCSR_LeadingIndexArray());
+		//TODO: change here the matrix type (symmetric, etc) according to what Z says
 	}
 
 	void ChSuperLUEngine::SetMatrix(int pb_size, double* values, int* rowIndex, int* colIndex)
 	{
 		m_n = pb_size;
-		m_a = values;
-		m_ia = rowIndex;
-		m_ja = colIndex;
-		dCreate_CompCol_Matrix(&m_mat_Super, m_n, m_n, m_ja[m_n], m_a, m_ia, m_ja, SLU_NC, SLU_D, SLU_GE);
+		m_mat_Super.nrow = m_n;
+		m_mat_Super.ncol = m_n;
+		auto m_mat_Super_store = static_cast<NCformat*>(m_mat_Super.Store);
+		m_mat_Super_store->nnz = colIndex[pb_size];
+		m_mat_Super_store->nzval = values;
+		m_mat_Super_store->rowind = rowIndex;
+		m_mat_Super_store->colptr = colIndex;
 
 		etree.resize(m_n);
 		perm_r.resize(m_n);
@@ -80,19 +74,26 @@ namespace chrono {
 
 	void ChSuperLUEngine::SetSolutionVector(ChMatrix<>& x)
 	{
+		assert(x.GetRows() == m_n);
+
 		SetSolutionVector(x.GetAddress());
 	}
 
 	void ChSuperLUEngine::SetSolutionVector(double* x)
 	{
-		m_x = x;
-		dCreate_Dense_Matrix(&m_sol_Super, m_n, m_nrhs, m_x, m_n, SLU_DN, SLU_D, SLU_GE);
+		m_sol_Super.nrow = m_n;
+		m_sol_Super.ncol = 1;
+		auto m_sol_Super_store = static_cast<DNformat*>(m_sol_Super.Store);
+		m_sol_Super_store->lda = m_n;
+		m_sol_Super_store->nzval = x;
 
 		ferr.resize(m_nrhs);
 	}
 
 	void ChSuperLUEngine::SetRhsVector(ChMatrix<>& b)
 	{
+		assert(b.GetRows() == m_n);
+
 		// that should deal multiple rhs
 		if (b.GetColumns()>1)
 			b.MatrTranspose(); // ChMatrix is row-major
@@ -102,10 +103,13 @@ namespace chrono {
 
 	void ChSuperLUEngine::SetRhsVector(double* b, int nrhs)
 	{
-		m_b = b;
 		m_nrhs = nrhs;
-		dCreate_Dense_Matrix(&m_rhs_Super, m_n, m_nrhs, m_b, m_n, SLU_DN, SLU_D, SLU_GE);
 
+		m_rhs_Super.nrow = m_n;
+		m_rhs_Super.ncol = nrhs;
+		auto m_rhs_Super_store = static_cast<DNformat*>(m_rhs_Super.Store);
+		m_rhs_Super_store->lda = m_n;
+		m_rhs_Super_store->nzval = b;
 
 		berr.resize(m_nrhs);
 	}
@@ -128,25 +132,12 @@ namespace chrono {
 		m_rhs_Super.ncol = (phase == ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
 		options.Fact = (phase == SOLVE) ? FACTORED : DOFACT; /* Indicate the factored form of m_mat_Super is supplied. */
 
-		ferr.resize(m_nrhs);
-		berr.resize(m_nrhs);
 		
 		// call to SuperLU
 		dgssvx(&options, &m_mat_Super, perm_c.data(), perm_r.data(), etree.data(), equed, R.data(), C.data(),
 			&L, &U, work, lwork, &m_rhs_Super, &m_sol_Super, &rpg, &rcond, ferr.data(), berr.data(),
 			&Glu, &mem_usage, &stat, &info);
 
-
-		if (phase != ANALYSIS_NUMFACTORIZATION)
-		{
-			/* This is how you could access the solution matrix. */
-			double* sol = static_cast<double*>(static_cast<DNformat*>(m_sol_Super.Store)->nzval);
-
-			for (auto row_sel = 0; row_sel<m_n; ++row_sel)
-			{
-				m_x[row_sel]= sol[row_sel];
-			}
-		}
 
 		if (phase == ANALYSIS_NUMFACTORIZATION || phase == COMPLETE)
 		{
@@ -172,7 +163,8 @@ namespace chrono {
 				printf("** Estimated memory: %d bytes\n", info - m_n);
 			}
 
-			if (options.PrintStat && phase == ANALYSIS_NUMFACTORIZATION) StatPrint(&stat);
+			if (options.PrintStat && phase == ANALYSIS_NUMFACTORIZATION)
+				StatPrint(&stat);
 		}
 
 		if (phase == SOLVE || phase == COMPLETE)
@@ -215,11 +207,20 @@ namespace chrono {
 
 	void ChSuperLUEngine::GetResidual(double* res) const
 	{
+		auto m_mat_Super_store = static_cast<NCformat*>(m_mat_Super.Store);
+		auto m_a = static_cast<double*>(m_mat_Super_store->nzval);
+		auto m_ia = static_cast<int*>(m_mat_Super_store->rowind);
+		auto m_ja = static_cast<int*>(m_mat_Super_store->colptr);
+
+		auto m_b = static_cast<double*>(static_cast<DNformat*>(m_rhs_Super.Store)->nzval);
+		auto m_x = static_cast<double*>(static_cast<DNformat*>(m_sol_Super.Store)->nzval);
+
+
 		for (auto col_sel = 0; col_sel<m_n; ++col_sel)
 		{
 			for (auto row_sel = m_ja[col_sel]; row_sel<m_ja[col_sel+1]; ++row_sel)
 			{
-				res[col_sel] = m_b[col_sel] - m_a[row_sel] * m_x[col_sel];
+				res[m_ia[col_sel]] = m_b[col_sel] - m_a[row_sel] * m_x[col_sel];
 			}
 		}
 	}
