@@ -499,12 +499,12 @@ double ChCSR3Matrix::GetElement(int row, int col) {
     assert(row < m_num_rows && col < m_num_cols);
     assert(row >= 0 && col >= 0);
 
-    int leaddimsel = row_major_format ? row : col;
-    int traildim_sel = row_major_format ? col : row;
+    int lead_sel = row_major_format ? row : col;
+    int trail_sel = row_major_format ? col : row;
 
-    for (int traildim_sel = leadIndex_vect[leaddimsel]; traildim_sel < leadIndex_vect[leaddimsel + 1]; traildim_sel++) {
-        if (trailIndex_vect[traildim_sel] == traildim_sel) {
-            return values_vect[traildim_sel];
+    for (int trailInd_sel = leadIndex_vect[lead_sel]; trailInd_sel < leadIndex_vect[lead_sel + 1]; trailInd_sel++) {
+        if (trailIndex_vect[trailInd_sel] == trail_sel) {
+            return values_vect[trailInd_sel];
         }
     }
     return 0;
@@ -610,7 +610,7 @@ bool ChCSR3Matrix::Compress() {
     int traildim_sel_new = 0;
     int leaddim_sel = 0;
 
-    for (int traildim_sel = 0; traildim_sel < leadIndex_vect[m_num_rows]; traildim_sel++) {
+    for (int traildim_sel = 0; traildim_sel < leadIndex_vect[leading_dimension]; traildim_sel++) {
         // if an element is not initialized it would simply skip its copy
         if (trailIndex_vect[traildim_sel] > -1) {
             trailIndex_vect[traildim_sel_new] = trailIndex_vect[traildim_sel];
@@ -622,7 +622,7 @@ bool ChCSR3Matrix::Compress() {
         // rectangular matrices)
         if (traildim_sel == leadIndex_vect[leaddim_sel]) {
             if (trailIndex_vect[traildim_sel] == -1) {
-                trailIndex_vect[traildim_sel_new] = std::min(leaddim_sel, m_num_cols);
+                trailIndex_vect[traildim_sel_new] = std::min(leaddim_sel, trailing_dimension);
                 values_vect[traildim_sel_new] = 0;
                 traildim_sel_new++;
             }
