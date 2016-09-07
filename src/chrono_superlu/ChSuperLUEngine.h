@@ -109,10 +109,10 @@ class ChApiSuperLU ChSuperLUEngine {
 	std::vector<int> perm_c; /* column permutation vector */
 	std::vector<int> perm_r; /* row permutations from partial pivoting */
 	std::vector<int> etree;
-	void* work = nullptr;
-	int            info;
-	int lwork = 0; // allocate space internally by system malloc (don't use 'work' variable)
-	int            i, nnz;
+	void*          work = nullptr;
+	int            info = 0;
+	int            lwork = 0; // allocate space internally by system malloc (don't use 'work' variable)
+	int            i =0, nnz=0;
 	//std::vector<double> rhsb, rhsx;
 	std::vector<double> R, C;
 	std::vector<double> ferr, berr;

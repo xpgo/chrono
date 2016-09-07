@@ -41,7 +41,8 @@ namespace chrono {
 	ChSuperLUEngine::~ChSuperLUEngine()
 	{
 		StatFree(&stat);
-		Destroy_CompCol_Matrix(&m_mat_Super);
+		//Destroy_CompCol_Matrix(&m_mat_Super); this would destroy also the CSR arrays
+		Destroy_SuperMatrix_Store(&m_mat_Super);
 		Destroy_SuperMatrix_Store(&m_rhs_Super);
 		Destroy_SuperMatrix_Store(&m_sol_Super);
 		if (lwork == 0) {
