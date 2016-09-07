@@ -38,7 +38,7 @@ int test_pure_vectors_input()
 int test_CSR_input()
 {
 	int rows = 5;
-	ChCSR3Matrix matCSR3(rows, rows, true, 16);
+	ChCSR3Matrix matCSR3(rows, rows, false);
 
 	matCSR3.SetElement(0, 0, 19);
 	matCSR3.SetElement(1, 0, 12);
@@ -57,7 +57,7 @@ int test_CSR_input()
 	matCSR3.SetElement(3, 4, 21);
 	matCSR3.SetElement(4, 4, 18);
 
-	//matCSR3.Compress();
+	matCSR3.Compress();
 
 
 	GetLog() << "Input matrix\n";
@@ -93,9 +93,12 @@ int test_CSR_input()
 
 int main(int argc, char *argv[])
 {
-	int test2 = test_CSR_input();
 
+	int test2 = test_CSR_input();
 	int test1 = test_pure_vectors_input();
+
+	
+
 
 	getchar();
 	
