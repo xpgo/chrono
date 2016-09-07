@@ -92,10 +92,10 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
     void initialize(int* nonzeros_vector);
     void initialize_ValuesColIndex();
     void copy(double* values_temp,
-              int* trailingIndex_temp,
+              int* leadIndex_temp,
               bool to_internal_arrays,
               int insleaddim = 0,
-              int traildim_sel = 0,
+              int trailInd_sel = 0,
               int shifts = 0);
 
   public:
