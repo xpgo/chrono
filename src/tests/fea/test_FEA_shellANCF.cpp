@@ -30,6 +30,12 @@
 #include "chrono_mkl/ChSolverMKL.h"
 #endif
 
+#define CHRONO_SUPERLU
+
+#ifdef CHRONO_SUPERLU
+#include "chrono_superlu/ChSolverSuperLU.h"
+#endif
+
 #ifdef CHRONO_OPENMP_ENABLED
 #include <omp.h>
 #endif
@@ -40,6 +46,13 @@ using namespace chrono::fea;
 using std::cout;
 using std::endl;
 
+enum solver_type
+{
+	MKL,
+	SUPERLU,
+	MINRES
+} use_solver;
+
 // -----------------------------------------------------------------------------
 
 int num_threads = 4;      // default number of threads
@@ -47,8 +60,8 @@ double step_size = 1e-3;  // integration step size
 int num_steps = 20;       // number of integration steps
 int skip_steps = 0;       // initial number of steps excluded from timing
 
-int numDiv_x = 50;  // mesh divisions in X direction
-int numDiv_y = 50;  // mesh divisions in Y direction
+int numDiv_x = 10;  // mesh divisions in X direction
+int numDiv_y = 10;  // mesh divisions in Y direction
 int numDiv_z = 1;   // mesh divisions in Z direction
 
 std::string out_dir = "../TEST_SHELL_ANCF";  // name of output directory
@@ -57,18 +70,31 @@ bool verbose = true;                        // verbose output?
 
 // -----------------------------------------------------------------------------
 
-void RunModel(bool use_mkl,              // use MKL solver (if available)
+void RunModel(solver_type solver_sel,    // use MKL solver (if available)
               bool use_adaptiveStep,     // allow step size reduction
               bool use_modifiedNewton,   // use modified Newton method
               const std::string& suffix  // output filename suffix
               ) {
+
 #ifndef CHRONO_MKL
-    use_mkl = false;
+    if (solver_sel == MKL)
+    {
+		cout << "MKL Solver not found; switch to MINRES" << endl;
+		solver_sel = MINRES;
+    }
+#endif
+
+#ifndef CHRONO_SUPERLU
+	if (solver_sel == SUPERLU)
+	{
+		cout << "SUPERLU Solver not found; switch to MINRES" << endl;
+		solver_sel = MINRES;
+	}
 #endif
 
     cout << endl;
     cout << "===================================================================" << endl;
-    cout << "Solver:          " << (use_mkl ? "MKL" : "MINRES") << endl;
+    cout << "Solver:          " << solver_sel << endl;
     cout << "Adaptive step:   " << (use_adaptiveStep ? "Yes" : "No") << endl;
     cout << "Modified Newton: " << (use_modifiedNewton ? "Yes" : "No") << endl;
     cout << endl;
@@ -165,13 +191,20 @@ void RunModel(bool use_mkl,              // use MKL solver (if available)
     my_system.SetupInitial();
 
     // Set up solver
-#ifdef CHRONO_MKL
-    ChSolverMKL<>* mkl_solver_stab = nullptr;
-    ChSolverMKL<>* mkl_solver_speed = nullptr;
-    ////ChSolverMKL<ChMapMatrix>* mkl_solver_stab = nullptr;
-    ////ChSolverMKL<ChMapMatrix>* mkl_solver_speed = nullptr;
+	switch (solver_sel)
+	{
+	case MKL:
+		break;
+	}
 
-    if (use_mkl) {
+
+#ifdef CHRONO_MKL
+	ChSolverMKL<>* mkl_solver_stab = nullptr;
+	ChSolverMKL<>* mkl_solver_speed = nullptr;
+	////ChSolverMKL<ChMapMatrix>* mkl_solver_stab = nullptr;
+	////ChSolverMKL<ChMapMatrix>* mkl_solver_speed = nullptr;
+
+    if (solver_sel == MKL) {
         mkl_solver_stab = new ChSolverMKL<>;
         mkl_solver_speed = new ChSolverMKL<>;
         ////mkl_solver_stab = new ChSolverMKL<ChMapMatrix>;
@@ -184,7 +217,22 @@ void RunModel(bool use_mkl,              // use MKL solver (if available)
     }
 #endif
 
-    if (!use_mkl) {
+#ifdef CHRONO_SUPERLU
+	ChSolverSuperLU<>* superlu_solver_stab = nullptr;
+	ChSolverSuperLU<>* superlu_solver_speed = nullptr;
+
+	if (solver_sel == SUPERLU) {
+		superlu_solver_stab = new ChSolverSuperLU<>;
+		superlu_solver_speed = new ChSolverSuperLU<>;
+		my_system.ChangeSolverStab(superlu_solver_stab);
+		my_system.ChangeSolverSpeed(superlu_solver_speed);
+		superlu_solver_speed->SetSparsityPatternLock(false);
+		superlu_solver_stab->SetSparsityPatternLock(false);
+		superlu_solver_speed->SetVerbose(verbose);
+	}
+#endif
+
+    if (solver_sel == MINRES) {
         my_system.SetSolverType(ChSystem::SOLVER_MINRES);
         ChSolverMINRES* msolver = (ChSolverMINRES*)my_system.GetSolverSpeed();
         msolver->SetDiagonalPreconditioning(true);
@@ -217,9 +265,11 @@ void RunModel(bool use_mkl,              // use MKL solver (if available)
     double time_setup = 0;
     double time_setup_assembly = 0;
     double time_setup_pardiso = 0;
+	double time_setup_superlu = 0;
     double time_solve = 0;
     double time_solve_assembly = 0;
     double time_solve_pardiso = 0;
+	double time_solve_superlu = 0;
     double time_update = 0;
     double time_force = 0;
     double time_jacobian = 0;
@@ -240,15 +290,32 @@ void RunModel(bool use_mkl,              // use MKL solver (if available)
         my_mesh->ResetCounters();
         my_mesh->ResetTimers();
 #ifdef CHRONO_MKL
-        if (use_mkl)
+        if (solver_sel == MKL)
             mkl_solver_speed->ResetTimers();
+#endif
+#ifdef CHRONO_SUPERLU
+		if (solver_sel == SUPERLU)
+			superlu_solver_speed->ResetTimers();
 #endif
         my_system.DoStepDynamics(step_size);
 
-        if (istep==3 && use_mkl)
+        if (istep==3)
         {
-            mkl_solver_speed->SetSparsityPatternLock(true);
-            mkl_solver_stab->SetSparsityPatternLock(true);
+#ifdef CHRONO_MKL
+			if (solver_sel == MKL)
+			{
+				mkl_solver_speed->SetSparsityPatternLock(true);
+				mkl_solver_stab->SetSparsityPatternLock(true);
+			}
+#endif
+#ifdef CHRONO_SUPERLU
+			if (solver_sel == SUPERLU)
+			{
+				superlu_solver_speed->SetSparsityPatternLock(true);
+				superlu_solver_stab->SetSparsityPatternLock(true);
+			}
+#endif
+				
         }
 
         if (istep == skip_steps) {
@@ -277,12 +344,20 @@ void RunModel(bool use_mkl,              // use MKL solver (if available)
         time_solve += my_system.GetTimerSolver();
         time_update += my_system.GetTimerUpdate();
 #ifdef CHRONO_MKL
-        if (use_mkl) {
+        if (solver_sel == MKL) {
             time_setup_assembly += mkl_solver_speed->GetTimeSetupAssembly();
             time_setup_pardiso += mkl_solver_speed->GetTimeSetupPardiso();
             time_solve_assembly += mkl_solver_speed->GetTimeSolveAssembly();
             time_solve_pardiso += mkl_solver_speed->GetTimeSolvePardiso();
         }
+#endif
+#ifdef CHRONO_SUPERLU
+		if (solver_sel == SUPERLU) {
+			time_setup_assembly += superlu_solver_speed->GetTimeSetupAssembly();
+			time_setup_superlu += superlu_solver_speed->GetTimeSetupSuperLU();
+			time_solve_assembly += superlu_solver_speed->GetTimeSolveAssembly();
+			time_solve_superlu += superlu_solver_speed->GetTimeSolveSuperLU();
+		}
 #endif
         time_force += my_mesh->GetTimeInternalForces();
         time_jacobian += my_mesh->GetTimeJacobianLoad();
@@ -303,10 +378,16 @@ void RunModel(bool use_mkl,              // use MKL solver (if available)
             cout << "step:  " << my_system.GetTimerStep() << endl;
             cout << "setup: " << my_system.GetTimerSetup();
 #ifdef CHRONO_MKL
-            if (use_mkl) {
+            if (solver_sel == MKL) {
                 cout << "  assembly: " << mkl_solver_speed->GetTimeSetupAssembly();
                 cout << "  pardiso: " << mkl_solver_speed->GetTimeSetupPardiso();
             }
+#endif
+#ifdef CHRONO_SUPERLU
+			if (solver_sel == SUPERLU) {
+				cout << "  assembly: " << superlu_solver_speed->GetTimeSetupAssembly();
+				cout << "  SuperLU: " << superlu_solver_speed->GetTimeSetupSuperLU();
+			}
 #endif
             cout << endl;
             cout << "solve: " << my_system.GetTimerSolver() << "  ";
@@ -331,19 +412,23 @@ void RunModel(bool use_mkl,              // use MKL solver (if available)
     cout << std::setprecision(3) << std::fixed;
     cout << "Total time: " << time_total << endl;
     cout << "  Setup:    " << time_setup << "\t (" << (time_setup / time_total) * 100 << "%)" << endl;
-    if (use_mkl) {
+#ifdef CHRONO_MKL
+    if (solver_sel == MKL) {
         cout << "    Assembly: " << time_setup_assembly << "\t (" << (time_setup_assembly / time_setup) * 100
              << "% setup)" << endl;
         cout << "    Pardiso:  " << time_setup_pardiso << "\t (" << (time_setup_pardiso / time_setup) * 100
              << "% setup)" << endl;
     }
     cout << "  Solve:    " << time_solve << "\t (" << (time_solve / time_total) * 100 << "%)" << endl;
-    if (use_mkl) {
+#endif
+#ifdef CHRONO_SUPERLU
+    if (solver_sel == SUPERLU) {
         cout << "    Assembly: " << time_solve_assembly << "\t (" << (time_solve_assembly / time_solve) * 100
              << "% solve)" << endl;
-        cout << "    Pardiso:  " << time_solve_pardiso << "\t (" << (time_solve_pardiso / time_solve) * 100
+        cout << "    SuperLU:  " << time_solve_superlu << "\t (" << (time_solve_superlu / time_solve) * 100
              << "% solve)" << endl;
     }
+#endif
     cout << "  Forces:   " << time_force << "\t (" << (time_force / time_total) * 100 << "%)" << endl;
     cout << "  Jacobian: " << time_jacobian << "\t (" << (time_jacobian / time_total) * 100 << "%)" << endl;
     cout << "  Update:   " << time_update << "\t (" << (time_update / time_total) * 100 << "%)" << endl;
@@ -379,12 +464,15 @@ int main(int argc, char* argv[]) {
     GetLog() << "No OpenMP\n";
 #endif
 
-    // Run simulations.
-    RunModel(true, true, false, "MKL_adaptive_full");     // MKL, adaptive step, full Newton
-    RunModel(true, true, true, "MKL_adaptive_modified");  // MKL, adaptive step, modified Newton
+	// Run simulations.
+	RunModel(SUPERLU, true, false, "MKL_adaptive_full");     // SUPERLU, adaptive step, full Newton
+	RunModel(SUPERLU, true, true, "MKL_adaptive_modified");  // SUPERLU, adaptive step, modified Newton
 
-    RunModel(false, true, false, "MINRES_adaptive_full");     // MINRES, adaptive step, full Newton
-    RunModel(false, true, true, "MINRES_adaptive_modified");  // MINRES, adaptive step, modified Newton
+    RunModel(MKL, true, false, "MKL_adaptive_full");     // MKL, adaptive step, full Newton
+    RunModel(MKL, true, true, "MKL_adaptive_modified");  // MKL, adaptive step, modified Newton
+
+    RunModel(MINRES, true, false, "MINRES_adaptive_full");     // MINRES, adaptive step, full Newton
+    RunModel(MINRES, true, true, "MINRES_adaptive_modified");  // MINRES, adaptive step, modified Newton
 
      return 0;
 }

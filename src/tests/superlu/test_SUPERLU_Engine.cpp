@@ -8,7 +8,7 @@ using namespace chrono;
 
 int test_pure_vectors_input()
 {
-	std::cout << "Test simple solution using STL vectors" << std::endl;
+	std::cout << "/******* Test simple solution using STL vectors *******/" << std::endl;
 	std::vector<double> values = { 19, 12, 12, 21, 12, 12, 21, 16, 21, 5, 21, 18 };
 	std::vector<int> rowIndex = { 0,1,4,1,2,4,0,2,0,3,3,4 };
 	std::vector<int> colIndex = { 0,3,6,8,10,12 };
@@ -31,13 +31,14 @@ int test_pure_vectors_input()
 	{
 		std::cout << sol[row_sel] << " ";
 	}
+	std::cout << std::endl << std::endl << std::endl;
 
 	return 0;
 }
 
 int test_CSR_input()
 {
-	std::cout << "Test simple solution using CSR matrix" << std::endl;
+	std::cout << "/******* Test simple solution using CSR matrix *******/" << std::endl;
 	int rows = 5;
 	ChCSR3Matrix matCSR3(rows, rows, false);
 
@@ -86,14 +87,14 @@ int test_CSR_input()
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 		std::cout << sol[row_sel] << " ";
-	std::cout << std::endl;
+	std::cout << std::endl << std::endl << std::endl;
 
 	return 0;
 }
 
 int test_SetupSolve()
 {
-	std::cout << "Test Factorization + Solution phase" << std::endl;
+	std::cout << " /******* Test Factorization + Solution phase *******/" << std::endl;
 	// initialize matrix
 	int rows = 5;
 	ChCSR3Matrix matCSR3(rows, rows, false);
@@ -122,14 +123,9 @@ int test_SetupSolve()
 
 
 	ChSuperLUEngine m_engine;
-
-
-
 	// call for factorization
 	m_engine.SetMatrix(matCSR3);
 	m_engine.SuperLUCall(12, true);
-
-
 
 	// call for first solve
 	m_engine.SetRhsVector(rhs.data());
@@ -138,7 +134,7 @@ int test_SetupSolve()
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 		std::cout << sol[row_sel] << " ";
-	std::cout << std::endl;
+	std::cout << std::endl << std::endl;
 
 	// call for second solve
 	std::fill(rhs.begin(), rhs.end(), 2.0);
@@ -146,16 +142,17 @@ int test_SetupSolve()
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 		std::cout << sol[row_sel] << " ";
-	std::cout << std::endl;
+	std::cout << std::endl << std::endl << std::endl;
 	return 0;
 }
 
 int main(int argc, char *argv[])
 {
 
-	int test3 = test_SetupSolve();
 	int test1 = test_pure_vectors_input();
 	int test2 = test_CSR_input();
+	int test3 = test_SetupSolve();
+
 	
 
 	

@@ -18,6 +18,11 @@ if(ENABLE_MODULE_MKL)
     list(APPEND LIBS "ChronoEngine_mkl")
 endif()
 
+if(ENABLE_MODULE_SUPERLU)
+    include_directories(${CH_SUPERLU_INCLUDES})
+    list(APPEND LIBS "ChronoEngine_SuperLU")
+endif()
+
 if(ENABLE_MODULE_IRRLICHT)
     include_directories(${CH_IRRLICHTINC})
     set(COMPILER_FLAGS "${COMPILER_FLAGS} ${CH_IRRLICHT_CXX_FLAGS}")
