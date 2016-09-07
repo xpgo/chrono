@@ -54,7 +54,7 @@ SET(ChronoEngine_SuperLU_HEADERS
 
 SET(ChronoEngine_SuperLU_SOURCES
 	ChSuperLUEngine.cpp
-    ChSolverSuperLU.cpp
+    # ChSolverSuperLU.cpp
 )
 
 SOURCE_GROUP("Headers" FILES ${ChronoEngine_SuperLU_HEADERS})

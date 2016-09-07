@@ -15,7 +15,6 @@
 // =============================================================================
 
 #include <algorithm>
-#include <cmath>
 
 #include "chrono_superlu/ChSuperLUEngine.h"
 
@@ -28,14 +27,7 @@ namespace chrono {
 
 	ChSuperLUEngine::ChSuperLUEngine(int pb_size): m_n(pb_size)
 	{
-		/* Defaults */
-		lwork = 0;
-
-		set_default_options(&options);
-
-		options.Equil = YES;
-		options.DiagPivotThresh = 1.0;
-		options.Trans = NOTRANS;
+		ResetSolver();
 	}
 
 	ChSuperLUEngine::~ChSuperLUEngine()
@@ -57,7 +49,10 @@ namespace chrono {
 		// this function is identical to SetMatrix(int pb_size, double* values, int* rowIndex, int* colIndex)
 		// but it is here because the type of the matrix can be deduced in this case from Z
 		m_n = Z.GetNumRows();
-		dCreate_CompCol_Matrix(&m_mat_Super, m_n, m_n, Z.GetNNZ(), Z.GetCSR_ValueArray(), Z.GetCSR_TrailingIndexArray(), Z.GetCSR_LeadingIndexArray(), SLU_NC, SLU_D, SLU_GE);
+		m_a = Z.GetCSR_ValueArray();
+		m_ia = Z.GetCSR_TrailingIndexArray();
+		m_ja = Z.GetCSR_LeadingIndexArray();
+		dCreate_CompCol_Matrix(&m_mat_Super, m_n, m_n, Z.GetNNZ(), m_a, m_ia, m_ja, SLU_NC, SLU_D, SLU_GE);
 
 		etree.resize(m_n);
 		perm_r.resize(m_n);
@@ -74,7 +69,6 @@ namespace chrono {
 		m_ia = rowIndex;
 		m_ja = colIndex;
 		dCreate_CompCol_Matrix(&m_mat_Super, m_n, m_n, m_ja[m_n], m_a, m_ia, m_ja, SLU_NC, SLU_D, SLU_GE);
-		auto Astore = static_cast<double*>(m_mat_Super.Store);
 
 		etree.resize(m_n);
 		perm_r.resize(m_n);
@@ -112,6 +106,7 @@ namespace chrono {
 		m_nrhs = nrhs;
 		dCreate_Dense_Matrix(&m_rhs_Super, m_n, m_nrhs, m_b, m_n, SLU_DN, SLU_D, SLU_GE);
 
+
 		berr.resize(m_nrhs);
 	}
 
@@ -133,6 +128,8 @@ namespace chrono {
 		m_rhs_Super.ncol = (phase == ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
 		options.Fact = (phase == SOLVE) ? FACTORED : DOFACT; /* Indicate the factored form of m_mat_Super is supplied. */
 
+		ferr.resize(m_nrhs);
+		berr.resize(m_nrhs);
 		
 		// call to SuperLU
 		dgssvx(&options, &m_mat_Super, perm_c.data(), perm_r.data(), etree.data(), equed, R.data(), C.data(),
@@ -201,9 +198,42 @@ namespace chrono {
 		}
 		
 
-		StatFree(&stat);
-
 		return info;
 	}
 
+	void ChSuperLUEngine::ResetSolver()
+	{
+		lwork = 0;
+		set_default_options(&options);
+	}
+
+	void ChSuperLUEngine::GetResidual(ChMatrix<>& res) const
+	{
+		assert(res.GetRows() >= m_n);
+		GetResidual(res.GetAddress());
+	}
+
+	void ChSuperLUEngine::GetResidual(double* res) const
+	{
+		for (auto col_sel = 0; col_sel<m_n; ++col_sel)
+		{
+			for (auto row_sel = m_ja[col_sel]; row_sel<m_ja[col_sel+1]; ++row_sel)
+			{
+				res[col_sel] = m_b[col_sel] - m_a[row_sel] * m_x[col_sel];
+			}
+		}
+	}
+
+	double ChSuperLUEngine::GetResidualNorm() const
+	{
+		std::vector<double> res(m_n);
+		GetResidual(res.data());
+		double norm = 0;
+		for (int i = 0; i < m_n; i++) {
+			norm += res[i] * res[i];
+		}
+
+		// also BLAS function can be used
+		return std::sqrt(norm);
+	}
 }  // end namespace chrono

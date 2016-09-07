@@ -58,9 +58,8 @@ namespace chrono {
 
 		m_timer_setup_assembly.stop();
 
-		/* ONLY PERFORM THE LU DECOMPOSITION */
 		m_engine.SetMatrix(m_mat);
-
+		// Performs factorization (LU decomposition)
 		m_timer_setup_superlu.start();
 		m_engine.SuperLUCall(12);
 		m_timer_setup_superlu.stop();
@@ -80,11 +79,7 @@ namespace chrono {
 		m_engine.SetSolutionVector(m_sol);
 		m_timer_solve_assembly.stop();
 
-
-		/* ------------------------------------------------------------
-		NOW WE SOLVE THE LINEAR SYSTEM USING THE FACTORED FORM OF m_mat_Super.
-		------------------------------------------------------------*/
-
+		// Solve the system
 		m_timer_solve_superlu.start();
 		m_engine.SuperLUCall(33);
 		m_timer_solve_superlu.stop();

@@ -67,8 +67,12 @@ class ChApiSuperLU ChSuperLUEngine {
     /// Reinitializes the solver to default values.
     void ResetSolver();
 
-    // Output functions
+	// Auxiliary functions
+	/// Returns the Options vector
+	superlu_options_t& GetOptions() { return options; }
 
+
+    // Output functions
     /// Calculate and return the problem residual res=b-Ax.
     /// Note that it is the caller's responsibility to provide an array of appropriate size.
     void GetResidual(ChMatrix<>& res) const;
@@ -77,12 +81,12 @@ class ChApiSuperLU ChSuperLUEngine {
     /// Calculate and return the L2-norm of the problem residual, ||b-Ax||.
     double GetResidualNorm() const;
 
-
   private:
 	// Data
 
 	// Matrix in CSR3 format.
 	// Note that ChSuperLUEngine does not own this data.
+	//TODO: actually they are not needed...
 	double* m_a = nullptr;    ///< pointer to the CSR array of non-zero elements of the A
 	int* m_ia = nullptr;  ///< pointer to the CSR array of row indices
 	int* m_ja = nullptr;  ///< pointer to the CSR array of columns indices
@@ -99,27 +103,31 @@ class ChApiSuperLU ChSuperLUEngine {
 	/* SuperLU data */
 	int& ldx = m_n;
 
-	char           equed[1];
-	SuperMatrix    m_mat_Super, L, U;
-	SuperMatrix    m_rhs_Super, m_sol_Super;
-	GlobalLU_t	   Glu; /* facilitate multiple factorizations with
-						SamePattern_SameRowPerm                  */
-	double         *values_vect;
-	int            *rowIndex_vect, *colIndex_ptr_vect;
+
+	SuperMatrix    m_mat_Super, m_rhs_Super, m_sol_Super;
 	std::vector<int> perm_c; /* column permutation vector */
 	std::vector<int> perm_r; /* row permutations from partial pivoting */
 	std::vector<int> etree;
-	void*          work = nullptr;
-	int            info = 0;
+
 	int            lwork = 0; // allocate space internally by system malloc (don't use 'work' variable)
-	int            i =0, nnz=0;
-	//std::vector<double> rhsb, rhsx;
-	std::vector<double> R, C;
-	std::vector<double> ferr, berr;
+	int            i = 0, nnz = 0;
+
+	std::vector<double> R = {0.0}, C = { 0.0 };
+	std::vector<double> ferr = {0.0}, berr={0.0};
 	double         rpg, rcond;
-	mem_usage_t    mem_usage;
 	superlu_options_t options;
 	SuperLUStat_t stat;
+
+	// internally used and never directly modified by user
+	SuperMatrix    L, U;
+	GlobalLU_t	   Glu; /* facilitate multiple factorizations with
+						SamePattern_SameRowPerm                  */
+	char           equed[1];
+	void*          work = nullptr; // don't used to allocate space
+	int            info = 0;
+	mem_usage_t    mem_usage;
+
+
 
     // SuperLU solver settings
 };
