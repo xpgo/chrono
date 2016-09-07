@@ -12,7 +12,7 @@
 // Authors: Dario Mangoni, Radu Serban
 // =============================================================================
 
-#include "chrono_mkl/ChCSR3Matrix.h"
+#include "chrono/core/ChCSR3Matrix.h"
 #include "chrono/core/ChMatrixDynamic.h"
 
 using namespace chrono;

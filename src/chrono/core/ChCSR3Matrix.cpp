@@ -13,7 +13,7 @@
 // =============================================================================
 
 #include <algorithm>
-#include "chrono_mkl/ChCSR3Matrix.h"
+#include "chrono/core/ChCSR3Matrix.h"
 
 #define ALIGNMENT_REQUIRED true
 
