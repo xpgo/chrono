@@ -60,8 +60,8 @@ double step_size = 1e-3;  // integration step size
 int num_steps = 20;       // number of integration steps
 int skip_steps = 0;       // initial number of steps excluded from timing
 
-int numDiv_x = 10;  // mesh divisions in X direction
-int numDiv_y = 10;  // mesh divisions in Y direction
+int numDiv_x = 50;  // mesh divisions in X direction
+int numDiv_y = 50;  // mesh divisions in Y direction
 int numDiv_z = 1;   // mesh divisions in Z direction
 
 std::string out_dir = "../TEST_SHELL_ANCF";  // name of output directory
@@ -465,8 +465,8 @@ int main(int argc, char* argv[]) {
 #endif
 
 	// Run simulations.
-	RunModel(SUPERLU, true, false, "MKL_adaptive_full");     // SUPERLU, adaptive step, full Newton
-	RunModel(SUPERLU, true, true, "MKL_adaptive_modified");  // SUPERLU, adaptive step, modified Newton
+	RunModel(SUPERLU, true, false, "SuperLU_adaptive_full");     // SUPERLU, adaptive step, full Newton
+	RunModel(SUPERLU, true, true, "SuperLU_adaptive_modified");  // SUPERLU, adaptive step, modified Newton
 
     RunModel(MKL, true, false, "MKL_adaptive_full");     // MKL, adaptive step, full Newton
     RunModel(MKL, true, true, "MKL_adaptive_modified");  // MKL, adaptive step, modified Newton

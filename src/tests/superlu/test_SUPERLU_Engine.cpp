@@ -25,7 +25,7 @@ int test_pure_vectors_input()
 	m_engine.SetSolutionVector(sol.data());
 	m_engine.SetRhsVector(rhs.data());
 
-	m_engine.SuperLUCall(13);
+	m_engine.SuperLUCall(13,2);
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 	{
