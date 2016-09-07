@@ -20,7 +20,7 @@
 #include "chrono_superlu/ChApiSuperLU.h"
 #include "chrono/core/ChSparseMatrix.h"
 #include "chrono/core/ChMatrixDynamic.h"
-#include "slu_ddefs.h"
+#include <slu_ddefs.h>
 
 
 namespace chrono {
@@ -62,7 +62,7 @@ class ChApiSuperLU ChSuperLUEngine {
     void SetProblem(ChSparseMatrix& Z, ChMatrix<>& b, ChMatrix<>& x);
 
     /// Solver routine.
-    int SuperLUCall(int phase, bool verbose = false);
+    int SuperLUCall(int phase, int verbose = 0);
 
     /// Reinitializes the solver to default values.
     void ResetSolver();

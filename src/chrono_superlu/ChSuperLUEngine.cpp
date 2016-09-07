@@ -28,6 +28,9 @@ namespace chrono {
 	ChSuperLUEngine::ChSuperLUEngine()
 	{
 		ResetSolver();
+		StatInit(&stat);
+		// it is fundamental to leave m_sol_Super.ncol=0, and m_rhs_Super.ncol=0
+		// in order to avoid checking of dgssvx routine
 		dCreate_Dense_Matrix(&m_sol_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
 		dCreate_Dense_Matrix(&m_rhs_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
 		dCreate_CompCol_Matrix(&m_mat_Super, 0, 0, 0, nullptr, nullptr, nullptr, SLU_NC, SLU_D, SLU_GE);
@@ -41,8 +44,11 @@ namespace chrono {
 		Destroy_SuperMatrix_Store(&m_rhs_Super);
 		Destroy_SuperMatrix_Store(&m_sol_Super);
 		if (lwork == 0) {
-			Destroy_SuperNode_Matrix(&L);
-			Destroy_CompCol_Matrix(&U);
+			if (L.nrow==m_n && L.ncol == m_n) // checks if the solver has ever been called
+			{
+				Destroy_SuperNode_Matrix(&L);
+				Destroy_CompCol_Matrix(&U);
+			}
 		}
 	}
 
@@ -121,11 +127,8 @@ namespace chrono {
 		SetSolutionVector(x);
 	}
 
-	int ChSuperLUEngine::SuperLUCall(int phase, bool verbose)
+	int ChSuperLUEngine::SuperLUCall(int phase, int verbose)
 	{
-
-		/* Initialize the statistics variables. */
-		StatInit(&stat);
 
 		// Set the number of right-hand side
 		// if put to 0 then factorize without solve
