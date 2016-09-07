@@ -139,9 +139,9 @@ namespace chrono {
 			&Glu, &mem_usage, &stat, &info);
 
 
-		if (phase == ANALYSIS_NUMFACTORIZATION || phase == COMPLETE)
+		if (verbose>1 && (phase == ANALYSIS_NUMFACTORIZATION || phase == COMPLETE))
 		{
-			if (verbose && (info == 0 || info == m_n + 1))
+			if (info == 0 || info == m_n + 1)
 			{
 				printf("LU factorization: dgssvx() returns info %d\n", info);
 
@@ -158,7 +158,7 @@ namespace chrono {
 				printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
 					mem_usage.for_lu / 1e6, mem_usage.total_needed / 1e6);
 			}
-			else if (verbose && (info > 0 && lwork == -1))
+			else if (info > 0 && lwork == -1)
 			{
 				printf("** Estimated memory: %d bytes\n", info - m_n);
 			}
@@ -167,9 +167,9 @@ namespace chrono {
 				StatPrint(&stat);
 		}
 
-		if (phase == SOLVE || phase == COMPLETE)
+		if (verbose>1 && (phase == SOLVE || phase == COMPLETE))
 		{
-			if (verbose && (info == 0 || info == m_n + 1))
+			if (info == 0 || info == m_n + 1)
 			{
 				printf("Triangular solve: dgssvx() returns info %d\n", info);
 
@@ -181,7 +181,7 @@ namespace chrono {
 						printf("%8d%8d%16e%16e\n", i + 1, stat.RefineSteps, ferr[i], berr[i]);
 				}
 			}
-			else if (verbose && (info > 0 && lwork == -1))
+			else if (info > 0 && lwork == -1)
 			{
 				printf("** Estimated memory: %d bytes\n", info - m_n);
 			}

@@ -83,7 +83,7 @@ public:
 
 		// Solve the system
 		m_timer_solve_superlu.start();
-		m_engine.SuperLUCall(33);
+		m_engine.SuperLUCall(33, verbose);
 		m_timer_solve_superlu.stop();
 		m_solver_call++;
 
@@ -92,6 +92,12 @@ public:
 		m_timer_solve_assembly.start();
 		sysd.FromVectorToUnknowns(m_sol);
 		m_timer_solve_assembly.stop();
+
+		if (verbose)
+		{
+			double res_norm = m_engine.GetResidualNorm();
+			GetLog() << " SUPERLU solve call " << m_solver_call << "  |residual| = " << res_norm << "\n";
+		}
 
 		return 0.0f;
 	}
@@ -133,10 +139,10 @@ public:
 
 		m_timer_setup_assembly.stop();
 
-		m_engine.SetMatrix(m_mat);
 		// Performs factorization (LU decomposition)
+		m_engine.SetMatrix(m_mat);
 		m_timer_setup_superlu.start();
-		m_engine.SuperLUCall(12);
+		m_engine.SuperLUCall(12, verbose);
 		m_timer_setup_superlu.stop();
 
 

@@ -44,7 +44,7 @@ class ChApi ChSolver {
     CH_RTTI_ROOT(ChSolver);
 
   public:
-    ChSolver() : verbose(false) {}
+    ChSolver() {}
 
     virtual ~ChSolver() {}
 
@@ -71,10 +71,10 @@ class ChApi ChSolver {
     }
 
     /// Set verbose output from solver.
-    void SetVerbose(bool mv) { verbose = mv; }
+    void SetVerbose(int mv) { verbose = mv; }
 
     // Return whether or not verbose output is enabled.
-    bool GetVerbose() const { return verbose; }
+    int GetVerbose() const { return verbose; }
 
     /// Method to allow serialization of transient data to archives.
     virtual void ArchiveOUT(ChArchiveOut& marchive) {
@@ -93,7 +93,7 @@ class ChApi ChSolver {
     }
 
   protected:
-    bool verbose;
+    int verbose = 0;
 };
 
 /// @} chrono_solver
