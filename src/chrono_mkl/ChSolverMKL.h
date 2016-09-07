@@ -38,7 +38,7 @@ class ChSolverMKL : public ChSolver {
         : m_engine(0, ChSparseMatrix::GENERAL),
           m_mat(1, 1),
           m_solver_call(0),
-          m_dim(0),
+          m_n(0),
           m_nnz(0),
           m_lock(false),
           m_use_perm(false),
@@ -135,21 +135,21 @@ class ChSolverMKL : public ChSolver {
 
         // Calculate problem size at first call.
         if (m_solver_call == 0) {
-            m_dim = sysd.CountActiveVariables() + sysd.CountActiveConstraints();
+            m_n = sysd.CountActiveVariables() + sysd.CountActiveConstraints();
         }
 
         // If an NNZ value for the underlying matrix was specified, perform an initial resizing, *before*
         // a call to ChSystemDescriptor::ConvertToMatrixForm(), to allow for possible size optimizations.
         // Otherwise, do this only at the first call, using the default sparsity fill-in.
         if (m_nnz != 0) {
-            m_mat.Reset(m_dim, m_dim, m_nnz);
+            m_mat.Reset(m_n, m_n, m_nnz);
         } else if (m_solver_call == 0) {
-            m_mat.Reset(m_dim, m_dim, static_cast<int>(m_dim * (m_dim * SPM_DEF_FULLNESS)));
+            m_mat.Reset(m_n, m_n, static_cast<int>(m_n * (m_n * SPM_DEF_FULLNESS)));
         }
 
         // Assemble the matrix.
         sysd.ConvertToMatrixForm(&m_mat, nullptr);
-        m_dim = m_mat.GetNumRows();
+        m_n = m_mat.GetNumRows();
 
 
         // Allow the matrix to be compressed.
@@ -170,7 +170,7 @@ class ChSolverMKL : public ChSolver {
         m_timer_setup_assembly.stop();
 
         if (verbose) {
-            GetLog() << " MKL setup n = " << m_dim << "  nnz = " << m_mat.GetNNZ() << "\n";
+            GetLog() << " MKL setup n = " << m_n << "  nnz = " << m_mat.GetNNZ() << "\n";
         }
 
         // Perform the factorization with the Pardiso sparse direct solver.
@@ -215,7 +215,7 @@ class ChSolverMKL : public ChSolver {
     Matrix m_mat;                   ///< problem matrix
     ChMatrixDynamic<double> m_rhs;  ///< right-hand side vector
     ChMatrixDynamic<double> m_sol;  ///< solution vector
-    int m_dim;                      ///< problem size
+    int m_n;                      ///< problem size
     int m_nnz;                      ///< user-supplied estimate of NNZ
     int m_solver_call;              ///< counter for calls to Solve
 

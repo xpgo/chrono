@@ -227,6 +227,7 @@ include_directories(${CH_INCLUDES})
 # Add directories to build various optional modules.  Each module is supposed
 # to provide an option for enabling that particular module.
 add_subdirectory(chrono_mkl)
+add_subdirectory(chrono_superlu)
 add_subdirectory(chrono_matlab)
 add_subdirectory(chrono_cascade)
 add_subdirectory(chrono_irrlicht)
@@ -335,6 +336,12 @@ if(ENABLE_MODULE_PYTHON)
   set(CHRONO_PYTHON "#define CHRONO_PYTHON")
 else()
   set(CHRONO_PYTHON "#undef CHRONO_PYTHON")
+endif()
+
+if(ENABLE_MODULE_SUPERLU)
+  set(CHRONO_SUPERLU "#define CHRONO_SUPERLU")
+else()
+  set(CHRONO_SUPERLU "#undef CHRONO_SUPERLU")
 endif()
 
 if(ENABLE_MODULE_VEHICLE)

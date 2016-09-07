@@ -57,6 +57,14 @@ if(ENABLE_MODULE_PARALLEL)
   	endif()
 endif()
 
+if(ENABLE_MODULE_SUPERLU)
+	option(BUILD_ADDITIONAL_TESTS_SUPERLU "Build additional test programs for SuperLU module" TRUE)
+	mark_as_advanced(FORCE BUILD_ADDITIONAL_TESTS_SUPERLU)
+	if(BUILD_ADDITIONAL_TESTS_SUPERLU)
+        add_subdirectory(superlu)
+   endif()
+endif()
+
 
 #if(ENABLE_MODULE_FSI)
 # 	option(BUILD_ADDITIONAL_TESTS_FSI "Build additional test programs for FSI module" TRUE)
