@@ -99,7 +99,7 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
               int shifts = 0);
 
   public:
-    ChCSR3Matrix(int nrows = 1, int ncols = 1, int nonzeros = 1, bool row_major_format_on = true);
+    ChCSR3Matrix(int nrows = 1, int ncols = 1, bool row_major_format_on = true, int nonzeros = 1);
     ChCSR3Matrix(int nrows, int ncols, int* nonzeros, bool row_major_format_on = true);
     virtual ~ChCSR3Matrix(){};
 

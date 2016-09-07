@@ -19,7 +19,7 @@
 
 namespace chrono {
 
-ChCSR3Matrix::ChCSR3Matrix(int nrows, int ncols, int nonzeros, bool row_major_format_on)
+ChCSR3Matrix::ChCSR3Matrix(int nrows, int ncols, bool row_major_format_on, int nonzeros)
     : ChSparseMatrix(nrows, ncols), row_major_format(row_major_format_on) {
     assert(nrows > 0 && ncols > 0 && nonzeros >= 0);
 
