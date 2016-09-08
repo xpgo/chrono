@@ -20,7 +20,7 @@
 #include "chrono_superlu/ChApiSuperLU.h"
 #include "chrono/core/ChSparseMatrix.h"
 #include "chrono/core/ChMatrixDynamic.h"
-#include <slu_ddefs.h>
+#include <slu_mt_ddefs.h>
 
 
 namespace chrono {
@@ -69,7 +69,7 @@ class ChApiSuperLU ChSuperLUEngine {
 
 	// Auxiliary functions
 	/// Returns the Options vector
-	superlu_options_t& GetOptions() { return options; }
+	superlumt_options_t& GetOptions() { return superlumt_options; }
 
 
     // Output functions
@@ -115,17 +115,23 @@ class ChApiSuperLU ChSuperLUEngine {
 	std::vector<double> R = {0.0}, C = { 0.0 };
 	std::vector<double> ferr = {0.0}, berr={0.0};
 	double         rpg, rcond;
-	superlu_options_t options;
-	SuperLUStat_t stat;
 
 	// internally used and never directly modified by user
 	SuperMatrix    L, U;
-	GlobalLU_t	   Glu; /* facilitate multiple factorizations with
-						SamePattern_SameRowPerm                  */
-	char           equed[1];
 	void*          work = nullptr; // don't used to allocate space
 	int            info = 0;
-	mem_usage_t    mem_usage;
+
+	// SuperLU_MT datas
+	superlu_memusage_t    superlu_memusage;
+	superlumt_options_t superlumt_options;
+	int         nprocs = 1;
+	fact_t      fact = EQUILIBRATE;
+	trans_t     trans = NOTRANS;
+	yes_no_t    refact = NO, usepr = NO;
+	equed_t     equed = NOEQUIL;
+	int relax, panel_size;
+	std::vector<int> colcnt_h;
+	std::vector<int> part_super_h;
 
 
 

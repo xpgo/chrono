@@ -27,8 +27,12 @@ namespace chrono {
 
 	ChSuperLUEngine::ChSuperLUEngine()
 	{
+		lwork = 0;
+		panel_size = sp_ienv(1);
+		relax = sp_ienv(2);
+
 		ResetSolver();
-		StatInit(&stat);
+
 		// it is fundamental to leave m_sol_Super.ncol=0, and m_rhs_Super.ncol=0
 		// in order to avoid checking of dgssvx routine
 		dCreate_Dense_Matrix(&m_sol_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
@@ -38,7 +42,7 @@ namespace chrono {
 
 	ChSuperLUEngine::~ChSuperLUEngine()
 	{
-		StatFree(&stat);
+		
 		//Destroy_CompCol_Matrix(&m_mat_Super); this would destroy also the CSR arrays
 		Destroy_SuperMatrix_Store(&m_mat_Super);
 		Destroy_SuperMatrix_Store(&m_rhs_Super);
@@ -70,12 +74,32 @@ namespace chrono {
 		m_mat_Super_store->rowind = rowIndex;
 		m_mat_Super_store->colptr = colIndex;
 
-		etree.resize(m_n);
+		R.resize(m_mat_Super.nrow);
+		C.resize(m_mat_Super.ncol);
+
 		perm_r.resize(m_n);
 		perm_c.resize(m_n);
 
-		R.resize(m_mat_Super.nrow);
-		C.resize(m_mat_Super.ncol);
+
+		get_perm_c(1, &m_mat_Super, perm_c.data());
+
+		superlumt_options.perm_c = perm_c.data();
+		superlumt_options.perm_r = perm_r.data();
+
+		// Internally computed
+		etree.resize(m_n);
+		colcnt_h.resize(m_n);
+		part_super_h.resize(m_n);
+
+		superlumt_options.etree = etree.data();
+		superlumt_options.colcnt_h = colcnt_h.data();
+		superlumt_options.part_super_h = part_super_h.data();
+
+		// update lda values also for rhs and sol because they could be
+		// not initialize if a factorization is called before
+		// initializing the sol and rhs
+		static_cast<DNformat*>(m_rhs_Super.Store)->lda = m_n;
+		static_cast<DNformat*>(m_sol_Super.Store)->lda = m_n;
 	}
 
 	void ChSuperLUEngine::SetSolutionVector(ChMatrix<>& x)
@@ -90,7 +114,7 @@ namespace chrono {
 		m_sol_Super.nrow = m_n;
 		m_sol_Super.ncol = 1;
 		auto m_sol_Super_store = static_cast<DNformat*>(m_sol_Super.Store);
-		m_sol_Super_store->lda = m_n;
+		//m_sol_Super_store->lda = m_n; // done during the SuperLU call
 		m_sol_Super_store->nzval = x;
 
 		ferr.resize(m_nrhs);
@@ -114,7 +138,7 @@ namespace chrono {
 		m_rhs_Super.nrow = m_n;
 		m_rhs_Super.ncol = nrhs;
 		auto m_rhs_Super_store = static_cast<DNformat*>(m_rhs_Super.Store);
-		m_rhs_Super_store->lda = m_n;
+		//m_rhs_Super_store->lda = m_n; // done during the SuperLU call
 		m_rhs_Super_store->nzval = b;
 
 		berr.resize(m_nrhs);
@@ -129,45 +153,53 @@ namespace chrono {
 
 	int ChSuperLUEngine::SuperLUCall(int phase, int verbose)
 	{
+		auto m_rhs_Super_ncol_bkp = m_rhs_Super.ncol;
+		auto m_sol_Super_ncol_bkp = m_sol_Super.ncol;
 
 		// Set the number of right-hand side
 		// if put to 0 then factorize without solve
 		m_rhs_Super.ncol = (phase == ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
-		options.Fact = (phase == SOLVE) ? FACTORED : DOFACT; /* Indicate the factored form of m_mat_Super is supplied. */
+		m_sol_Super.ncol = (phase == ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
+		superlumt_options.fact = (phase == SOLVE) ? FACTORED : DOFACT; /* Indicate the factored form of m_mat_Super is supplied. */
+		//TODO: superlumt_options.refact
 
-		
+
 		// call to SuperLU
-		dgssvx(&options, &m_mat_Super, perm_c.data(), perm_r.data(), etree.data(), equed, R.data(), C.data(),
-			&L, &U, work, lwork, &m_rhs_Super, &m_sol_Super, &rpg, &rcond, ferr.data(), berr.data(),
-			&Glu, &mem_usage, &stat, &info);
+		pdgssvx(nprocs, &superlumt_options, &m_mat_Super, perm_c.data(), perm_r.data(), &equed, R.data(), C.data(),
+			&L, &U, &m_rhs_Super, &m_sol_Super, &rpg, &rcond, ferr.data(), berr.data(),
+			&superlu_memusage, &info);
 
+		// restore previous values of columns of rhs and sol
+		// otherwise if someone set rhs and sol before factorization they will be corrupted
+		m_rhs_Super.ncol = m_rhs_Super_ncol_bkp;
+		m_sol_Super.ncol = m_sol_Super_ncol_bkp;
 
 		if (verbose>1 && (phase == ANALYSIS_NUMFACTORIZATION || phase == COMPLETE))
 		{
 			if (info == 0 || info == m_n + 1)
 			{
-				printf("LU factorization: dgssvx() returns info %d\n", info);
+				printf("Recip. pivot growth = %e\n", rpg);
+				printf("Recip. condition number = %e\n", rcond);
+				printf("%8s%16s%16s\n", "rhs", "FERR", "BERR");
+				for (i = 0; i < m_nrhs; ++i) {
+					printf(IFMT "%16e%16e\n", i + 1, ferr[i], berr[i]);
+				}
 
-				if (options.PivotGrowth) printf("Recip. pivot growth = %e\n", rpg);
-				if (options.ConditionNumber)
-					printf("Recip. condition number = %e\n", rcond);
-				auto Lnnz = static_cast<SCformat*>(L.Store)->nnz;
-				auto Unnz = static_cast<NCformat*>(U.Store)->nnz;
-				printf("No of nonzeros in factor L = %d\n", Lnnz);
-				printf("No of nonzeros in factor U = %d\n", Unnz);
-				printf("No of nonzeros in L+U = %d\n", Lnnz + Unnz - m_n);
-				printf("FILL ratio = %.1f\n", static_cast<float>(Lnnz + Unnz - m_n) / nnz);
+				auto Lnnz = static_cast<SCPformat*>(L.Store)->nnz;
+				auto Unnz = static_cast<NCPformat*>(U.Store)->nnz;
+				printf("No of nonzeros in factor L = " IFMT "\n", Lnnz);
+				printf("No of nonzeros in factor U = " IFMT "\n", Unnz);
+				printf("No of nonzeros in L+U = " IFMT "\n", Lnnz + Unnz - m_n);
+				printf("L\\U MB %.3f\ttotal MB needed %.3f\texpansions " IFMT "\n",
+					superlu_memusage.for_lu / 1e6, superlu_memusage.total_needed / 1e6,
+					superlu_memusage.expansions);
 
-				printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
-					mem_usage.for_lu / 1e6, mem_usage.total_needed / 1e6);
 			}
 			else if (info > 0 && lwork == -1)
 			{
 				printf("** Estimated memory: %d bytes\n", info - m_n);
 			}
 
-			if (options.PrintStat && phase == ANALYSIS_NUMFACTORIZATION)
-				StatPrint(&stat);
 		}
 
 		if (verbose>1 && (phase == SOLVE || phase == COMPLETE))
@@ -175,21 +207,11 @@ namespace chrono {
 			if (info == 0 || info == m_n + 1)
 			{
 				printf("Triangular solve: dgssvx() returns info %d\n", info);
-
-				if (options.IterRefine)
-				{
-					printf("Iterative Refinement:\n");
-					printf("%8s%8s%16s%16s\n", "rhs", "Steps", "FERR", "BERR");
-					for (i = 0; i < m_nrhs; ++i)
-						printf("%8d%8d%16e%16e\n", i + 1, stat.RefineSteps, ferr[i], berr[i]);
-				}
 			}
 			else if (info > 0 && lwork == -1)
 			{
-				printf("** Estimated memory: %d bytes\n", info - m_n);
+				printf("** Estimated memory: " IFMT " bytes\n", info - m_n);
 			}
-
-			if (options.PrintStat) StatPrint(&stat);
 		}
 		
 
@@ -198,8 +220,21 @@ namespace chrono {
 
 	void ChSuperLUEngine::ResetSolver()
 	{
-		lwork = 0;
-		set_default_options(&options);
+		superlumt_options.nprocs = nprocs;
+		superlumt_options.fact = fact;
+		superlumt_options.trans = trans;
+		superlumt_options.refact = refact;
+		superlumt_options.panel_size = panel_size;
+		superlumt_options.relax = relax;
+		superlumt_options.usepr = usepr;
+		superlumt_options.drop_tol = 0.0;
+		superlumt_options.diag_pivot_thresh = 1.0;
+		superlumt_options.SymmetricMode = NO;
+		superlumt_options.PrintStat = NO;
+		superlumt_options.perm_c = perm_c.data();
+		superlumt_options.perm_r = perm_r.data();
+		superlumt_options.work = work;
+		superlumt_options.lwork = lwork;
 	}
 
 	void ChSuperLUEngine::GetResidual(ChMatrix<>& res) const

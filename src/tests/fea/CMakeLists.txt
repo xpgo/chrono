@@ -46,6 +46,7 @@ foreach(PROGRAM ${FEA_TESTS})
 
     set_target_properties(${PROGRAM} PROPERTIES
         FOLDER tests
+		COMPILE_DEFINITIONS "${CH_SUPERLU_DEFS}"
         COMPILE_FLAGS "${COMPILER_FLAGS}"
         LINK_FLAGS "${LINKER_FLAGS}"
     )

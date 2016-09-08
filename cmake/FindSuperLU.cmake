@@ -27,13 +27,6 @@
 #    system paths.
 #
 
-# look for BLAS
-find_package(BLAS QUIET)
-if(NOT BLAS_FOUND)
-  message(WARNING "SuperLU requires BLAS which was not found, skipping the test.")
-  return()
-endif(NOT BLAS_FOUND)
-
 # look for header files, only at positions given by the user
 find_path(SUPERLU_INCLUDE_DIR
   NAMES supermatrix.h
@@ -50,7 +43,7 @@ find_path(SUPERLU_INCLUDE_DIR
 
 # look for library, only at positions given by the user
 find_library(SUPERLU_LIBRARY
-  NAMES "superlu_4.3" "superlu_4.2" "superlu_4.1" "superlu_4.0" "superlu_3.1" "superlu_3.0" "superlu"
+  NAMES "superlu_4.3" "superlu_4.2" "superlu_4.1" "superlu_4.0" "superlu_3.1" "superlu_3.0" "superlu" "superlu_mt"
   PATHS ${SUPERLU_PREFIX} ${SUPERLU_ROOT}
   PATH_SUFFIXES "lib" "lib32" "lib64"
   NO_DEFAULT_PATH
@@ -58,7 +51,7 @@ find_library(SUPERLU_LIBRARY
 
 # look for library files, including default paths
 find_library(SUPERLU_LIBRARY
-  NAMES "superlu_4.3" "superlu_4.2" "superlu_4.1" "superlu_4.0" "superlu_3.1" "superlu_3.0" "superlu"
+  NAMES "superlu_4.3" "superlu_4.2" "superlu_4.1" "superlu_4.0" "superlu_3.1" "superlu_3.0" "superlu" "superlu_mt"
   PATH_SUFFIXES "lib" "lib32" "lib64"
 )
 

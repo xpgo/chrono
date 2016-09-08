@@ -1,4 +1,4 @@
-#include "slu_ddefs.h"
+#include "slu_mt_ddefs.h"
 #include <vector>
 #include "chrono_superlu/ChSuperLUEngine.h"
 #include <core/ChCSR3Matrix.h>
@@ -152,13 +152,6 @@ int main(int argc, char *argv[])
 	int test1 = test_pure_vectors_input();
 	int test2 = test_CSR_input();
 	int test3 = test_SetupSolve();
-
-	
-
-	
-
-
-	getchar();
 	
 	return test1 || test2 || test3;
 }

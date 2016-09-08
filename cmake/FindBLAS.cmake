@@ -13,7 +13,6 @@
 #  BLAS_INCLUDE_DIR - include directory
 
 # Do nothing is BLAS was found before
-IF(NOT BLAS_FOUND)
 
 SET(BLAS_LIBRARIES)
 SET(BLAS_INCLUDE_DIR)
@@ -93,6 +92,7 @@ MACRO(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list)
     set(${LIBRARIES} NOTFOUND)
   endif(NOT _libraries_work)
 endmacro(Check_Fortran_Libraries)
+
 
 # Intel MKL?
 if((NOT BLAS_LIBRARIES)
@@ -240,25 +240,6 @@ if((NOT BLAS_LIBRARIES)
   endif (BLAS_LIBRARIES)
 endif()
 
-# custom, easy, straightforward search of blas library
-if((NOT BLAS_LIBRARIES)
-    AND ((NOT WITH_BLAS) OR (WITH_BLAS STREQUAL "generic")))
-	message(STATUS "BLAS_ROOT is ${BLAS_ROOT}")
-	find_library(BLAS_LIBRARIES "blas"
-		PATHS "${BLAS_ROOT}"
-		PATH_SUFFIXES "lib"
-		)
-		
-	find_path(BLAS_INCLUDE_DIR "slu_ddefs.h"
-		PATHS "${BLAS_ROOT}"
-		PATH_SUFFIXES "include"
-		)
-		
-  if (BLAS_LIBRARIES AND BLAS_INCLUDE_DIR)
-    set(BLAS_INFO "generic")
-  endif (BLAS_LIBRARIES AND BLAS_INCLUDE_DIR)
-endif()
-
 # Determine if blas was compiled with the f2c conventions
 IF (BLAS_LIBRARIES)
   SET(CMAKE_REQUIRED_LIBRARIES ${BLAS_LIBRARIES})
@@ -312,6 +293,3 @@ IF(NOT BLAS_FIND_QUIETLY)
     MESSAGE(STATUS "Cannot find a library with BLAS API. Not using BLAS.")
   ENDIF(BLAS_FOUND)
 ENDIF(NOT BLAS_FIND_QUIETLY)
-
-# Do nothing is BLAS was found before
-ENDIF(NOT BLAS_FOUND)
