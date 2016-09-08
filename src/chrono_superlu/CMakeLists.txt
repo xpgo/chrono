@@ -8,7 +8,7 @@ option(ENABLE_MODULE_SUPERLU "Enable the Chrono SuperLU module" OFF)
 
 IF(NOT ENABLE_MODULE_SUPERLU)
     MARK_AS_ADVANCED(FORCE SUPERLU_ROOT)
-
+	MARK_AS_ADVANCED(FORCE BLAS_ROOT)
     RETURN()
 ENDIF()
 
@@ -16,21 +16,31 @@ MESSAGE(STATUS "==== Chrono SuperLU module ====")
 
 
 MARK_AS_ADVANCED(CLEAR SUPERLU_ROOT)
-
+MARK_AS_ADVANCED(CLEAR BLAS_ROOT)
 
 # ------------------------------------------------------------------------------
 # Dependencies for SuperLU module
 # ------------------------------------------------------------------------------
 
-message(STATUS "Find SuperLU libraries")
+message(STATUS "Finding SuperLU libraries...")
 find_package(SUPERLU)
+message(STATUS "SUPERLU_ROOT is ${SUPERLU_ROOT}")
 
 message(STATUS "   SUPERLU include dirs:  ${SUPERLU_INCLUDE_DIRS}")
 message(STATUS "   SUPERLU libraries:     ${SUPERLU_LIBRARIES}")
+message(STATUS "   BLAS include dirs:     ${BLAS_INCLUDE_DIRS}")
 message(STATUS "   BLAS library:          ${BLAS_LIBRARIES}")
 
 if(NOT SUPERLU_LIBRARIES)
 	set(SUPERLU_ROOT "C:/Program Files/SuperLU" CACHE PATH "Location of SuperLU installation")
+else()
+	MARK_AS_ADVANCED(FORCE SUPERLU_ROOT)
+endif()
+
+if(NOT BLAS_LIBRARIES)
+	set(BLAS_ROOT "${SUPERLU_ROOT}" CACHE PATH "Location of SuperLU installation")
+else()
+	MARK_AS_ADVANCED(FORCE BLAS_ROOT)
 endif()
 
 # ------------------------------------------------------------------------------

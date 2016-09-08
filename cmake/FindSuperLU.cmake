@@ -28,7 +28,7 @@
 #
 
 # look for BLAS
-find_package(BLAS QUIET REQUIRED)
+find_package(BLAS QUIET)
 if(NOT BLAS_FOUND)
   message(WARNING "SuperLU requires BLAS which was not found, skipping the test.")
   return()
@@ -126,6 +126,9 @@ mark_as_advanced(SUPERLU_INCLUDE_DIR SUPERLU_LIBRARY)
 
 # if both headers and library are found, store results
 if(SUPERLU_FOUND)
+  if (NOT SUPERLU_ROOT)
+	SET (SUPERLU_ROOT "${SUPERLU_LIBRARIES}/../")
+  endif()
   set(SUPERLU_INCLUDE_DIRS ${SUPERLU_INCLUDE_DIR})
   set(SUPERLU_LIBRARIES    ${SUPERLU_LIBRARY})
   # log result

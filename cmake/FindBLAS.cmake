@@ -17,6 +17,7 @@ IF(NOT BLAS_FOUND)
 
 SET(BLAS_LIBRARIES)
 SET(BLAS_INCLUDE_DIR)
+MARK_AS_ADVANCED(FORCE BLAS_LIBRARIES)
 SET(BLAS_INFO)
 SET(BLAS_F2C)
 
@@ -237,6 +238,25 @@ if((NOT BLAS_LIBRARIES)
   if (BLAS_LIBRARIES)
     set(BLAS_INFO "generic")
   endif (BLAS_LIBRARIES)
+endif()
+
+# custom, easy, straightforward search of blas library
+if((NOT BLAS_LIBRARIES)
+    AND ((NOT WITH_BLAS) OR (WITH_BLAS STREQUAL "generic")))
+	message(STATUS "BLAS_ROOT is ${BLAS_ROOT}")
+	find_library(BLAS_LIBRARIES "blas"
+		PATHS "${BLAS_ROOT}"
+		PATH_SUFFIXES "lib"
+		)
+		
+	find_path(BLAS_INCLUDE_DIR "slu_ddefs.h"
+		PATHS "${BLAS_ROOT}"
+		PATH_SUFFIXES "include"
+		)
+		
+  if (BLAS_LIBRARIES AND BLAS_INCLUDE_DIR)
+    set(BLAS_INFO "generic")
+  endif (BLAS_LIBRARIES AND BLAS_INCLUDE_DIR)
 endif()
 
 # Determine if blas was compiled with the f2c conventions
