@@ -33,8 +33,6 @@ namespace chrono {
 
 		ResetSolver();
 
-		// it is fundamental to leave m_sol_Super.ncol=0, and m_rhs_Super.ncol=0
-		// in order to avoid checking of dgssvx routine
 		dCreate_Dense_Matrix(&m_sol_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
 		dCreate_Dense_Matrix(&m_rhs_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
 		dCreate_CompCol_Matrix(&m_mat_Super, 0, 0, 0, nullptr, nullptr, nullptr, SLU_NC, SLU_D, SLU_GE);
@@ -42,13 +40,12 @@ namespace chrono {
 
 	ChSuperLUEngine::~ChSuperLUEngine()
 	{
-		
 		//Destroy_CompCol_Matrix(&m_mat_Super); this would destroy also the CSR arrays
 		Destroy_SuperMatrix_Store(&m_mat_Super);
 		Destroy_SuperMatrix_Store(&m_rhs_Super);
 		Destroy_SuperMatrix_Store(&m_sol_Super);
 		if (lwork == 0) {
-			if (L.nrow==m_n && L.ncol == m_n) // checks if the solver has ever been called
+			if (L.nrow==m_n && L.ncol == m_n && m_n!=0) // checks if the solver has ever been called
 			{
 				Destroy_SuperNode_Matrix(&L);
 				Destroy_CompCol_Matrix(&U);

@@ -124,7 +124,7 @@ class ChApiSuperLU ChSuperLUEngine {
 	// SuperLU_MT datas
 	superlu_memusage_t    superlu_memusage;
 	superlumt_options_t superlumt_options;
-	int         nprocs = 1;
+	int         nprocs = 4;
 	fact_t      fact = EQUILIBRATE;
 	trans_t     trans = NOTRANS;
 	yes_no_t    refact = NO, usepr = NO;
