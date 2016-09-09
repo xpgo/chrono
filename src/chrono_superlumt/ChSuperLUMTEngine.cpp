@@ -14,9 +14,9 @@
 // Interfacing to the Pardiso Sparse Direct Solver from the Intel® MKL Library.
 // =============================================================================
 
-#include <algorithm>
-
 #include "chrono_superlumt/ChSuperLUMTEngine.h"
+#include <omp.h>
+
 
 namespace chrono {
 	enum phase_t {
@@ -27,7 +27,6 @@ namespace chrono {
 
 	ChSuperLUMTEngine::ChSuperLUMTEngine()
 	{
-		lwork = 0;
 		panel_size = sp_ienv(1);
 		relax = sp_ienv(2);
 
@@ -162,7 +161,7 @@ namespace chrono {
 
 
 		// call to SuperLU_MT
-		pdgssvx(nprocs, &superlumt_options, &m_mat_Super, perm_c.data(), perm_r.data(), &equed, R.data(), C.data(),
+		pdgssvx(superlumt_options.nprocs, &superlumt_options, &m_mat_Super, perm_c.data(), perm_r.data(), &equed, R.data(), C.data(),
 			&L, &U, &m_rhs_Super, &m_sol_Super, &rpg, &rcond, ferr.data(), berr.data(),
 			&superlu_memusage, &info);
 
@@ -178,7 +177,7 @@ namespace chrono {
 				printf("Recip. pivot growth = %e\n", rpg);
 				printf("Recip. condition number = %e\n", rcond);
 				printf("%8s%16s%16s\n", "rhs", "FERR", "BERR");
-				for (i = 0; i < m_nrhs; ++i) {
+				for (auto i = 0; i < m_nrhs; ++i) {
 					printf(IFMT "%16e%16e\n", i + 1, ferr[i], berr[i]);
 				}
 
@@ -217,13 +216,13 @@ namespace chrono {
 
 	void ChSuperLUMTEngine::ResetSolver()
 	{
-		superlumt_options.nprocs = nprocs;
-		superlumt_options.fact = fact;
-		superlumt_options.trans = trans;
-		superlumt_options.refact = refact;
+		superlumt_options.nprocs = omp_get_num_procs();
+		superlumt_options.fact = EQUILIBRATE;
+		superlumt_options.trans = NOTRANS;
+		superlumt_options.refact = NO;
 		superlumt_options.panel_size = panel_size;
 		superlumt_options.relax = relax;
-		superlumt_options.usepr = usepr;
+		superlumt_options.usepr = NO;
 		superlumt_options.drop_tol = 0.0;
 		superlumt_options.diag_pivot_thresh = 1.0;
 		superlumt_options.SymmetricMode = NO;
@@ -265,7 +264,7 @@ namespace chrono {
 		std::vector<double> res(m_n);
 		GetResidual(res.data());
 		double norm = 0;
-		for (int i = 0; i < m_n; i++) {
+		for (auto i = 0; i < m_n; i++) {
 			norm += res[i] * res[i];
 		}
 

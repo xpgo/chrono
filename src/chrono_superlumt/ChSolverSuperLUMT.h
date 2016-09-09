@@ -46,9 +46,6 @@ public:
 	/// to be unchanged from call to call.
 	void SetSparsityPatternLock(bool val) { m_lock = val; }
 
-	/// Set the number of non-zero entries in the problem matrix.
-	void SetMatrixNNZ(int nnz) { m_nnz = nnz; }
-
 	/// Reset timers for internal phases in Solve and Setup.
 	void ResetTimers() {
 		m_timer_setup_assembly.reset();

@@ -70,6 +70,10 @@ class ChApiSuperLUMT ChSuperLUMTEngine {
 	// Auxiliary functions
 	/// Returns the Options vector
 	superlumt_options_t& GetOptions() { return superlumt_options; }
+	/// Set the number of cores for SuperLU_MT (only factorization phase is parallelized)
+	void SetNumProcs(int nprocs_in) { superlumt_options.nprocs = nprocs_in; }
+	/// Get the number of cores for SuperLU_MT
+	int GetNumProcs() const { return superlumt_options.nprocs; }
 
 
     // Output functions
@@ -88,19 +92,18 @@ class ChApiSuperLUMT ChSuperLUMTEngine {
 	int m_nrhs = 1;  ///< number of rhs vectors
 
 	/* SuperLU_MT data */
-	int& ldx = m_n;
+	int& ldx = m_n; ///< leading-dimension size of the arrays
 
 	SuperMatrix    m_mat_Super, m_rhs_Super, m_sol_Super;
-	std::vector<int> perm_c; /* column permutation vector */
-	std::vector<int> perm_r; /* row permutations from partial pivoting */
-	std::vector<int> etree;
+	std::vector<int> perm_c; ///< column permutation vector
+	std::vector<int> perm_r; ///< row permutations from partial pivoting
+	std::vector<int> etree; ///< SuperLU internal used
 
-	int            lwork = 0; // allocate space internally by system malloc (don't use 'work' variable)
-	int            i = 0, nnz = 0;
+	int            lwork = 0; ///< allocate space internally by system malloc (don't use 'work' variable)
 
-	std::vector<double> R = {0.0}, C = { 0.0 };
-	std::vector<double> ferr = {0.0}, berr={0.0};
-	double         rpg, rcond;
+	std::vector<double> R, C;
+	std::vector<double> ferr, berr;
+	double         rpg = 0, rcond = 0;
 
 	// internally used and never directly modified by user
 	SuperMatrix    L, U;
@@ -110,16 +113,10 @@ class ChApiSuperLUMT ChSuperLUMTEngine {
 	// SuperLU_MT datas (different from serial SuperLU)
 	superlu_memusage_t    superlu_memusage;
 	superlumt_options_t superlumt_options;
-	int         nprocs = 4;
-	fact_t      fact = EQUILIBRATE;
-	trans_t     trans = NOTRANS;
-	yes_no_t    refact = NO, usepr = NO;
 	equed_t     equed = NOEQUIL;
 	int relax, panel_size;
-	std::vector<int> colcnt_h;
-	std::vector<int> part_super_h;
-
-
+	std::vector<int> colcnt_h; ///< SuperLU_MT internal used
+	std::vector<int> part_super_h; ///< SuperLU_MT internal used
 
     // SuperLU_MT solver settings
 };
