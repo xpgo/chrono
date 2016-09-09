@@ -22,21 +22,11 @@ MARK_AS_ADVANCED(CLEAR BLAS_ROOT)
 # Threading
 # ------------------------------------------------------------------------------
 
-SET(CMAKE_THREAD_PREFER_PTHREAD ON)
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads QUIET)
-find_package(OpenMP QUIET)
 
-SET(CH_SUPERLUMT_DEFS)
+SET(CH_SUPERLUMT_DEFS "PRNTlevel=0")
 if (CMAKE_USE_PTHREADS_INIT)
-	MESSAGE(STATUS "Using pthread multithreading")
-	SET(MULTITHREADING_LIBRARIES "Threads::Threads")
 	LIST(APPEND CH_SUPERLUMT_DEFS "__PTHREAD")
 elseif(OPENMP_FOUND)
-	MESSAGE(STATUS "Using OpenMP multithreading")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 	LIST(APPEND CH_SUPERLUMT_DEFS "__OPENMP")
 else()
 	MESSAGE(WARNING "No multithreading library has been found")
@@ -65,6 +55,8 @@ set(BLAS_ROOT "${SUPERLUMT_ROOT}" CACHE PATH "Location of BLAS installation")
 find_package(BLAS QUIET)
 if(BLAS_FOUND)
 	MARK_AS_ADVANCED(FORCE BLAS_ROOT)
+	MARK_AS_ADVANCED(FORCE BLAS_LIBRARIES)
+	MARK_AS_ADVANCED(FORCE BLAS_INCLUDE_DIRS)
 else() # custom, easy, straightforward search of blas library
 	find_library(BLAS_LIBRARIES "blas"
 		PATHS "${BLAS_ROOT}"
@@ -76,11 +68,11 @@ else() # custom, easy, straightforward search of blas library
 		PATH_SUFFIXES "include"
 		)
 	
-  if (BLAS_LIBRARIES AND BLAS_INCLUDE_DIR)
+  if (BLAS_LIBRARIES AND BLAS_INCLUDE_DIRS)
 	SET(BLAS_FOUND TRUE)
 	MARK_AS_ADVANCED(FORCE BLAS_LIBRARIES)
 	MARK_AS_ADVANCED(FORCE BLAS_INCLUDE_DIRS)
-  endif (BLAS_LIBRARIES AND BLAS_INCLUDE_DIR)
+  endif (BLAS_LIBRARIES AND BLAS_INCLUDE_DIRS)
 endif()
 message(STATUS "   BLAS include dirs:     ${BLAS_INCLUDE_DIRS}")
 message(STATUS "   BLAS library:          ${BLAS_LIBRARIES}")
@@ -118,7 +110,6 @@ SOURCE_GROUP("Sources" FILES ${ChronoEngine_SuperLUMT_SOURCES})
 # ------------------------------------------------------------------------------
 # Add the ChronoEngine_SuperLUMT library
 # ------------------------------------------------------------------------------
-
 ADD_LIBRARY(ChronoEngine_SuperLUMT SHARED
             ${ChronoEngine_SuperLUMT_SOURCES}
             ${ChronoEngine_SuperLUMT_HEADERS})
