@@ -1,6 +1,5 @@
-#include "slu_mt_ddefs.h"
 #include <vector>
-#include "chrono_superlu/ChSuperLUEngine.h"
+#include "chrono_superlumt/ChSuperLUMTEngine.h"
 #include <core/ChCSR3Matrix.h>
 
 using namespace chrono;
@@ -19,13 +18,13 @@ int test_pure_vectors_input()
 	std::vector<double> sol(rows, 0.0);
 
 
-	ChSuperLUEngine m_engine;
+	ChSuperLUMTEngine m_engine;
 
 	m_engine.SetMatrix(rows, values.data(), rowIndex.data(), colIndex.data());
 	m_engine.SetSolutionVector(sol.data());
 	m_engine.SetRhsVector(rhs.data());
 
-	m_engine.SuperLUCall(13,2);
+	m_engine.SuperLUMTCall(13,2);
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 	{
@@ -77,13 +76,13 @@ int test_CSR_input()
 	std::vector<double> sol(rows, 0.0);
 
 
-	ChSuperLUEngine m_engine;
+	ChSuperLUMTEngine m_engine;
 
 	m_engine.SetMatrix(matCSR3);
 	m_engine.SetSolutionVector(sol.data());
 	m_engine.SetRhsVector(rhs.data());
 
-	m_engine.SuperLUCall(13, true);
+	m_engine.SuperLUMTCall(13, true);
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 		std::cout << sol[row_sel] << " ";
@@ -122,15 +121,15 @@ int test_SetupSolve()
 	std::vector<double> sol(rows, 0.0);
 
 
-	ChSuperLUEngine m_engine;
+	ChSuperLUMTEngine m_engine;
 	// call for factorization
 	m_engine.SetMatrix(matCSR3);
-	m_engine.SuperLUCall(12, true);
+	m_engine.SuperLUMTCall(12, true);
 
 	// call for first solve
 	m_engine.SetRhsVector(rhs.data());
 	m_engine.SetSolutionVector(sol.data());
-	m_engine.SuperLUCall(33, true);
+	m_engine.SuperLUMTCall(33, true);
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 		std::cout << sol[row_sel] << " ";
@@ -138,7 +137,7 @@ int test_SetupSolve()
 
 	// call for second solve
 	std::fill(rhs.begin(), rhs.end(), 2.0);
-	m_engine.SuperLUCall(33, true);
+	m_engine.SuperLUMTCall(33, true);
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 		std::cout << sol[row_sel] << " ";

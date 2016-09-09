@@ -16,7 +16,7 @@
 
 #include <algorithm>
 
-#include "chrono_superlu/ChSuperLUEngine.h"
+#include "chrono_superlumt/ChSuperLUMTEngine.h"
 
 namespace chrono {
 	enum phase_t {
@@ -25,7 +25,7 @@ namespace chrono {
 		SOLVE = 33,
 	};
 
-	ChSuperLUEngine::ChSuperLUEngine()
+	ChSuperLUMTEngine::ChSuperLUMTEngine()
 	{
 		lwork = 0;
 		panel_size = sp_ienv(1);
@@ -38,7 +38,7 @@ namespace chrono {
 		dCreate_CompCol_Matrix(&m_mat_Super, 0, 0, 0, nullptr, nullptr, nullptr, SLU_NC, SLU_D, SLU_GE);
 	}
 
-	ChSuperLUEngine::~ChSuperLUEngine()
+	ChSuperLUMTEngine::~ChSuperLUMTEngine()
 	{
 		//Destroy_CompCol_Matrix(&m_mat_Super); this would destroy also the CSR arrays
 		Destroy_SuperMatrix_Store(&m_mat_Super);
@@ -53,14 +53,14 @@ namespace chrono {
 		}
 	}
 
-	void ChSuperLUEngine::SetMatrix(ChSparseMatrix& Z)
+	void ChSuperLUMTEngine::SetMatrix(ChSparseMatrix& Z)
 	{
 
 		SetMatrix(Z.GetNumRows(), Z.GetCSR_ValueArray(), Z.GetCSR_TrailingIndexArray(), Z.GetCSR_LeadingIndexArray());
 		//TODO: change here the matrix type (symmetric, etc) according to what Z says
 	}
 
-	void ChSuperLUEngine::SetMatrix(int pb_size, double* values, int* rowIndex, int* colIndex)
+	void ChSuperLUMTEngine::SetMatrix(int pb_size, double* values, int* rowIndex, int* colIndex)
 	{
 		m_n = pb_size;
 		m_mat_Super.nrow = m_n;
@@ -99,25 +99,25 @@ namespace chrono {
 		static_cast<DNformat*>(m_sol_Super.Store)->lda = m_n;
 	}
 
-	void ChSuperLUEngine::SetSolutionVector(ChMatrix<>& x)
+	void ChSuperLUMTEngine::SetSolutionVector(ChMatrix<>& x)
 	{
 		assert(x.GetRows() == m_n);
 
 		SetSolutionVector(x.GetAddress());
 	}
 
-	void ChSuperLUEngine::SetSolutionVector(double* x)
+	void ChSuperLUMTEngine::SetSolutionVector(double* x)
 	{
 		m_sol_Super.nrow = m_n;
 		m_sol_Super.ncol = 1;
 		auto m_sol_Super_store = static_cast<DNformat*>(m_sol_Super.Store);
-		//m_sol_Super_store->lda = m_n; // done during the SuperLU call
+		//m_sol_Super_store->lda = m_n; // done during the SuperLU_MT call
 		m_sol_Super_store->nzval = x;
 
 		ferr.resize(m_nrhs);
 	}
 
-	void ChSuperLUEngine::SetRhsVector(ChMatrix<>& b)
+	void ChSuperLUMTEngine::SetRhsVector(ChMatrix<>& b)
 	{
 		assert(b.GetRows() == m_n);
 
@@ -128,27 +128,27 @@ namespace chrono {
 		SetRhsVector(b.GetAddress(), b.GetColumns());
 	}
 
-	void ChSuperLUEngine::SetRhsVector(double* b, int nrhs)
+	void ChSuperLUMTEngine::SetRhsVector(double* b, int nrhs)
 	{
 		m_nrhs = nrhs;
 
 		m_rhs_Super.nrow = m_n;
 		m_rhs_Super.ncol = nrhs;
 		auto m_rhs_Super_store = static_cast<DNformat*>(m_rhs_Super.Store);
-		//m_rhs_Super_store->lda = m_n; // done during the SuperLU call
+		//m_rhs_Super_store->lda = m_n; // done during the SuperLU_MT call
 		m_rhs_Super_store->nzval = b;
 
 		berr.resize(m_nrhs);
 	}
 
-	void ChSuperLUEngine::SetProblem(ChSparseMatrix& Z, ChMatrix<>& b, ChMatrix<>& x)
+	void ChSuperLUMTEngine::SetProblem(ChSparseMatrix& Z, ChMatrix<>& b, ChMatrix<>& x)
 	{
 		SetMatrix(Z);
 		SetRhsVector(b);
 		SetSolutionVector(x);
 	}
 
-	int ChSuperLUEngine::SuperLUCall(int phase, int verbose)
+	int ChSuperLUMTEngine::SuperLUMTCall(int phase, int verbose)
 	{
 		auto m_rhs_Super_ncol_bkp = m_rhs_Super.ncol;
 		auto m_sol_Super_ncol_bkp = m_sol_Super.ncol;
@@ -161,7 +161,7 @@ namespace chrono {
 		//TODO: superlumt_options.refact
 
 
-		// call to SuperLU
+		// call to SuperLU_MT
 		pdgssvx(nprocs, &superlumt_options, &m_mat_Super, perm_c.data(), perm_r.data(), &equed, R.data(), C.data(),
 			&L, &U, &m_rhs_Super, &m_sol_Super, &rpg, &rcond, ferr.data(), berr.data(),
 			&superlu_memusage, &info);
@@ -215,7 +215,7 @@ namespace chrono {
 		return info;
 	}
 
-	void ChSuperLUEngine::ResetSolver()
+	void ChSuperLUMTEngine::ResetSolver()
 	{
 		superlumt_options.nprocs = nprocs;
 		superlumt_options.fact = fact;
@@ -234,13 +234,13 @@ namespace chrono {
 		superlumt_options.lwork = lwork;
 	}
 
-	void ChSuperLUEngine::GetResidual(ChMatrix<>& res) const
+	void ChSuperLUMTEngine::GetResidual(ChMatrix<>& res) const
 	{
 		assert(res.GetRows() >= m_n);
 		GetResidual(res.GetAddress());
 	}
 
-	void ChSuperLUEngine::GetResidual(double* res) const
+	void ChSuperLUMTEngine::GetResidual(double* res) const
 	{
 		auto m_mat_Super_store = static_cast<NCformat*>(m_mat_Super.Store);
 		auto m_a = static_cast<double*>(m_mat_Super_store->nzval);
@@ -260,7 +260,7 @@ namespace chrono {
 		}
 	}
 
-	double ChSuperLUEngine::GetResidualNorm() const
+	double ChSuperLUMTEngine::GetResidualNorm() const
 	{
 		std::vector<double> res(m_n);
 		GetResidual(res.data());

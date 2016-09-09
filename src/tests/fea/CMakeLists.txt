@@ -18,9 +18,9 @@ if(ENABLE_MODULE_MKL)
     list(APPEND LIBS "ChronoEngine_mkl")
 endif()
 
-if(ENABLE_MODULE_SUPERLU)
-    include_directories(${CH_SUPERLU_INCLUDES})
-    list(APPEND LIBS "ChronoEngine_SuperLU")
+if(ENABLE_MODULE_SUPERLUMT)
+    include_directories(${CH_SUPERLUMT_INCLUDES})
+    list(APPEND LIBS "ChronoEngine_SuperLUMT")
 endif()
 
 if(ENABLE_MODULE_IRRLICHT)
@@ -46,7 +46,7 @@ foreach(PROGRAM ${FEA_TESTS})
 
     set_target_properties(${PROGRAM} PROPERTIES
         FOLDER tests
-		COMPILE_DEFINITIONS "${CH_SUPERLU_DEFS}"
+		COMPILE_DEFINITIONS "${CH_SUPERLUMT_DEFS}"
         COMPILE_FLAGS "${COMPILER_FLAGS}"
         LINK_FLAGS "${LINKER_FLAGS}"
     )

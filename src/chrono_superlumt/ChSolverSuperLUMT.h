@@ -12,8 +12,8 @@
 // Authors: Dario Mangoni, Radu Serban
 // =============================================================================
 
-#ifndef CHSOLVERSUPERLU_H
-#define CHSOLVERSUPERLU_H
+#ifndef CHSOLVERSUPERLUMT_H
+#define CHSOLVERSUPERLUMT_H
 
 #include "chrono/solver/ChSolver.h"
 #include "chrono/solver/ChSystemDescriptor.h"
@@ -22,22 +22,22 @@
 #include "chrono/core/ChTimer.h"
 
 #include "chrono/core/ChCSR3Matrix.h"
-#include "chrono_superlu/ChSuperLUEngine.h"
+#include "chrono_superlumt/ChSuperLUMTEngine.h"
 
 namespace chrono {
 
-/// @addtogroup superlu_module
+/// @addtogroup superlumt_module
 /// @{
 
-/// Class that wraps the SuperLU solver.
+/// Class that wraps the SuperLU_MT solver.
 /// It can solve linear systems, but not VI and complementarity problems.
 template <typename Matrix = ChCSR3Matrix>
-class ChSolverSuperLU : public ChSolver {
+class ChSolverSuperLUMT : public ChSolver {
 
 public:
-	ChSolverSuperLU(){}
+	ChSolverSuperLUMT(){}
 
-	~ChSolverSuperLU(){}
+	~ChSolverSuperLUMT(){}
 
 	Matrix& GetMatrix() { return m_mat; }
 
@@ -52,25 +52,25 @@ public:
 	/// Reset timers for internal phases in Solve and Setup.
 	void ResetTimers() {
 		m_timer_setup_assembly.reset();
-		m_timer_setup_superlu.reset();
+		m_timer_setup_superlumt.reset();
 		m_timer_solve_assembly.reset();
-		m_timer_solve_superlu.reset();
+		m_timer_solve_superlumt.reset();
 	}
 
 	/// Get cumulative time for assembly operations in Solve phase.
 	double GetTimeSolveAssembly() const { return m_timer_solve_assembly(); }
 	/// Get cumulative time for Pardiso calls in Solve phase.
-	double GetTimeSolveSuperLU() const { return m_timer_solve_superlu(); }
+	double GetTimeSolveSuperLUMT() const { return m_timer_solve_superlumt(); }
 	/// Get cumulative time for assembly operations in Setup phase.
 	double GetTimeSetupAssembly() const { return m_timer_setup_assembly(); }
 	/// Get cumulative time for Pardiso calls in Setup phase.
-	double GetTimeSetupSuperLU() const { return m_timer_setup_superlu(); }
+	double GetTimeSetupSuperLUMT() const { return m_timer_setup_superlumt(); }
 
 	/// Indicate whether or not the Solve() phase requires an up-to-date problem matrix.
 	/// As typical of direct solvers, the Pardiso solver only requires the matrix for its Setup() phase.
 	virtual bool SolveRequiresMatrix() const override { return false; }
 
-	/// Solve using the SuperLU solver.
+	/// Solve using the SuperLU_MT solver.
 	/// It uses the matrix factorization obtained at the last call to Setup().
 	virtual double Solve(ChSystemDescriptor& sysd) override {
 		// Assemble the problem right-hand side vector.
@@ -82,9 +82,9 @@ public:
 		m_timer_solve_assembly.stop();
 
 		// Solve the system
-		m_timer_solve_superlu.start();
-		m_engine.SuperLUCall(33, verbose);
-		m_timer_solve_superlu.stop();
+		m_timer_solve_superlumt.start();
+		m_engine.SuperLUMTCall(33, verbose);
+		m_timer_solve_superlumt.stop();
 		m_solver_call++;
 
 
@@ -96,14 +96,14 @@ public:
 		if (verbose)
 		{
 			double res_norm = m_engine.GetResidualNorm();
-			GetLog() << " SUPERLU solve call " << m_solver_call << "  |residual| = " << res_norm << "\n";
+			GetLog() << " SUPERLU_MT solve call " << m_solver_call << "  |residual| = " << res_norm << "\n";
 		}
 
 		return 0.0f;
 	}
 
 	/// Perform the solver setup operations.
-	/// For the SuperLU solver, this means assembling and factorizing the system matrix.
+	/// For the SuperLU_MT solver, this means assembling and factorizing the system matrix.
 	/// Returns true if successful and false otherwise.
 	virtual bool Setup(ChSystemDescriptor& sysd) override {
 		m_timer_setup_assembly.start();
@@ -141,9 +141,9 @@ public:
 
 		// Performs factorization (LU decomposition)
 		m_engine.SetMatrix(m_mat);
-		m_timer_setup_superlu.start();
-		m_engine.SuperLUCall(12, verbose);
-		m_timer_setup_superlu.stop();
+		m_timer_setup_superlumt.start();
+		m_engine.SuperLUMTCall(12, verbose);
+		m_timer_setup_superlumt.stop();
 
 
 		return true;
@@ -179,17 +179,17 @@ private:
 
     bool m_lock = false;                ///< is the matrix sparsity pattern locked?
 
-	ChSuperLUEngine m_engine;
+	ChSuperLUMTEngine m_engine;
 
     ChTimer<> m_timer_setup_assembly;  ///< timer for matrix assembly
-    ChTimer<> m_timer_setup_superlu;   ///< timer for factorization
+    ChTimer<> m_timer_setup_superlumt;   ///< timer for factorization
     ChTimer<> m_timer_solve_assembly;  ///< timer for RHS assembly
-    ChTimer<> m_timer_solve_superlu;   ///< timer for solution
+    ChTimer<> m_timer_solve_superlumt;   ///< timer for solution
 
 
 };
 
-	/// @} superlu_module
+	/// @} superlumt_module
 
 }  // end namespace chrono
 

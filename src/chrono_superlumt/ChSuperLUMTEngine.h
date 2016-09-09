@@ -11,13 +11,13 @@
 // =============================================================================
 // Authors: Dario Mangoni, Radu Serban
 // =============================================================================
-// Interfacing to the SuperLU solver.
+// Interfacing to the SuperLU_MT solver.
 // =============================================================================
 
-#ifndef CHSUPERLUENGINE_H
-#define CHSUPERLUENGINE_H
+#ifndef CHSUPERLUMTENGINE_H
+#define CHSUPERLUMTENGINE_H
 
-#include "chrono_superlu/ChApiSuperLU.h"
+#include "chrono_superlumt/ChApiSuperLUMT.h"
 #include "chrono/core/ChSparseMatrix.h"
 #include "chrono/core/ChMatrixDynamic.h"
 #include <slu_mt_ddefs.h>
@@ -25,17 +25,17 @@
 
 namespace chrono {
 
-/// @addtogroup superlu_module
+/// @addtogroup superlumt_module
 /// @{
 
-/// Interface class to SuperLU solver.
+/// Interface class to SuperLU_MT solver.
 /// This class wraps the C interface of the solver in order to fit Chrono data structures.
 /// This class can still be called by the end-user in order to solve linear systems.
 /// See demo_SUPERLU_Engine for the related demo.
-class ChApiSuperLU ChSuperLUEngine {
+class ChApiSuperLUMT ChSuperLUMTEngine {
   public:
-    ChSuperLUEngine();
-    ~ChSuperLUEngine();
+    ChSuperLUMTEngine();
+    ~ChSuperLUMTEngine();
 
     /// Set problem dimension.
     void SetProblemSize(int pb_size) { m_n = pb_size; }
@@ -62,7 +62,7 @@ class ChApiSuperLU ChSuperLUEngine {
     void SetProblem(ChSparseMatrix& Z, ChMatrix<>& b, ChMatrix<>& x);
 
     /// Solver routine.
-    int SuperLUCall(int phase, int verbose = 0);
+    int SuperLUMTCall(int phase, int verbose = 0);
 
     /// Reinitializes the solver to default values.
     void ResetSolver();
@@ -82,27 +82,13 @@ class ChApiSuperLU ChSuperLUEngine {
     double GetResidualNorm() const;
 
   private:
-	// Data
 
-	// Matrix in CSR3 format.
-	// Note that ChSuperLUEngine does not own this data.
-	//TODO: actually they are not needed...
-	//double* m_a = nullptr;    ///< pointer to the CSR array of non-zero elements of the A
-	//int* m_ia = nullptr;  ///< pointer to the CSR array of row indices
-	//int* m_ja = nullptr;  ///< pointer to the CSR array of columns indices
-
-	// Right-hand side and solution arrays.
-	// Note that ChSuperLUEngine does not own this data.
-	//double* m_b = nullptr;  ///< rhs vector
-	//double* m_x = nullptr;  ///< solution vector
-
-				// Problem properties
+	// Problem properties
 	int m_n = 0;     ///< (square) matrix size
 	int m_nrhs = 1;  ///< number of rhs vectors
 
-	/* SuperLU data */
+	/* SuperLU_MT data */
 	int& ldx = m_n;
-
 
 	SuperMatrix    m_mat_Super, m_rhs_Super, m_sol_Super;
 	std::vector<int> perm_c; /* column permutation vector */
@@ -121,7 +107,7 @@ class ChApiSuperLU ChSuperLUEngine {
 	void*          work = nullptr; // don't used to allocate space
 	int            info = 0;
 
-	// SuperLU_MT datas
+	// SuperLU_MT datas (different from serial SuperLU)
 	superlu_memusage_t    superlu_memusage;
 	superlumt_options_t superlumt_options;
 	int         nprocs = 4;
@@ -135,12 +121,12 @@ class ChApiSuperLU ChSuperLUEngine {
 
 
 
-    // SuperLU solver settings
+    // SuperLU_MT solver settings
 };
 
 
 
-	/// @} superlu_module
+	/// @} superlumt_module
 
 }  // end of namespace chrono
 

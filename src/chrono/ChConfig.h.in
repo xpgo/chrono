@@ -55,6 +55,9 @@
 // If module PYTHON was enabled, define CHRONO_PYTHON
 @CHRONO_PYTHON@
 
+// If module SUPERLUMT was enabled, define CHRONO_SUPERLUMT
+@CHRONO_SUPERLUMT@
+
 // If module VEHICLE was enabled, define CHRONO_VEHICLE
 @CHRONO_VEHICLE@
 
