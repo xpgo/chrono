@@ -22,7 +22,7 @@
 #include "chrono/core/ChMatrixDynamic.h"
 #include "chrono/core/ChLinkedListMatrix.h"
 #include "chrono/core/ChMapMatrix.h"
-#include "chrono_mkl/ChCSR3Matrix.h"
+#include "chrono/core/ChCSR3Matrix.h"
 
 using namespace chrono;
 using std::cout;
