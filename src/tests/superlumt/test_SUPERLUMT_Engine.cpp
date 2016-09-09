@@ -14,8 +14,8 @@ int test_pure_vectors_input()
 
 	int rows = colIndex.size() - 1;
 
-	std::vector<double> rhs(rows, 1.0);
-	std::vector<double> sol(rows, 0.0);
+    std::vector<double> rhs(rows, 1.0);
+    std::vector<double> sol(rows, 0.0);
 
 
 	ChSuperLUMTEngine m_engine;

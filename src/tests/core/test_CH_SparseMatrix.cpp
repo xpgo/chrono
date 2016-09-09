@@ -92,10 +92,10 @@ void timeSetElement() {
         //for (int i = 0; i < nnz; i++) {
         //    B.SetElement(row_indices[i], col_indices[i], 2.0);
         //}
-        //B.Compress();
-        //timer.stop();
-        //cout << "      NNZ:  " << B.GetLeadingIndexLength() << endl;
-        //cout << "      Time: " << timer() << endl;
+        // B.Compress();
+        // timer.stop();
+        // cout << "      NNZ:  " << B.GetLeadingIndexLength() << endl;
+        // cout << "      Time: " << timer() << endl;
     }
 
     {

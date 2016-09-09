@@ -144,17 +144,17 @@ namespace chrono {
 	{
 		SetMatrix(Z);
 		SetRhsVector(b);
-		SetSolutionVector(x);
-	}
+        SetSolutionVector(x);
+    }
 
 	int ChSuperLUMTEngine::SuperLUMTCall(int phase, int verbose)
 	{
 		auto m_rhs_Super_ncol_bkp = m_rhs_Super.ncol;
 		auto m_sol_Super_ncol_bkp = m_sol_Super.ncol;
 
-		// Set the number of right-hand side
-		// if put to 0 then factorize without solve
-		m_rhs_Super.ncol = (phase == ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
+        // Set the number of right-hand side
+        // if put to 0 then factorize without solve
+        m_rhs_Super.ncol = (phase == ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
 		m_sol_Super.ncol = (phase == ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
 		superlumt_options.fact = (phase == SOLVE) ? FACTORED : DOFACT; /* Indicate the factored form of m_mat_Super is supplied. */
 		//TODO: superlumt_options.refact

@@ -430,7 +430,7 @@ int main(int argc, char* argv[]) {
     GetLog() << "No OpenMP\n";
 #endif
 
-	// Run simulations.
+    // Run simulations.
 #ifdef CHRONO_SUPERLUMT
 	RunModel(SUPERLUMT, true, false, "SuperLU_adaptive_full");     // SUPERLUMT, adaptive step, full Newton
 	RunModel(SUPERLUMT, true, true, "SuperLU_adaptive_modified");  // SUPERLUMT, adaptive step, modified Newton
