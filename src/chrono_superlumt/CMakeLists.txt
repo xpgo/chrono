@@ -39,9 +39,10 @@ endif()
 message(STATUS "Finding SuperLUMT libraries...")
 
 # Find SuperLUMT
+SET(SUPERLUMT_FOUND FALSE)
 set(SUPERLUMT_ROOT "C:/Program Files/SuperLU_MT" CACHE PATH "Location of SuperLUMT installation")
 find_package(SUPERLUMT)
-message(STATUS "SUPERLUMT_ROOT is ${SUPERLUMT_ROOT}")
+message(STATUS "   SUPERLUMT_ROOT is ${SUPERLUMT_ROOT}")
 if(SUPERLUMT_FOUND)
 	MARK_AS_ADVANCED(FORCE SUPERLUMT_ROOT)
 endif()
@@ -49,10 +50,12 @@ message(STATUS "   SUPERLUMT include dirs:  ${SUPERLUMT_INCLUDE_DIRS}")
 message(STATUS "   SUPERLUMT libraries:     ${SUPERLUMT_LIBRARIES}")
 
 
-
 # Find BLAS (eventually looking into SuperLUMT folder)
+UNSET(BLAS_FOUND)
+UNSET(BLAS_LIBRARIES)
 set(BLAS_ROOT "${SUPERLUMT_ROOT}" CACHE PATH "Location of BLAS installation")
 find_package(BLAS QUIET)
+
 if(BLAS_FOUND)
 	MARK_AS_ADVANCED(FORCE BLAS_ROOT)
 	MARK_AS_ADVANCED(FORCE BLAS_LIBRARIES)
@@ -114,7 +117,6 @@ ADD_LIBRARY(ChronoEngine_SuperLUMT SHARED
             ${ChronoEngine_SuperLUMT_SOURCES}
             ${ChronoEngine_SuperLUMT_HEADERS})
 
-MESSAGE(STATUS "CH_SUPERLUMT_DEFS is ${CH_SUPERLUMT_DEFS}")
 SET_TARGET_PROPERTIES(ChronoEngine_SuperLUMT PROPERTIES
                       COMPILE_FLAGS "${COMPILER_FLAGS}"
                       LINK_FLAGS "${LINKER_FLAGS}"
