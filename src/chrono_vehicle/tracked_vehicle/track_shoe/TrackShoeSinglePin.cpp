@@ -39,7 +39,7 @@ static ChVector<> loadVector(const Value& a) {
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-TrackShoeSinglePin::TrackShoeSinglePin(const std::string& filename) : ChTrackShoeSinglePin(""), m_vis_type(VisualizationType::NONE) {
+TrackShoeSinglePin::TrackShoeSinglePin(const std::string& filename) : ChTrackShoeSinglePin(""), m_has_mesh(false) {
     FILE* fp = fopen(filename.c_str(), "r");
 
     char readBuffer[65536];
@@ -55,7 +55,7 @@ TrackShoeSinglePin::TrackShoeSinglePin(const std::string& filename) : ChTrackSho
     GetLog() << "Loaded JSON: " << filename.c_str() << "\n";
 }
 
-TrackShoeSinglePin::TrackShoeSinglePin(const rapidjson::Document& d) : ChTrackShoeSinglePin(""), m_vis_type(VisualizationType::NONE) {
+TrackShoeSinglePin::TrackShoeSinglePin(const rapidjson::Document& d) : ChTrackShoeSinglePin(""), m_has_mesh(false) {
     Create(d);
 }
 
@@ -82,7 +82,7 @@ void TrackShoeSinglePin::Create(const rapidjson::Document& d) {
     m_pad_box_dims = loadVector(d["Contact Geometry"]["Shoe"]["Pad Dimensions"]);
     m_pad_box_loc = loadVector(d["Contact Geometry"]["Shoe"]["Pad Location"]);
     m_guide_box_dims = loadVector(d["Contact Geometry"]["Shoe"]["Guide Dimensions"]);
-    m_guide_box_loc = loadVector(d["Contact Geometry"]["Shoe"]["Guide location"]);
+    m_guide_box_loc = loadVector(d["Contact Geometry"]["Shoe"]["Guide Location"]);
 
     m_cyl_radius = d["Contact Geometry"]["Cylinder"]["Radius"].GetDouble();
     m_front_cyl_loc = d["Contact Geometry"]["Cylinder"]["Front Offset"].GetDouble();
@@ -112,32 +112,26 @@ void TrackShoeSinglePin::Create(const rapidjson::Document& d) {
 
     // Read wheel visualization
     if (d.HasMember("Visualization")) {
-        if (d["Visualization"].HasMember("Mesh Filename")) {
-            m_meshFile = d["Visualization"]["Mesh Filename"].GetString();
-            m_meshName = d["Visualization"]["Mesh Name"].GetString();
-            m_vis_type = VisualizationType::MESH;
-        } else {
-            m_vis_type = VisualizationType::PRIMITIVES;
-        }
+        assert(d["Visualization"].HasMember("Mesh Filename"));
+        assert(d["Visualization"].HasMember("Mesh Name"));
+        m_meshFile = d["Visualization"]["Mesh Filename"].GetString();
+        m_meshName = d["Visualization"]["Mesh Name"].GetString();
+        m_has_mesh = true;
     }
 }
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void TrackShoeSinglePin::AddShoeVisualization() {
-    switch (m_vis_type) {
-        case VisualizationType::PRIMITIVES:
-            ChTrackShoeSinglePin::AddShoeVisualization();
-            break;
-        case VisualizationType::MESH: {
-            geometry::ChTriangleMeshConnected trimesh;
-            trimesh.LoadWavefrontMesh(vehicle::GetDataFile(m_meshFile), false, false);
-            auto trimesh_shape = std::make_shared<ChTriangleMeshShape>();
-            trimesh_shape->SetMesh(trimesh);
-            trimesh_shape->SetName(m_meshName);
-            m_shoe->AddAsset(trimesh_shape);
-            break;
-        }
+void TrackShoeSinglePin::AddVisualizationAssets(VisualizationType vis) {
+    if (vis == VisualizationType::MESH && m_has_mesh) {
+        geometry::ChTriangleMeshConnected trimesh;
+        trimesh.LoadWavefrontMesh(vehicle::GetDataFile(m_meshFile), false, false);
+        auto trimesh_shape = std::make_shared<ChTriangleMeshShape>();
+        trimesh_shape->SetMesh(trimesh);
+        trimesh_shape->SetName(m_meshName);
+        m_shoe->AddAsset(trimesh_shape);
+    } else {
+        ChTrackShoeSinglePin::AddVisualizationAssets(vis);
     }
 }
 

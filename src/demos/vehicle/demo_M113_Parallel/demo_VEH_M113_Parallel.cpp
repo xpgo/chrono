@@ -128,7 +128,7 @@ double time_hold = 0.2;
 // Solver parameters
 double time_step = 1e-3;  // 2e-4;
 
-double tolerance = 0.1;
+double tolerance = 0.01;
 
 int max_iteration_bilateral = 1000;  // 1000;
 int max_iteration_normal = 0;
@@ -360,7 +360,6 @@ int main(int argc, char* argv[]) {
         vertical_offset = CreateParticles(system);
     }
 
-
     // --------------------------
     // Construct the M113 vehicle
     // --------------------------
@@ -370,12 +369,13 @@ int main(int argc, char* argv[]) {
     ////vehicle.SetStepsize(0.0001);
 
     vehicle.SetChassisVisType(VisualizationType::NONE);
-    vehicle.SetRoadWheelVisType(VisualizationType::MESH);
-    vehicle.SetIdlerVisType(VisualizationType::MESH);
-    vehicle.SetSprocketVisType(VisualizationType::MESH);
-    vehicle.SetTrackShoeVisType(VisualizationType::MESH);
 
     vehicle.Initialize(ChCoordsys<>(initLoc, initRot));
+
+    vehicle.SetSprocketVisualizationType(VisualizationType::MESH);
+    vehicle.SetIdlerVisualizationType(VisualizationType::MESH);
+    vehicle.SetRoadWheelAssemblyVisualizationType(VisualizationType::MESH);
+    vehicle.SetTrackShoeVisualizationType(VisualizationType::MESH);
 
     ////vehicle.SetCollide(TrackCollide::NONE);
     ////vehicle.SetCollide(TrackCollide::WHEELS_LEFT | TrackCollide::WHEELS_RIGHT);

@@ -12,31 +12,21 @@
 // Authors: Radu Serban
 // =============================================================================
 //
-// M113 simple brake model
+// Base class for all vehicle subsystems.
 //
 // =============================================================================
 
-#ifndef M113_BRAKESIMPLE_H
-#define M113_BRAKESIMPLE_H
-
-#include "chrono_vehicle/tracked_vehicle/brake/ChTrackBrakeSimple.h"
-
-#include "chrono_models/ChApiModels.h"
+#include "chrono_vehicle/ChPart.h"
 
 namespace chrono {
 namespace vehicle {
-namespace m113 {
 
-class CH_MODELS_API M113_BrakeSimple : public ChTrackBrakeSimple {
-  public:
-    M113_BrakeSimple() : ChTrackBrakeSimple("M113_Brake") {}
-    ~M113_BrakeSimple() {}
+ChPart::ChPart(const std::string& name) : m_name(name) {}
 
-    virtual double GetMaxBrakingTorque() override { return 10000.0; }
-};
+void ChPart::SetVisualizationType(VisualizationType vis) {
+    RemoveVisualizationAssets();
+    AddVisualizationAssets(vis);
+}
 
-}  // end namespace m113
 }  // end namespace vehicle
 }  // end namespace chrono
-
-#endif

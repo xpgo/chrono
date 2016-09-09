@@ -98,56 +98,24 @@ void M113_Vehicle::SetChassisVisType(VisualizationType vis) {
     m_chassisVisType = vis;
 }
 
-void M113_Vehicle::SetSprocketVisType(VisualizationType vis) {
-    switch (m_type) {
-        case TrackShoeType::SINGLE_PIN:
-            std::static_pointer_cast<M113_TrackAssemblySinglePin>(m_tracks[0])->SetSprocketVisType(vis);
-            std::static_pointer_cast<M113_TrackAssemblySinglePin>(m_tracks[1])->SetSprocketVisType(vis);
-            break;
-        case TrackShoeType::DOUBLE_PIN:
-            std::static_pointer_cast<M113_TrackAssemblyDoublePin>(m_tracks[0])->SetSprocketVisType(vis);
-            std::static_pointer_cast<M113_TrackAssemblyDoublePin>(m_tracks[1])->SetSprocketVisType(vis);
-            break;
-    }
+void M113_Vehicle::SetSprocketVisualizationType(VisualizationType vis) {
+    m_tracks[0]->SetSprocketVisualizationType(vis);
+    m_tracks[1]->SetSprocketVisualizationType(vis);
 }
 
-void M113_Vehicle::SetIdlerVisType(VisualizationType vis) {
-    switch (m_type) {
-        case TrackShoeType::SINGLE_PIN:
-            std::static_pointer_cast<M113_TrackAssemblySinglePin>(m_tracks[0])->SetIdlerVisType(vis);
-            std::static_pointer_cast<M113_TrackAssemblySinglePin>(m_tracks[1])->SetIdlerVisType(vis);
-            break;
-        case TrackShoeType::DOUBLE_PIN:
-            std::static_pointer_cast<M113_TrackAssemblyDoublePin>(m_tracks[0])->SetIdlerVisType(vis);
-            std::static_pointer_cast<M113_TrackAssemblyDoublePin>(m_tracks[1])->SetIdlerVisType(vis);
-            break;
-    }
+void M113_Vehicle::SetIdlerVisualizationType(VisualizationType vis) {
+    m_tracks[0]->SetIdlerVisualizationType(vis);
+    m_tracks[1]->SetIdlerVisualizationType(vis);
 }
 
-void M113_Vehicle::SetRoadWheelVisType(VisualizationType vis) {
-    switch (m_type) {
-        case TrackShoeType::SINGLE_PIN:
-            std::static_pointer_cast<M113_TrackAssemblySinglePin>(m_tracks[0])->SetRoadWheelVisType(vis);
-            std::static_pointer_cast<M113_TrackAssemblySinglePin>(m_tracks[1])->SetRoadWheelVisType(vis);
-            break;
-        case TrackShoeType::DOUBLE_PIN:
-            std::static_pointer_cast<M113_TrackAssemblyDoublePin>(m_tracks[0])->SetRoadWheelVisType(vis);
-            std::static_pointer_cast<M113_TrackAssemblyDoublePin>(m_tracks[1])->SetRoadWheelVisType(vis);
-            break;
-    }
+void M113_Vehicle::SetRoadWheelAssemblyVisualizationType(VisualizationType vis) {
+    m_tracks[0]->SetRoadWheelAssemblyVisualizationType(vis);
+    m_tracks[1]->SetRoadWheelAssemblyVisualizationType(vis);
 }
 
-void M113_Vehicle::SetTrackShoeVisType(VisualizationType vis) {
-    switch (m_type) {
-        case TrackShoeType::SINGLE_PIN:
-            std::static_pointer_cast<M113_TrackAssemblySinglePin>(m_tracks[0])->SetTrackShoeVisType(vis);
-            std::static_pointer_cast<M113_TrackAssemblySinglePin>(m_tracks[1])->SetTrackShoeVisType(vis);
-            break;
-        case TrackShoeType::DOUBLE_PIN:
-            std::static_pointer_cast<M113_TrackAssemblyDoublePin>(m_tracks[0])->SetTrackShoeVisType(vis);
-            std::static_pointer_cast<M113_TrackAssemblyDoublePin>(m_tracks[1])->SetTrackShoeVisType(vis);
-            break;
-    }
+void M113_Vehicle::SetTrackShoeVisualizationType(VisualizationType vis) {
+    m_tracks[0]->SetTrackShoeVisualizationType(vis);
+    m_tracks[1]->SetTrackShoeVisualizationType(vis);
 }
 
 // -----------------------------------------------------------------------------
@@ -175,37 +143,13 @@ void M113_Vehicle::Initialize(const ChCoordsys<>& chassisPos) {
         }
     }
 
+    // Initialize the left and right track assemblies.
     double track_offset = 1.0795;
-    ChVector<> sprocket_loc;
-    ChVector<> idler_loc;
-    std::vector<ChVector<> > susp_locs(5);
-
-    // Initialize the left track assembly.
-    sprocket_loc = ChVector<>(0, track_offset, 0);
-    idler_loc = ChVector<>(-3.92, track_offset, -0.12);  //// Original x value: -3.97   
-    susp_locs[0] = ChVector<>(-0.655, track_offset, -0.215);
-    susp_locs[1] = ChVector<>(-1.322, track_offset, -0.215);
-    susp_locs[2] = ChVector<>(-1.989, track_offset, -0.215);
-    susp_locs[3] = ChVector<>(-2.656, track_offset, -0.215);
-    susp_locs[4] = ChVector<>(-3.322, track_offset, -0.215);
-
-    m_tracks[0]->Initialize(m_chassis, sprocket_loc, idler_loc, susp_locs);
-
-    // Initialize the right track assembly.
-    sprocket_loc = ChVector<>(0, -track_offset, 0);
-    idler_loc = ChVector<>(-3.92, -track_offset, -0.12);  //// Original x value: -3.97  
-    susp_locs[0] = ChVector<>(-0.740, -track_offset, -0.215);
-    susp_locs[1] = ChVector<>(-1.407, -track_offset, -0.215);
-    susp_locs[2] = ChVector<>(-2.074, -track_offset, -0.215);
-    susp_locs[3] = ChVector<>(-2.740, -track_offset, -0.215);
-    susp_locs[4] = ChVector<>(-3.407, -track_offset, -0.215);
-
-    m_tracks[1]->Initialize(m_chassis, sprocket_loc, idler_loc, susp_locs);
+    m_tracks[0]->Initialize(m_chassis, ChVector<>(0, track_offset, 0));
+    m_tracks[1]->Initialize(m_chassis, ChVector<>(0, -track_offset, 0));
 
     // Initialize the driveline subsystem
     m_driveline->Initialize(m_chassis, m_tracks[0], m_tracks[1]);
-
-    //// TODO
 }
 
 // -----------------------------------------------------------------------------

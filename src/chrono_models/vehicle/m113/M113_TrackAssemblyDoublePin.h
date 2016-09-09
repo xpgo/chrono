@@ -30,13 +30,18 @@ namespace m113 {
 
 /// M113 track assembly using double-pin track shoes.
 class CH_MODELS_API M113_TrackAssemblyDoublePin : public ChTrackAssemblyDoublePin {
-public:
+  public:
     M113_TrackAssemblyDoublePin(VehicleSide side);
 
-    void SetIdlerVisType(VisualizationType vis);
-    void SetRoadWheelVisType(VisualizationType vis);
-    void SetSprocketVisType(VisualizationType vis);
-    void SetTrackShoeVisType(VisualizationType vis);
+    virtual const ChVector<>& GetSprocketLocation() const override;
+    virtual const ChVector<>& GetIdlerLocation() const override;
+    virtual const ChVector<>& GetRoadWhelAssemblyLocation(int which) const override;
+
+  private:
+    static const ChVector<> m_sprocket_loc;
+    static const ChVector<> m_idler_loc;
+    static const ChVector<> m_susp_locs_L[5];
+    static const ChVector<> m_susp_locs_R[5];
 };
 
 }  // end namespace m113

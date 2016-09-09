@@ -66,11 +66,11 @@ class CH_MODELS_API M113_Idler : public ChDoubleIdler {
     /// Return the callback function for spring force.
     virtual ChSpringForceCallback* GetTensionerForceCallback() const override { return m_tensionerForceCB; }
 
-    /// Add visualization of the idler wheel.
-    virtual void AddWheelVisualization() override;
+    /// Return the free length for the tensioner spring.
+    virtual double GetTensionerFreeLength() const { return m_tensioner_l0; }
 
-    /// Set the idler wheel visualization type.
-    void SetVisType(VisualizationType vis) { m_vis_type = vis; }
+    /// Add visualization assets for the idler subsystem.
+    virtual void AddVisualizationAssets(VisualizationType vis) override;
 
     /// Export the wheel mesh Wavefront OBJ as a POV-Ray mesh macro.
     void ExportMeshPovray(const std::string& out_dir);
@@ -99,8 +99,6 @@ class CH_MODELS_API M113_Idler : public ChDoubleIdler {
     static const double m_tensioner_k;
     static const double m_tensioner_c;
     static const double m_tensioner_f;
-
-    VisualizationType m_vis_type;
 };
 
 class CH_MODELS_API M113_IdlerLeft : public M113_Idler {
