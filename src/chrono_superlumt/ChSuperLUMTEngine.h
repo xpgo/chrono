@@ -84,6 +84,9 @@ class ChApiSuperLUMT ChSuperLUMTEngine {
 	/// Compute reverse of conditioning number of the input matrix
 	void SetRCONDevaluation(bool on_off) { rcond_evaluation = on_off; }
 
+	/// Returns the value of the conditioning number of the last evaluation
+	double GetRCOND() const { return m_rcond; }
+
 	/// Force iterative refinement of the computed solution
 	void SetIterativeRefinements(bool on_off) { iterative_refinement = on_off; }
 
@@ -101,7 +104,7 @@ class ChApiSuperLUMT ChSuperLUMTEngine {
 
 	// Problem properties
 	int m_n = 0;     ///< (square) matrix size
-	int m_nrhs = 1;  ///< number of rhs vectors
+	int m_nrhs = 0;  ///< number of rhs vectors
 
 	/* SuperLU_MT data */
 	int& ldx = m_n; ///< leading-dimension size of the arrays
@@ -115,7 +118,7 @@ class ChApiSuperLUMT ChSuperLUMTEngine {
 
 	std::vector<double> R, C;
 	std::vector<double> ferr, berr;
-	double         rpg = 0, rcond = 0;
+	double         rpg = 0, m_rcond = 0;
 
 	// internally used and never directly modified by user
 	SuperMatrix    L, U;

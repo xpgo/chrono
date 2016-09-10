@@ -65,7 +65,7 @@ int numDiv_z = 1;   // mesh divisions in Z direction
 
 std::string out_dir = "../TEST_SHELL_ANCF";  // name of output directory
 bool output = true;                         // generate output file?
-bool verbose = false;                        // verbose output?
+int verbose = 0;                        // verbose output?
 
 // -----------------------------------------------------------------------------
 
@@ -388,18 +388,18 @@ void RunModel(solver_type solver_sel,    // use MKL solver (if available)
     cout << "Total time: " << time_total << endl;
     cout << "  Setup:    " << time_setup << "\t (" << (time_setup / time_total) * 100 << "%)" << endl;
 #if defined(CHRONO_MKL) || defined(CHRONO_SUPERLUMT)
-    cout << "    Assembly: " << time_setup_assembly << "\t (" << (time_setup_assembly / time_setup) * 100
+    cout << "  |-Assembly: " << time_setup_assembly << "\t (" << (time_setup_assembly / time_setup) * 100
             << "% setup)" << endl;
-    cout << "    SolverCall:  " << time_setup_solver << "\t (" << (time_setup_solver / time_setup) * 100
+    cout << "  |-SolverCall:  " << time_setup_solver << "\t (" << (time_setup_solver / time_setup) * 100
             << "% setup)" << endl;
 #endif
 	cout << "  Solve:    " << time_solve << "\t (" << (time_solve / time_total) * 100 << "%)" << endl;
-	cout << "  (Solver total:    " << time_setup_solver + time_solve_solver << "\t (" << (time_setup_solver + time_solve_solver) / time_total * 100 << "%))" << endl;
     cout << "  Forces:   " << time_force << "\t (" << (time_force / time_total) * 100 << "%)" << endl;
     cout << "  Jacobian: " << time_jacobian << "\t (" << (time_jacobian / time_total) * 100 << "%)" << endl;
     cout << "  Update:   " << time_update << "\t (" << (time_update / time_total) * 100 << "%)" << endl;
     cout << "  Other:    " << time_other << "\t (" << (time_other / time_total) * 100 << "%)" << endl;
     cout << endl;
+	cout << "Solver overall time:    " << time_setup_solver + time_solve_solver << "\t (" << (time_setup_solver + time_solve_solver) / time_total * 100 << "%))" << endl;
     cout << "Time for skipped steps (" << skip_steps << "): " << time_skipped << endl;
 
     if (output) {

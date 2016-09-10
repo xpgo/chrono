@@ -94,6 +94,8 @@ public:
 		{
 			double res_norm = m_engine.GetResidualNorm();
 			GetLog() << " SUPERLU_MT solve call " << m_solver_call << "  |residual| = " << res_norm << "\n";
+			if (m_engine.GetRCOND() != -1)
+				GetLog() << " Matrix RCOND " << m_solver_call << "\n";
 		}
 
 		return 0.0f;

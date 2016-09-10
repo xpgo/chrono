@@ -16,6 +16,7 @@
 
 #include "chrono_superlumt/ChSuperLUMTEngine.h"
 #include <omp.h>
+#include <algorithm>
 
 
 namespace chrono {
@@ -23,10 +24,11 @@ namespace chrono {
 
 	ChSuperLUMTEngine::ChSuperLUMTEngine()
 	{
-		panel_size = sp_ienv(1);
-		relax = sp_ienv(2);
 
 		ResetSolver();
+
+		panel_size = sp_ienv(1);
+		relax = sp_ienv(2);
 
 		dCreate_Dense_Matrix(&m_sol_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
 		dCreate_Dense_Matrix(&m_rhs_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
@@ -75,11 +77,7 @@ namespace chrono {
 		perm_r.resize(m_n);
 		perm_c.resize(m_n);
 
-
-		get_perm_c(1, &m_mat_Super, perm_c.data());
-
-		superlumt_options.perm_c = perm_c.data();
-		superlumt_options.perm_r = perm_r.data();
+		get_perm_c(MMD_ATA, &m_mat_Super, perm_c.data());
 
 		// Internally computed
 		etree.resize(m_n);
@@ -155,13 +153,13 @@ namespace chrono {
         // if put to 0 then factorize without solve
         m_rhs_Super.ncol = (phase == phase_t::ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
 		m_sol_Super.ncol = (phase == phase_t::ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
-		superlumt_options.fact = (phase == phase_t::SOLVE) ? FACTORED : DOFACT; /* Indicate the factored form of m_mat_Super is supplied. */
+		superlumt_options.fact = (phase == phase_t::SOLVE) ? FACTORED : EQUILIBRATE; /* Indicate the factored form of m_mat_Super is supplied. */
 		//TODO: superlumt_options.refact
 
 
-		// call to SuperLU_MT
+		// call to SuperLU_MT modified routine
 		pdgssvx_mod(superlumt_options.nprocs, &superlumt_options, &m_mat_Super, perm_c.data(), perm_r.data(), &equed, R.data(), C.data(),
-			&L, &U, &m_rhs_Super, &m_sol_Super, &rpg, &rcond, ferr.data(), berr.data(),
+			&L, &U, &m_rhs_Super, &m_sol_Super, &rpg, &m_rcond, ferr.data(), berr.data(),
 			&superlu_memusage, &info);
 
 
@@ -170,46 +168,48 @@ namespace chrono {
 		m_rhs_Super.ncol = m_rhs_Super_ncol_bkp;
 		m_sol_Super.ncol = m_sol_Super_ncol_bkp;
 
-		if (verbose>1 && (phase == phase_t::ANALYSIS_NUMFACTORIZATION || phase == phase_t::COMPLETE))
+		if (verbose>1)
 		{
-			if (info == 0 || info == m_n + 1)
+			if (phase == phase_t::ANALYSIS_NUMFACTORIZATION || phase == phase_t::COMPLETE)
 			{
-				printf("Recip. pivot growth = %e\n", rpg);
-				printf("Recip. condition number = %e\n", rcond);
-				printf("%8s%16s%16s\n", "rhs", "FERR", "BERR");
-				for (auto i = 0; i < m_nrhs; ++i) {
-					printf(IFMT "%16e%16e\n", i + 1, ferr[i], berr[i]);
+				if (info == 0 || info == m_n + 1)
+				{
+					printf("Recip. pivot growth = %e\n", rpg);
+					if (rcond_evaluation) printf("Recip. condition number = %e\n", m_rcond);
+					printf("%8s%16s%16s\n", "rhs", "FERR", "BERR");
+					for (auto i = 0; i < m_nrhs; ++i) {
+						printf(IFMT "%16e%16e\n", i + 1, ferr[i], berr[i]);
+					}
+
+					auto Lnnz = static_cast<SCPformat*>(L.Store)->nnz;
+					auto Unnz = static_cast<NCPformat*>(U.Store)->nnz;
+					printf("No of nonzeros in factor L = " IFMT "\n", Lnnz);
+					printf("No of nonzeros in factor U = " IFMT "\n", Unnz);
+					printf("No of nonzeros in L+U = " IFMT "\n", Lnnz + Unnz - m_n);
+					printf("L\\U MB %.3f\ttotal MB needed %.3f\texpansions " IFMT "\n",
+						superlu_memusage.for_lu / 1e6, superlu_memusage.total_needed / 1e6,
+						superlu_memusage.expansions);
+
 				}
-
-				auto Lnnz = static_cast<SCPformat*>(L.Store)->nnz;
-				auto Unnz = static_cast<NCPformat*>(U.Store)->nnz;
-				printf("No of nonzeros in factor L = " IFMT "\n", Lnnz);
-				printf("No of nonzeros in factor U = " IFMT "\n", Unnz);
-				printf("No of nonzeros in L+U = " IFMT "\n", Lnnz + Unnz - m_n);
-				printf("L\\U MB %.3f\ttotal MB needed %.3f\texpansions " IFMT "\n",
-					superlu_memusage.for_lu / 1e6, superlu_memusage.total_needed / 1e6,
-					superlu_memusage.expansions);
-
+				else if (info > 0 && lwork == -1)
+					printf("** Estimated memory: %d bytes\n", info - m_n);
 			}
-			else if (info > 0 && lwork == -1)
+
+			if (phase == phase_t::SOLVE || phase == phase_t::COMPLETE)
 			{
-				printf("** Estimated memory: %d bytes\n", info - m_n);
+				if (info == 0 || info == m_n + 1)
+					printf("Triangular solve: dgssvx() returns info %d\n", info);
+				else if (info > 0 && lwork == -1)
+					printf("** Estimated memory: " IFMT " bytes\n", info - m_n);
 			}
+			
+			printf("time for [EQUIL] phase: %f\n", Gstat.utime[EQUIL]);
+			printf("time for [FACT] phase: %f\n", Gstat.utime[FACT]);
+			printf("time for [RCOND] phase: %f\n", Gstat.utime[RCOND]);
+			printf("time for [SOLVE] phase: %f\n", Gstat.utime[SOLVE]);
+			printf("time for [REFINE] phase: %f\n", Gstat.utime[REFINE]);
 
 		}
-
-		if (verbose>1 && (phase == phase_t::SOLVE || phase == phase_t::COMPLETE))
-		{
-			if (info == 0 || info == m_n + 1)
-			{
-				printf("Triangular solve: dgssvx() returns info %d\n", info);
-			}
-			else if (info > 0 && lwork == -1)
-			{
-				printf("** Estimated memory: " IFMT " bytes\n", info - m_n);
-			}
-		}
-		
 
 		return info;
 	}
@@ -236,7 +236,7 @@ namespace chrono {
 	void ChSuperLUMTEngine::SetNumProcs(int nprocs_in)
 	{
 		StatFree(&Gstat);
-		superlumt_options.nprocs = nprocs_in;
+		superlumt_options.nprocs = std::max(nprocs_in,omp_get_num_procs());
 		StatAlloc(m_n, superlumt_options.nprocs, panel_size, relax, &Gstat);
 	}
 
@@ -290,11 +290,9 @@ namespace chrono {
 		int_t     nrhs = B->ncol;
 		SuperMatrix *AA; /* A in NC format used by the factorization routine.*/
 		SuperMatrix AC; /* Matrix postmultiplied by Pc */
-		int_t       colequ, equil, dofact, notran, rowequ;
-		char      norm[1];
+		bool       colequ, rowequ;
 		trans_t   trant;
-		int_t     j, info1;
-		int i;
+		int_t     info1;
 		double amax, anorm, bignum, smlnum, colcnd, rowcnd, rcmax, rcmin;
 		int_t     panel_size = superlumt_options->panel_size;
 		double    t0;      /* temporary time */
@@ -307,49 +305,45 @@ namespace chrono {
 		superlumt_options->perm_c = perm_c;
 		superlumt_options->perm_r = perm_r;
 
+
 		*info = 0;
-		dofact = (superlumt_options->fact == DOFACT);
-		equil = (superlumt_options->fact == EQUILIBRATE);
-		notran = (superlumt_options->trans == NOTRANS);
+		auto dofact = (superlumt_options->fact == DOFACT);
+		auto equil = (superlumt_options->fact == EQUILIBRATE);
+		auto notran = (superlumt_options->trans == NOTRANS);
+
 		if (dofact || equil) {
 			*equed = NOEQUIL;
 			rowequ = FALSE;
 			colequ = FALSE;
-			bignum = std::numeric_limits<double>::max();
 		}
 		else {
 			rowequ = (*equed == ROW) || (*equed == BOTH);
 			colequ = (*equed == COL) || (*equed == BOTH);
-			//smlnum = dlamch_("Safe minimum");
-			smlnum = std::numeric_limits<double>::max();
-			bignum = 1. / smlnum;
 		}
+		smlnum = dlamch_("Safe minimum");
+		bignum = 1. / smlnum;
 
-#ifdef DEBUG
 		/* ------------------------------------------------------------
 		Test the input parameters.
 		------------------------------------------------------------*/
 		if (nprocs <= 0) *info = -1;
-		else if ((!dofact && !equil && (superlumt_options->fact != FACTORED))
-			|| (!notran && (superlumt_options->trans != TRANS) &&
-			(superlumt_options->trans != CONJ))
-			|| (superlumt_options->refact != YES &&
-				superlumt_options->refact != NO)
-			|| (superlumt_options->usepr != YES &&
-				superlumt_options->usepr != NO)
+		else if ((!dofact && !equil && superlumt_options->fact != FACTORED)
+			|| (!notran && (superlumt_options->trans != TRANS) && (superlumt_options->trans != CONJ))
+			|| (superlumt_options->refact != YES && superlumt_options->refact != NO)
+			|| (superlumt_options->usepr != YES && superlumt_options->usepr != NO)
 			|| superlumt_options->lwork < -1)
 			*info = -2;
 		else if (A->nrow != A->ncol || A->nrow < 0 ||
-			(A->Stype != SLU_NC && A->Stype != SLU_NR) ||
-			A->Dtype != SLU_D || A->Mtype != SLU_GE)
+			    (A->Stype != SLU_NC && A->Stype != SLU_NR) ||
+			     A->Dtype != SLU_D || A->Mtype != SLU_GE)
 			*info = -3;
-		else if ((superlumt_options->fact == FACTORED) &&
-			!(rowequ || colequ || (*equed == NOEQUIL))) *info = -6;
+		else if (superlumt_options->fact == FACTORED && !(rowequ || colequ || *equed == NOEQUIL))
+			*info = -6;
 		else {
 			if (rowequ) {
 				rcmin = bignum;
 				rcmax = 0.;
-				for (j = 0; j < A->nrow; ++j) {
+				for (auto j = 0; j < A->nrow; ++j) {
 					rcmin = SUPERLU_MIN(rcmin, R[j]);
 					rcmax = SUPERLU_MAX(rcmax, R[j]);
 				}
@@ -361,7 +355,7 @@ namespace chrono {
 			if (colequ && *info == 0) {
 				rcmin = bignum;
 				rcmax = 0.;
-				for (j = 0; j < A->nrow; ++j) {
+				for (auto j = 0; j < A->nrow; ++j) {
 					rcmin = SUPERLU_MIN(rcmin, C[j]);
 					rcmax = SUPERLU_MAX(rcmax, C[j]);
 				}
@@ -381,12 +375,12 @@ namespace chrono {
 					*info = -12;
 			}
 		}
+
 		if (*info != 0) {
-			i = -(*info);
+			int_t i = -(*info);
 			xerbla_("pdgssvx", &i);
 			return;
 		}
-#endif
 
 
 		/* ------------------------------------------------------------
@@ -439,19 +433,18 @@ namespace chrono {
 		------------------------------------------------------------*/
 		if (notran) {
 			if (rowequ) {
-				for (j = 0; j < nrhs; ++j)
-					for (i = 0; i < A->nrow; ++i) {
+				for (auto j = 0; j < nrhs; ++j)
+					for (auto i = 0; i < A->nrow; ++i) {
 						Bval[i + j*ldb] *= R[i];
 					}
 			}
 		}
 		else if (colequ) {
-			for (j = 0; j < nrhs; ++j)
-				for (i = 0; i < A->nrow; ++i) {
+			for (auto j = 0; j < nrhs; ++j)
+				for (auto i = 0; i < A->nrow; ++i) {
 					Bval[i + j*ldb] *= C[i];
 				}
 		}
-
 
 		/* ------------------------------------------------------------
 		Perform the LU factorization.
@@ -463,7 +456,7 @@ namespace chrono {
 			sp_colorder(AA, perm_c, superlumt_options, &AC);
             Gstat.utime[ETREE] = SuperLU_timer_() - t0;
 
-#if PRNTlevel>=2
+#if (PRNTlevel>=2)
 			printf("Factor PA = LU ... relax %d\tw %d\tmaxsuper %d\trowblk %d\n",
 				superlumt_options->relax, panel_size, sp_ienv(3), sp_ienv(4));
 			fflush(stdout);
@@ -475,23 +468,24 @@ namespace chrono {
             Gstat.utime[FACT] = SuperLU_timer_() - t0;
 
 			flops_t flopcnt = 0;
-			for (i = 0; i < nprocs; ++i) flopcnt += Gstat.procstat[i].fcops;
+			for (auto i = 0; i < nprocs; ++i) flopcnt += Gstat.procstat[i].fcops;
             Gstat.ops[FACT] = flopcnt;
 
 			if (superlumt_options->lwork == -1) {
-				superlu_memusage->total_needed = *info - A->ncol;
+				superlu_memusage->total_needed = static_cast<float_t>(*info - A->ncol);
 				return;
 			}
 		}
 
-
-		if (*info > 0) {
+		// if factorization errors occurred...
+		if (*info > 0) { 
 			if (*info <= A->ncol) {
 				/* Compute the reciprocal pivot growth factor of the leading
 				rank-deficient *info columns of A. */
 				*recip_pivot_growth = dPivotGrowth(*info, AA, perm_c, L, U);
 			}
 		}
+		// if no errors in factorization...
 		else {
 
 			/* ------------------------------------------------------------
@@ -504,74 +498,72 @@ namespace chrono {
 				/* ------------------------------------------------------------
 				Estimate the reciprocal of the condition number of A.
 				------------------------------------------------------------*/
+				char      norm[1];
 				t0 = SuperLU_timer_();
-				if (notran) {
-					*reinterpret_cast<unsigned char *>(norm) = '1';
-				}
-				else {
-					*reinterpret_cast<unsigned char *>(norm) = 'I';
-				}
+				norm[0] = notran ? '1' : 'I';
 				anorm = dlangs(norm, AA);
 				dgscon(norm, L, U, anorm, rcond, info);
                 Gstat.utime[RCOND] = SuperLU_timer_() - t0;
 			}
-			/* ------------------------------------------------------------
-			Compute the solution matrix X.
-			------------------------------------------------------------*/
-			for (j = 0; j < nrhs; j++)    /* Save a copy of the right hand sides */
-				for (i = 0; i < B->nrow; i++)
-					Xval[i + j*ldx] = Bval[i + j*ldb];
 
-			t0 = SuperLU_timer_();
-			dgstrs(trant, L, U, perm_r, perm_c, X, &Gstat, info);
-            Gstat.utime[SOLVE] = SuperLU_timer_() - t0;
-            Gstat.ops[SOLVE] = Gstat.ops[TRISOLVE];
-
-			if (iterative_refinement)
+			// if there is actually a rhs
+			if (B->ncol>0)
 			{
 				/* ------------------------------------------------------------
-				Use iterative refinement to improve the computed solution and
-				compute error bounds and backward error estimates for it.
+				Compute the solution matrix X.
 				------------------------------------------------------------*/
-				t0 = SuperLU_timer_();
-				dgsrfs(trant, AA, L, U, perm_r, perm_c, *equed,
-					R, C, B, X, ferr, berr, &Gstat, info);
-                Gstat.utime[REFINE] = SuperLU_timer_() - t0;
-			}
-			
+				for (auto j = 0; j < nrhs; j++)    /* Save a copy of the right hand sides */
+					for (auto i = 0; i < B->nrow; i++)
+						Xval[i + j*ldx] = Bval[i + j*ldb];
 
-			/* ------------------------------------------------------------
-			Transform the solution matrix X to a solution of the original
-			system.
-			------------------------------------------------------------*/
-			if (notran) {
-				if (colequ) {
-					for (j = 0; j < nrhs; ++j)
-						for (i = 0; i < A->nrow; ++i) {
-							Xval[i + j*ldx] *= C[i];
+				t0 = SuperLU_timer_();
+				dgstrs(trant, L, U, perm_r, perm_c, X, &Gstat, info);
+				Gstat.utime[SOLVE] = SuperLU_timer_() - t0;
+				Gstat.ops[SOLVE] = Gstat.ops[TRISOLVE];
+
+				if (iterative_refinement)
+				{
+					/* ------------------------------------------------------------
+					Use iterative refinement to improve the computed solution and
+					compute error bounds and backward error estimates for it.
+					------------------------------------------------------------*/
+					t0 = SuperLU_timer_();
+					dgsrfs(trant, AA, L, U, perm_r, perm_c, *equed, R, C, B, X, ferr, berr, &Gstat, info);
+					Gstat.utime[REFINE] = SuperLU_timer_() - t0;
+				}
+
+
+				/* ------------------------------------------------------------
+				Transform the solution matrix X to a solution of the original
+				system.
+				------------------------------------------------------------*/
+				if (notran) {
+					if (colequ) {
+						for (auto j = 0; j < nrhs; ++j)
+							for (auto i = 0; i < A->nrow; ++i) {
+								Xval[i + j*ldx] *= C[i];
+							}
+					}
+				}
+				else if (rowequ) {
+					for (auto j = 0; j < nrhs; ++j)
+						for (auto i = 0; i < A->nrow; ++i) {
+							Xval[i + j*ldx] *= R[i];
 						}
 				}
-			}
-			else if (rowequ) {
-				for (j = 0; j < nrhs; ++j)
-					for (i = 0; i < A->nrow; ++i) {
-						Xval[i + j*ldx] *= R[i];
-					}
-			}
 
-			if (rcond_evaluation)
-			{
-				/* Set INFO = A->ncol+1 if the matrix is singular to
-				working precision.*/
-				if (*rcond < dlamch_("E")) *info = A->ncol + 1;				//if (*rcond < dlamch_("E")) *info = A->ncol + 1;
-			}
-			
-
+				if (rcond_evaluation)
+				{
+					/* Set INFO = A->ncol+1 if the matrix is singular to
+					working precision.*/
+					if (*rcond < dlamch_("E"))
+						*info = A->ncol + 1;
+				}
+			} // end if (rhs has non-zero dimension)
 		}
-
 		superlu_dQuerySpace(nprocs, L, U, panel_size, superlu_memusage);
 
-		/* ------------------------------------------------------------
+        /* ------------------------------------------------------------
 		Deallocate storage after factorization.
 		------------------------------------------------------------*/
 		if (dofact || equil) {
@@ -594,11 +586,7 @@ namespace chrono {
 		PrintStat(&Gstat);
 #endif
 
-		//printf("utime[EQUIL]: %f\n", Gstat.utime[EQUIL]);
-		//printf("utime[FACT]: %f\n", Gstat.utime[FACT]);
-		//printf("utime[RCOND]: %f\n", Gstat.utime[RCOND]);
-		//printf("utime[SOLVE]: %f\n", Gstat.utime[SOLVE]);
-		//printf("utime[REFINE]: %f\n", Gstat.utime[REFINE]);
+
 
 	}
 
