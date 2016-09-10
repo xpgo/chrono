@@ -8,22 +8,19 @@ option(ENABLE_MODULE_SUPERLUMT "Enable the Chrono SuperLUMT module" OFF)
 
 IF(NOT ENABLE_MODULE_SUPERLUMT)
     MARK_AS_ADVANCED(FORCE SUPERLUMT_ROOT)
-	MARK_AS_ADVANCED(FORCE BLAS_ROOT)
     RETURN()
 ENDIF()
 
 MESSAGE(STATUS "==== Chrono SuperLUMT module ====")
 
-
 MARK_AS_ADVANCED(CLEAR SUPERLUMT_ROOT)
-MARK_AS_ADVANCED(CLEAR BLAS_ROOT)
 
 # ------------------------------------------------------------------------------
 # Threading
 # ------------------------------------------------------------------------------
 
 
-SET(CH_SUPERLUMT_DEFS "PRNTlevel=0 Add_")
+SET(CH_SUPERLUMT_DEFS "PRNTlevel=0;Add_")
 if (CMAKE_USE_PTHREADS_INIT)
 	LIST(APPEND CH_SUPERLUMT_DEFS "__PTHREAD")
 elseif(OPENMP_FOUND)
@@ -65,30 +62,31 @@ message(STATUS "   SUPERLUMT libraries:     ${SUPERLUMT_LIBRARIES}")
 
 # Find BLAS (eventually looking into SuperLUMT folder)
 UNSET(BLAS_FOUND)
-UNSET(BLAS_LIBRARIES)
-set(BLAS_ROOT "${SUPERLUMT_ROOT}" CACHE PATH "Location of BLAS installation")
+UNSET(BLAS_LIBRARIES CACHE)
+UNSET(BLAS_INCLUDE_DIRS CACHE)
 find_package(BLAS QUIET)
 if(BLAS_FOUND)
-	MARK_AS_ADVANCED(FORCE BLAS_ROOT)
+	SET(BLAS_INCLUDE_DIRS ${BLAS_INCLUDE_DIR})
 	MARK_AS_ADVANCED(FORCE BLAS_LIBRARIES)
 	MARK_AS_ADVANCED(FORCE BLAS_INCLUDE_DIRS)
 else() # custom, easy, straightforward search of blas library
+	set(BLAS_ROOT "${SUPERLUMT_ROOT}" CACHE PATH "Location of BLAS installation")
 	find_library(BLAS_LIBRARIES "blas"
 		PATHS "${BLAS_ROOT}"
 		PATH_SUFFIXES "lib"
 		)
-		
 	find_path(BLAS_INCLUDE_DIRS "f2c.h"
 		PATHS "${BLAS_ROOT}"
 		PATH_SUFFIXES "include"
 		)
-	
   if (BLAS_LIBRARIES AND BLAS_INCLUDE_DIRS)
 	SET(BLAS_FOUND TRUE)
+	UNSET(BLAS_ROOT)
 	MARK_AS_ADVANCED(FORCE BLAS_LIBRARIES)
 	MARK_AS_ADVANCED(FORCE BLAS_INCLUDE_DIRS)
   endif (BLAS_LIBRARIES AND BLAS_INCLUDE_DIRS)
 endif()
+
 message(STATUS "   BLAS include dirs:     ${BLAS_INCLUDE_DIRS}")
 message(STATUS "   BLAS library:          ${BLAS_LIBRARIES}")
 
