@@ -24,11 +24,10 @@ namespace chrono {
 
 	ChSuperLUMTEngine::ChSuperLUMTEngine()
 	{
-
-		ResetSolver();
-
 		panel_size = sp_ienv(1);
 		relax = sp_ienv(2);
+
+		ResetSolver();
 
 		dCreate_Dense_Matrix(&m_sol_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
 		dCreate_Dense_Matrix(&m_rhs_Super, 0, 0, nullptr, 0, SLU_DN, SLU_D, SLU_GE);
