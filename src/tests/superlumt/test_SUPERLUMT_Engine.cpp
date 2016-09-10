@@ -24,7 +24,7 @@ int test_pure_vectors_input()
 	m_engine.SetSolutionVector(sol.data());
 	m_engine.SetRhsVector(rhs.data());
 
-	m_engine.SuperLUMTCall(13,2);
+	m_engine.SuperLUMTCall(phase_t::COMPLETE,2);
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 	{
@@ -82,7 +82,7 @@ int test_CSR_input()
 	m_engine.SetSolutionVector(sol.data());
 	m_engine.SetRhsVector(rhs.data());
 
-	m_engine.SuperLUMTCall(13, true);
+	m_engine.SuperLUMTCall(phase_t::COMPLETE, true);
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 		std::cout << sol[row_sel] << " ";
@@ -124,12 +124,12 @@ int test_SetupSolve()
 	ChSuperLUMTEngine m_engine;
 	// call for factorization
 	m_engine.SetMatrix(matCSR3);
-	m_engine.SuperLUMTCall(12, true);
+	m_engine.SuperLUMTCall(phase_t::ANALYSIS_NUMFACTORIZATION, true);
 
 	// call for first solve
 	m_engine.SetRhsVector(rhs.data());
 	m_engine.SetSolutionVector(sol.data());
-	m_engine.SuperLUMTCall(33, true);
+	m_engine.SuperLUMTCall(phase_t::SOLVE, true);
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 		std::cout << sol[row_sel] << " ";
@@ -137,7 +137,7 @@ int test_SetupSolve()
 
 	// call for second solve
 	std::fill(rhs.begin(), rhs.end(), 2.0);
-	m_engine.SuperLUMTCall(33, true);
+	m_engine.SuperLUMTCall(phase_t::SOLVE, true);
 
 	for (auto row_sel = 0; row_sel<sol.size(); ++row_sel)
 		std::cout << sol[row_sel] << " ";

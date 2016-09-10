@@ -27,7 +27,11 @@ namespace chrono {
 
 /// @addtogroup superlumt_module
 /// @{
-
+	enum class phase_t {
+		COMPLETE = 13,
+		ANALYSIS_NUMFACTORIZATION = 12,
+		SOLVE = 33,
+	};
 /// Interface class to SuperLU_MT solver.
 /// This class wraps the C interface of the solver in order to fit Chrono data structures.
 /// This class can still be called by the end-user in order to solve linear systems.
@@ -62,7 +66,7 @@ class ChApiSuperLUMT ChSuperLUMTEngine {
     void SetProblem(ChSparseMatrix& Z, ChMatrix<>& b, ChMatrix<>& x);
 
     /// Solver routine.
-    int SuperLUMTCall(int phase, int verbose = 0);
+	int SuperLUMTCall(phase_t phase, int verbose = 0);
 
     /// Reinitializes the solver to default values.
     void ResetSolver();
@@ -70,10 +74,18 @@ class ChApiSuperLUMT ChSuperLUMTEngine {
 	// Auxiliary functions
 	/// Returns the Options vector
 	superlumt_options_t& GetOptions() { return superlumt_options; }
+
 	/// Set the number of cores for SuperLU_MT (only factorization phase is parallelized)
-	void SetNumProcs(int nprocs_in) { superlumt_options.nprocs = nprocs_in; }
+	void SetNumProcs(int nprocs_in);
+
 	/// Get the number of cores for SuperLU_MT
 	int GetNumProcs() const { return superlumt_options.nprocs; }
+
+	/// Compute reverse of conditioning number of the input matrix
+	void SetRCONDevaluation(bool on_off) { rcond_evaluation = on_off; }
+
+	/// Force iterative refinement of the computed solution
+	void SetIterativeRefinements(bool on_off) { iterative_refinement = on_off; }
 
 
     // Output functions
@@ -117,9 +129,24 @@ class ChApiSuperLUMT ChSuperLUMTEngine {
 	int relax, panel_size;
 	std::vector<int> colcnt_h; ///< SuperLU_MT internal used
 	std::vector<int> part_super_h; ///< SuperLU_MT internal used
+	Gstat_t   Gstat;
 
-    // SuperLU_MT solver settings
+	bool iterative_refinement = false;
+	bool rcond_evaluation = false;
+
+protected:
+	void
+		pdgssvx_mod(int_t nprocs, superlumt_options_t *superlumt_options, SuperMatrix *A,
+			int_t *perm_c, int_t *perm_r, equed_t *equed, double *R, double *C,
+			SuperMatrix *L, SuperMatrix *U,
+			SuperMatrix *B, SuperMatrix *X, double *recip_pivot_growth,
+			double *rcond, double *ferr, double *berr,
+			superlu_memusage_t *superlu_memusage, int_t *info);
+
+	
+
 };
+
 
 
 

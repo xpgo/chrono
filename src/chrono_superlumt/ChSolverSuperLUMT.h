@@ -80,7 +80,7 @@ public:
 
 		// Solve the system
 		m_timer_solve_superlumt.start();
-		m_engine.SuperLUMTCall(33, verbose);
+		m_engine.SuperLUMTCall(phase_t::SOLVE, verbose);
 		m_timer_solve_superlumt.stop();
 		m_solver_call++;
 
@@ -139,7 +139,7 @@ public:
 		// Performs factorization (LU decomposition)
 		m_engine.SetMatrix(m_mat);
 		m_timer_setup_superlumt.start();
-		m_engine.SuperLUMTCall(12, verbose);
+		m_engine.SuperLUMTCall(phase_t::ANALYSIS_NUMFACTORIZATION, verbose);
 		m_timer_setup_superlumt.stop();
 
 
