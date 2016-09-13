@@ -1,0 +1,28 @@
+284c284
+< extern int_t  ParallelFinalize ();
+---
+> extern int_t  ParallelFinalize (pxgstrf_shared_t *pxgstrf_shared);
+295c295
+< extern void PartDomains(const int_t, const float, SuperMatrix *, int_t *, int_t *);
+---
+> 
+330c330
+< extern void dsp_colorder (SuperMatrix *, int_t *, superlumt_options_t *,
+---
+> extern void sp_colorder (SuperMatrix *, int_t *, superlumt_options_t *,
+348a349,350
+> extern void
+> *pdgstrf_thread(void *);
+454d455
+< extern int_t  memory_usage ();
+464,465c465,467
+< extern int_t     sp_ienv(int_t);
+< extern double  dlamch_();
+---
+> extern int_t   sp_ienv(int_t);
+> extern double  dlamch_(char *cmach);
+> extern double  dlangs(char *, SuperMatrix *);
+488c490
+< extern void    print_lu_col(int_t, char *, int_t, int_t, int_t, int_t *, GlobalLU_t *);
+---
+> extern void    dprint_lu_col(int_t, char *, int_t, int_t, int_t, int_t, int_t *, GlobalLU_t *);
