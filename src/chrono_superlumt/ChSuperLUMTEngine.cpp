@@ -50,6 +50,8 @@ namespace chrono {
 				Destroy_CompCol_Matrix(&U);
 			}
 		}
+
+		StatFree(&Gstat);
 	}
 
 	void ChSuperLUMTEngine::SetMatrix(ChSparseMatrix& Z)
@@ -88,7 +90,7 @@ namespace chrono {
 		superlumt_options.part_super_h = part_super_h.data();
 
 		// update lda values also for rhs and sol because they could be
-		// not initialize if a factorization is called before
+		// not initialized if a factorization is called before
 		// initializing the sol and rhs
 		static_cast<DNformat*>(m_rhs_Super.Store)->lda = m_n;
 		static_cast<DNformat*>(m_sol_Super.Store)->lda = m_n;
@@ -153,7 +155,7 @@ namespace chrono {
         m_rhs_Super.ncol = (phase == phase_t::ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
 		m_sol_Super.ncol = (phase == phase_t::ANALYSIS_NUMFACTORIZATION) ? 0 : m_nrhs;
 		superlumt_options.fact = (phase == phase_t::SOLVE) ? FACTORED : EQUILIBRATE; /* Indicate the factored form of m_mat_Super is supplied. */
-		//TODO: superlumt_options.refact
+		//TODO: look for superlumt_options.refact
 
 
 		// call to SuperLU_MT modified routine
@@ -163,7 +165,7 @@ namespace chrono {
 
 
 		// restore previous values of columns of rhs and sol
-		// otherwise if someone set rhs and sol before factorization they will be corrupted
+		// otherwise, if someone set rhs and sol before factorization, they will be forgotten
 		m_rhs_Super.ncol = m_rhs_Super_ncol_bkp;
 		m_sol_Super.ncol = m_sol_Super_ncol_bkp;
 
@@ -171,43 +173,15 @@ namespace chrono {
 		{
 			if (phase == phase_t::ANALYSIS_NUMFACTORIZATION || phase == phase_t::COMPLETE)
 			{
-				if (info == 0 || info == m_n + 1)
-				{
-					printf("Recip. pivot growth = %e\n", rpg);
-					if (rcond_evaluation) printf("Recip. condition number = %e\n", m_rcond);
-					printf("%8s%16s%16s\n", "rhs", "FERR", "BERR");
-					for (auto i = 0; i < m_nrhs; ++i) {
-						printf(IFMT "%16e%16e\n", i + 1, ferr[i], berr[i]);
-					}
-
-					auto Lnnz = static_cast<SCPformat*>(L.Store)->nnz;
-					auto Unnz = static_cast<NCPformat*>(U.Store)->nnz;
-					printf("No of nonzeros in factor L = " IFMT "\n", Lnnz);
-					printf("No of nonzeros in factor U = " IFMT "\n", Unnz);
-					printf("No of nonzeros in L+U = " IFMT "\n", Lnnz + Unnz - m_n);
-					printf("L\\U MB %.3f\ttotal MB needed %.3f\texpansions " IFMT "\n",
-						superlu_memusage.for_lu / 1e6, superlu_memusage.total_needed / 1e6,
-						superlu_memusage.expansions);
-
-				}
-				else if (info > 0 && lwork == -1)
-					printf("** Estimated memory: %d bytes\n", info - m_n);
+				printf("time for [EQUIL] phase: %f\n", Gstat.utime[EQUIL]);
+				printf("time for [FACT] phase: %f\n", Gstat.utime[FACT]);
 			}
-
-			if (phase == phase_t::SOLVE || phase == phase_t::COMPLETE)
-			{
-				if (info == 0 || info == m_n + 1)
-					printf("Triangular solve: dgssvx() returns info %d\n", info);
-				else if (info > 0 && lwork == -1)
-					printf("** Estimated memory: " IFMT " bytes\n", info - m_n);
-			}
-			
-			printf("time for [EQUIL] phase: %f\n", Gstat.utime[EQUIL]);
-			printf("time for [FACT] phase: %f\n", Gstat.utime[FACT]);
-			printf("time for [RCOND] phase: %f\n", Gstat.utime[RCOND]);
-			printf("time for [SOLVE] phase: %f\n", Gstat.utime[SOLVE]);
-			printf("time for [REFINE] phase: %f\n", Gstat.utime[REFINE]);
-
+			if (rcond_evaluation)
+				printf("time for [RCOND] phase: %f\n", Gstat.utime[RCOND]);
+			if (phase == phase_t::COMPLETE)
+				printf("time for [SOLVE] phase: %f\n", Gstat.utime[SOLVE]);
+			if (iterative_refinement)
+				printf("time for [REFINE] phase: %f\n", Gstat.utime[REFINE]);
 		}
 
 		return info;
@@ -383,7 +357,7 @@ namespace chrono {
 
 
 		/* ------------------------------------------------------------
-		Allocate storage and initialize statistics variables.
+		Initialize statistics variables.
 		------------------------------------------------------------*/
 		StatInit(m_n, superlumt_options->nprocs, &Gstat);
 
@@ -506,7 +480,7 @@ namespace chrono {
 			}
 
 			// if there is actually a rhs
-			if (B->ncol>0)
+			if (nrhs>0)
 			{
 				/* ------------------------------------------------------------
 				Compute the solution matrix X.
