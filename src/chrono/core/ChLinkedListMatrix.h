@@ -57,8 +57,8 @@ class ChApi ChLinkedListMatrix : public ChSparseMatrix {
     ChMelement* mnextel;             // address of next writable element in mbufferlist
 
     int mtot_size;      // total allocated space for elements (maybe in noncontiguous buffers list)
-    int mbuffer_size;   // size of currently used buffer
-    int mbuffer_added;  // mbuffer_added grows all time a new element is set non-zero,
+	int mbuffer_size;   // size of currently used buffer
+	int mbuffer_added;  // mbuffer_added grows all time a new element is set non-zero,
     // until it reaches mbuffer_size (if so, allocation of another buffer is needed). Handled internally.
 
     std::vector<int> m_pindices;

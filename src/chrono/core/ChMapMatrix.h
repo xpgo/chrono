@@ -81,7 +81,7 @@ class ChApi ChMapMatrix : public ChSparseMatrix {
   private:
     struct MatrixRow {
         MatrixRow() : m_nnz(0) {}
-        int m_nnz;                               ///< number of non-zero elements in row
+		int m_nnz;                               ///< number of non-zero elements in row
         std::unordered_map<int, double> m_data;  ///< column - value pairs in row
     };
 

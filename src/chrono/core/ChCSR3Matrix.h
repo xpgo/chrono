@@ -16,7 +16,6 @@
 #define CHCSR3MATRIX_H
 
 #include <limits>
-#include <string>
 
 #include "chrono/core/ChSparseMatrix.h"
 #include "chrono/core/ChAlignedAllocator.h"
@@ -69,46 +68,37 @@ arrays
 * Reset() and Resize() eventually expands the arrays dimension (increase occupancy)
 * but they DO NOT REDUCE the occupancy. Eventually it has to be done manually with Trim().
 */
-
 class ChApi ChCSR3Matrix : public ChSparseMatrix {
   private:
     const bool row_major_format = true;
-    const int array_alignment = 64;
+    const static int array_alignment = 64;
     bool isCompressed = false;
     int max_shifts = std::numeric_limits<int>::max();
 
     // CSR matrix arrays.
-    std::vector<double, aligned_allocator<double, 64>> values_vect;
-    std::vector<int, aligned_allocator<int, 64>> trailIndex_vect;
-    std::vector<int, aligned_allocator<int, 64>> leadIndex_vect;
-    int& leading_dimension = row_major_format ? m_num_rows : m_num_cols;
-    int& trailing_dimension = row_major_format ? m_num_cols : m_num_rows;
+    std::vector<double, aligned_allocator<double, array_alignment>> values;
+    std::vector<int, aligned_allocator<int, array_alignment>> trailIndex;
+    std::vector<int, aligned_allocator<int, array_alignment>> leadIndex;
+	std::vector<bool> initialized_element;
+    int* leading_dimension = nullptr;
+    int* trailing_dimension = nullptr;
 
     bool m_lock_broken = false;  ///< true if a modification was made that overrules m_lock
 
   protected:
-    void insert(int insrow, int inscol, double insval, int& col_sel);
-    void initialize(int colIndex_length = 0);
-    void initialize(int* nonzeros_vector);
-    void initialize_ValuesColIndex();
-    void copy(double* values_temp,
-              int* leadIndex_temp,
-              bool to_internal_arrays,
-              int insleaddim = 0,
-              int trailInd_sel = 0,
-              int shifts = 0);
+	void static distribute_integer_range_on_vector(std::vector<int, aligned_allocator<int, array_alignment>>& vector, int initial_number, int final_number);
+	void reset_arrays(int lead_dim, int trail_dim, int nonzeros);
+	void insert(int& trail_sel, const int& lead_sel);
 
   public:
     ChCSR3Matrix(int nrows = 1, int ncols = 1, bool row_major_format_on = true, int nonzeros = 1);
-    ChCSR3Matrix(int nrows, int ncols, int* nonzeros, bool row_major_format_on = true);
     virtual ~ChCSR3Matrix(){};
 
-    virtual void SetElement(int insrow, int inscol, double insval, bool overwrite = true) override;
-    virtual double GetElement(int row, int col) override;
+    virtual void SetElement(int row_sel, int col_sel, double insval, bool overwrite = true) override;
+    virtual double GetElement(int row_sel, int col_sel) override;
 
-    //double& Element(int row, int col);
-    double& Element(int row, int col);
-    double& operator()(int row, int col) { return Element(row, col); }
+    double& Element(int row_sel, int col_sel);
+    double& operator()(int row_sel, int col_sel) { return Element(row_sel, col_sel); }
     double& operator()(int index) { return Element(index / m_num_cols, index % m_num_cols); }
 
     // Size manipulation
@@ -119,16 +109,16 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
     }
 
     /// Get the number of non-zero elements in this matrix.
-    virtual int GetNNZ() const override { return trailIndex_vect.size(); }
+    virtual int GetNNZ() const override { return trailIndex.size(); }
 
     /// Return the row index array in the CSR representation of this matrix.
-    virtual int* GetCSR_LeadingIndexArray() const override { return const_cast<int*>(leadIndex_vect.data()); }
+	virtual int* GetCSR_LeadingIndexArray() const override;
 
     /// Return the column index array in the CSR representation of this matrix.
-    virtual int* GetCSR_TrailingIndexArray() const override { return const_cast<int*>(trailIndex_vect.data()); }
+	virtual int* GetCSR_TrailingIndexArray() const override;
 
     /// Return the array of matrix values in the CSR representation of this matrix.
-    virtual double* GetCSR_ValueArray() const override { return const_cast<double*>(values_vect.data()); }
+	virtual double* GetCSR_ValueArray() const override;
 
     /// Compress the internal arrays and purge all uninitialized elements.
     virtual bool Compress() override;
@@ -139,21 +129,17 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
     void Prune(double pruning_threshold = 0);
 
     // Auxiliary functions
-    //int GetLeadingIndexLength() const { return leadIndex_vect.back(); }
-    int GetLeadingIndexLength() const { return leadIndex_vect[m_num_rows]; }
-    int GetTrailingIndexCapacity() const { return trailIndex_vect.capacity(); }
-    void GetNonZerosDistribution(int* nonzeros_vector) const;
-    bool CheckArraysAlignment(int alignment) const;
+	int GetTrailingIndexLength() const { return trailIndex.size(); }
+    int GetTrailingIndexCapacity() const { return trailIndex.capacity(); }
 
     void SetMaxShifts(int max_shifts_new = std::numeric_limits<int>::max()) { max_shifts = max_shifts_new; }
     bool IsCompressed() const { return isCompressed; }
 
     // Testing functions
-    void GetMemoryInfo() const;
     int VerifyMatrix() const;
 
     // Import/Export functions
-    void ImportFromDatFile(std::string filepath);
+	void ImportFromDatFile(std::string filepath, bool row_major_format_on = true);
     void ExportToDatFile(std::string filepath, int precision = 12) const;
 };
 
