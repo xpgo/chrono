@@ -73,12 +73,13 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
     const bool row_major_format = true;
     const static int array_alignment = 64;
     bool isCompressed = false;
+    //int max_shifts = std::numeric_limits<int>::max();
     int max_shifts = std::numeric_limits<int>::max();
 
     // CSR matrix arrays.
+	std::vector<int, aligned_allocator<int, array_alignment>> leadIndex;
+	std::vector<int, aligned_allocator<int, array_alignment>> trailIndex;
     std::vector<double, aligned_allocator<double, array_alignment>> values;
-    std::vector<int, aligned_allocator<int, array_alignment>> trailIndex;
-    std::vector<int, aligned_allocator<int, array_alignment>> leadIndex;
 	std::vector<bool> initialized_element;
     int* leading_dimension = nullptr;
     int* trailing_dimension = nullptr;
@@ -89,13 +90,26 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
 	void static distribute_integer_range_on_vector(std::vector<int, aligned_allocator<int, array_alignment>>& vector, int initial_number, int final_number);
 	void reset_arrays(int lead_dim, int trail_dim, int nonzeros);
 	void insert(int& trail_sel, const int& lead_sel);
+	void copy_and_distribute(const std::vector<int, aligned_allocator<int, array_alignment>>& trailIndex_src,
+							 const std::vector<double, aligned_allocator<double, array_alignment>>& values_src,
+							 const std::vector<bool>& initialized_element_src,
+							 std::vector<int, aligned_allocator<int, array_alignment>>& trailIndex_dest,
+							 std::vector<double, aligned_allocator<double, array_alignment>>& values_dest,
+							 std::vector<bool>& initialized_element_dest,
+							 int& trail_ins, int lead_ins,
+							 int storage_augm);
+
+	static void resize_to_their_limits(std::vector<int, aligned_allocator<int, array_alignment>>& trailIndex_in,
+											  std::vector<double, aligned_allocator<double, array_alignment>>& values_in,
+											  std::vector<bool>& initialized_element_in,
+											  int new_size);
 
   public:
     ChCSR3Matrix(int nrows = 1, int ncols = 1, bool row_major_format_on = true, int nonzeros = 1);
     virtual ~ChCSR3Matrix(){};
 
     virtual void SetElement(int row_sel, int col_sel, double insval, bool overwrite = true) override;
-    virtual double GetElement(int row_sel, int col_sel) override;
+    virtual double GetElement(int row_sel, int col_sel) const override;
 
     double& Element(int row_sel, int col_sel);
     double& operator()(int row_sel, int col_sel) { return Element(row_sel, col_sel); }
@@ -129,7 +143,7 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
     void Prune(double pruning_threshold = 0);
 
     // Auxiliary functions
-	int GetTrailingIndexLength() const { return trailIndex.size(); }
+	int GetTrailingIndexLength() const { return leadIndex[*leading_dimension]; }
     int GetTrailingIndexCapacity() const { return trailIndex.capacity(); }
 
     void SetMaxShifts(int max_shifts_new = std::numeric_limits<int>::max()) { max_shifts = max_shifts_new; }
@@ -139,11 +153,13 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
     int VerifyMatrix() const;
 
     // Import/Export functions
-	void ImportFromDatFile(std::string filepath, bool row_major_format_on = true);
-    void ExportToDatFile(std::string filepath, int precision = 12) const;
+	void ImportFromDatFile(std::string filepath = "", bool row_major_format_on = true);
+    void ExportToDatFile(std::string filepath = "", int precision = 6) const;
 };
 
-/// @} chrono
+	
+
+	/// @} chrono
 
 };  // end namespace chrono
 

@@ -81,7 +81,7 @@ void ChMapMatrix::SetElement(int row, int col, double elem, bool overwrite) {
     m_CSR_current = false;
 }
 
-double ChMapMatrix::GetElement(int row, int col) {
+double ChMapMatrix::GetElement(int row, int col) const {
     assert(row < m_num_rows);
     assert(col < m_num_cols);
 

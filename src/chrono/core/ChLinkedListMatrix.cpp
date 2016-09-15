@@ -334,11 +334,11 @@ void ChLinkedListMatrix::SetElement(int row, int col, double elem, bool overwrit
     SetElement(row, col, elem, guess);
 }
 
-double ChLinkedListMatrix::GetElement(int row, int col) {
+double ChLinkedListMatrix::GetElement(int row, int col) const {
     double retv;
     ChMelement* guess;
     guess = *(elarray + row);
-    GetElement(row, col, &retv, guess);
+    const_cast<ChLinkedListMatrix*>(this)->GetElement(row, col, &retv, guess);
     return retv;
 }
 

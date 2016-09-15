@@ -155,6 +155,7 @@ class ChSolverMKL : public ChSolver {
         // Allow the matrix to be compressed.
         bool change = m_mat.Compress();
 
+
         // Set current matrix in the MKL engine.
         m_engine.SetMatrix(m_mat);
 

@@ -69,7 +69,7 @@ class ChApi ChSparseMatrix {
     void SetSparsityPatternLock(bool val) { m_lock = val; }
 
     virtual void SetElement(int insrow, int inscol, double insval, bool overwrite = true) = 0;
-    virtual double GetElement(int row, int col) = 0;
+    virtual double GetElement(int row, int col) const = 0;
 
     virtual void Reset(int row, int col, int nonzeros = 0) = 0;
     virtual bool Resize(int nrows, int ncols, int nonzeros = 0) = 0;

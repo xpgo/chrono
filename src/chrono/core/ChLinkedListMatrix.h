@@ -104,7 +104,7 @@ class ChApi ChLinkedListMatrix : public ChSparseMatrix {
     void ResetBlocks(int nrows, int ncols);
 
     virtual void SetElement(int row, int col, double elem, bool overwrite = true) override;
-    virtual double GetElement(int row, int col) override;
+    virtual double GetElement(int row, int col) const override;
 
     // Customized functions, speed-optimized for sparse matrices:
 
