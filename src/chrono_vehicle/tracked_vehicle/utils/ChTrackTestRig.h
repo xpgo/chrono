@@ -25,9 +25,6 @@
 #define CH_TRACK_TEST_RIG_H
 
 #include <string>
-#include <vector>
-
-#include "chrono/assets/ChColor.h"
 
 #include "chrono_vehicle/ChVehicle.h"
 #include "chrono_vehicle/tracked_vehicle/ChTrackAssembly.h"
@@ -48,25 +45,20 @@ namespace vehicle {
 /// Definition of a suspension test rig.
 class CH_VEHICLE_API ChTrackTestRig : public ChVehicle {
   public:
-    /// Construct a test rig for a specified track assembly of a given vehicle.
-    ChTrackTestRig(
-        const std::string& filename,  ///< [in] JSON file with vehicle specification
-        VehicleSide side,             ///< [in] select left or right track assembly
-        ChMaterialSurfaceBase::ContactMethod contact_method = ChMaterialSurfaceBase::DVI  ///< [in] contact method
-        );
+    /// Default constructor.
+    ChTrackTestRig() {}
 
-    /// Construct a test rig from specified file.
+    /// Construct a test rig from specified track assembly JSON file.
     ChTrackTestRig(
         const std::string& filename,  ///< [in] JSON file with test rig specification
+        const ChVector<>& location,   ///< [in] track assembly location
         ChMaterialSurfaceBase::ContactMethod contact_method = ChMaterialSurfaceBase::DVI  ///< [in] contact method
         );
 
     /// Construct a test rig using the specified track assembly and subsystem locations.
     ChTrackTestRig(
-        std::shared_ptr<ChTrackAssembly> assembly,     ///< [in] handle to the track assembly
-        const ChVector<>& sprocketLoc,                 ///< [in] sprocket location
-        const ChVector<>& idlerLoc,                    ///< [in] idler location
-        const std::vector<ChVector<> >& suspLocs,      ///< [in] suspension locations
+        std::shared_ptr<ChTrackAssembly> assembly,  ///< [in] handle to the track assembly
+        const ChVector<>& location,                 ///< [in] track assembly location
         ChMaterialSurfaceBase::ContactMethod contact_method = ChMaterialSurfaceBase::DVI  ///< [in] contact method
         );
 
@@ -89,10 +81,6 @@ class CH_VEHICLE_API ChTrackTestRig : public ChVehicle {
 
     /// Return the location of the shaker post.
     const ChVector<>& GetPostPosition() const { return m_post_pos; }
-
-    /// Get the local driver position and orientation.
-    /// This is a coordinate system relative to the chassis reference frame.
-    virtual ChCoordsys<> GetLocalDriverCoordsys() const override { return ChCoordsys<>(); }
 
     /// Get the track assembly subsystem.
     std::shared_ptr<ChTrackAssembly> GetTrackAssembly() const { return m_track; }
@@ -147,9 +135,7 @@ class CH_VEHICLE_API ChTrackTestRig : public ChVehicle {
 
     double m_max_torque;  ///< maximum torque applied to sprocket
 
-    ChVector<> m_sprocketLoc;
-    ChVector<> m_idlerLoc;
-    std::vector<ChVector<> > m_suspLocs;
+    ChVector<> m_location; ///< track assembly subsystem location
 };
 
 /// @} vehicle_tracked_utils

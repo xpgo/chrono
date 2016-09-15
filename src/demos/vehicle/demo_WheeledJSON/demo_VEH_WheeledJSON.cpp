@@ -125,14 +125,18 @@ int main(int argc, char* argv[]) {
     // Create the vehicle system
     WheeledVehicle vehicle(vehicle::GetDataFile(vehicle_file), ChMaterialSurfaceBase::DEM);
     vehicle.Initialize(ChCoordsys<>(initLoc, initRot));
-    ////vehicle.GetChassis()->SetBodyFixed(true);
+    vehicle.SetChassisVisualizationType(VisualizationType::PRIMITIVES);
+    ////vehicle.GetChassisBody()->SetBodyFixed(true);
+    vehicle.SetSuspensionVisualizationType(VisualizationType::PRIMITIVES);
+    vehicle.SetSteeringVisualizationType(VisualizationType::PRIMITIVES);
+    vehicle.SetWheelVisualizationType(VisualizationType::NONE);
 
     // Create the ground
     RigidTerrain terrain(vehicle.GetSystem(), vehicle::GetDataFile(rigidterrain_file));
 
     // Create and initialize the powertrain system
     SimplePowertrain powertrain(vehicle::GetDataFile(simplepowertrain_file));
-    powertrain.Initialize(vehicle.GetChassis(), vehicle.GetDriveshaft());
+    powertrain.Initialize(vehicle.GetChassisBody(), vehicle.GetDriveshaft());
 
     // Create and initialize the tires
     int num_axles = vehicle.GetNumberAxles();
@@ -142,6 +146,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < num_wheels; i++) {
         tires[i] = std::make_shared<RigidTire>(vehicle::GetDataFile(rigidtire_file));
         tires[i]->Initialize(vehicle.GetWheelBody(i), VehicleSide(i % 2));
+        tires[i]->SetVisualizationType(VisualizationType::PRIMITIVES);
     }
 
 #ifdef USE_IRRLICHT

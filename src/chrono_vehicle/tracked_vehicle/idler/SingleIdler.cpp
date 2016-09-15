@@ -39,7 +39,7 @@ static ChVector<> loadVector(const Value& a) {
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-SingleIdler::SingleIdler(const std::string& filename) :ChSingleIdler(""), m_vis_type(VisualizationType::NONE) {
+SingleIdler::SingleIdler(const std::string& filename) :ChSingleIdler(""), m_has_mesh(false) {
     FILE* fp = fopen(filename.c_str(), "r");
 
     char readBuffer[65536];
@@ -55,7 +55,7 @@ SingleIdler::SingleIdler(const std::string& filename) :ChSingleIdler(""), m_vis_
     GetLog() << "Loaded JSON: " << filename.c_str() << "\n";
 }
 
-SingleIdler::SingleIdler(const rapidjson::Document& d) : ChSingleIdler(""), m_vis_type(VisualizationType::NONE) {
+SingleIdler::SingleIdler(const rapidjson::Document& d) : ChSingleIdler(""), m_has_mesh(false) {
     Create(d);
 }
 
@@ -88,10 +88,9 @@ void SingleIdler::Create(const rapidjson::Document& d) {
     assert(d.HasMember("Tensioner"));
     m_points[TSDA_CARRIER] = loadVector(d["Tensioner"]["Location Carrier"]);
     m_points[TSDA_CHASSIS] = loadVector(d["Tensioner"]["Location Chassis"]);
+    m_tensioner_l0 = d["Tensioner"]["Free Length"].GetDouble();
     double tensioner_f = d["Tensioner"]["Preload"].GetDouble();
-    double tensioner_l0 = d["Tensioner"]["Free Length"].GetDouble();
-    m_tensioner->Set_SpringRestLength(tensioner_l0);
-    if (d["Tensioner"].HasMember("SpringCoefficient")) {
+    if (d["Tensioner"].HasMember("Spring Coefficient")) {
         // Linear spring-damper
         double tensioner_k = d["Tensioner"]["Spring Coefficient"].GetDouble();
         double tensioner_c = d["Tensioner"]["Damping Coefficient"].GetDouble();
@@ -137,32 +136,26 @@ void SingleIdler::Create(const rapidjson::Document& d) {
 
     // Read wheel visualization
     if (d.HasMember("Visualization")) {
-        if (d["Visualization"].HasMember("Mesh Filename")) {
-            m_meshFile = d["Visualization"]["Mesh Filename"].GetString();
-            m_meshName = d["Visualization"]["Mesh Name"].GetString();
-            m_vis_type = VisualizationType::MESH;
-        } else {
-            m_vis_type = VisualizationType::PRIMITIVES;
-        }
+        assert(d["Visualization"].HasMember("Mesh Filename"));
+        assert(d["Visualization"].HasMember("Mesh Name"));
+        m_meshFile = d["Visualization"]["Mesh Filename"].GetString();
+        m_meshName = d["Visualization"]["Mesh Name"].GetString();
+        m_has_mesh = true;
     }
 }
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void SingleIdler::AddWheelVisualization() {
-    switch (m_vis_type) {
-        case VisualizationType::PRIMITIVES:
-            ChSingleIdler::AddWheelVisualization();
-            break;
-        case VisualizationType::MESH: {
-            geometry::ChTriangleMeshConnected trimesh;
-            trimesh.LoadWavefrontMesh(vehicle::GetDataFile(m_meshFile), false, false);
-            auto trimesh_shape = std::make_shared<ChTriangleMeshShape>();
-            trimesh_shape->SetMesh(trimesh);
-            trimesh_shape->SetName(m_meshName);
-            m_wheel->AddAsset(trimesh_shape);
-            break;
-        }
+void SingleIdler::AddVisualizationAssets(VisualizationType vis) {
+    ChSingleIdler::AddVisualizationAssets(vis);
+
+    if (vis == VisualizationType::MESH && m_has_mesh) {
+        geometry::ChTriangleMeshConnected trimesh;
+        trimesh.LoadWavefrontMesh(vehicle::GetDataFile(m_meshFile), false, false);
+        auto trimesh_shape = std::make_shared<ChTriangleMeshShape>();
+        trimesh_shape->SetMesh(trimesh);
+        trimesh_shape->SetName(m_meshName);
+        m_wheel->AddAsset(trimesh_shape);
     }
 }
 
