@@ -15,10 +15,13 @@
 #ifndef CHCSR3MATRIX_H
 #define CHCSR3MATRIX_H
 
+#define ALIGNED_ALLOCATORS
+
 #include <limits>
 
 #include "chrono/core/ChSparseMatrix.h"
 #include "chrono/core/ChAlignedAllocator.h"
+#include "ChTimer.h"
 
 namespace chrono {
 
@@ -73,13 +76,20 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
     const bool row_major_format = true;
     const static int array_alignment = 64;
     bool isCompressed = false;
-    //int max_shifts = std::numeric_limits<int>::max();
     int max_shifts = std::numeric_limits<int>::max();
 
     // CSR matrix arrays.
-	std::vector<int, aligned_allocator<int, array_alignment>> leadIndex;
-	std::vector<int, aligned_allocator<int, array_alignment>> trailIndex;
-    std::vector<double, aligned_allocator<double, array_alignment>> values;
+#ifdef ALIGNED_ALLOCATORS
+	typedef std::vector<int, aligned_allocator<int, array_alignment>> index_vector_t;
+	typedef std::vector<double, aligned_allocator<double, array_alignment>> values_vector_t;
+#else
+	typedef std::vector<int> index_vector_t;
+	typedef std::vector<double> values_vector_t;
+#endif
+
+	index_vector_t leadIndex;
+	index_vector_t trailIndex;
+	values_vector_t values;
 	std::vector<bool> initialized_element;
     int* leading_dimension = nullptr;
     int* trailing_dimension = nullptr;
@@ -87,20 +97,20 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
     bool m_lock_broken = false;  ///< true if a modification was made that overrules m_lock
 
   protected:
-	void static distribute_integer_range_on_vector(std::vector<int, aligned_allocator<int, array_alignment>>& vector, int initial_number, int final_number);
+	void static distribute_integer_range_on_vector(index_vector_t& vector, int initial_number, int final_number);
 	void reset_arrays(int lead_dim, int trail_dim, int nonzeros);
 	void insert(int& trail_sel, const int& lead_sel);
-	void copy_and_distribute(const std::vector<int, aligned_allocator<int, array_alignment>>& trailIndex_src,
-							 const std::vector<double, aligned_allocator<double, array_alignment>>& values_src,
+	void copy_and_distribute(const index_vector_t& trailIndex_src,
+							 const values_vector_t& values_src,
 							 const std::vector<bool>& initialized_element_src,
-							 std::vector<int, aligned_allocator<int, array_alignment>>& trailIndex_dest,
-							 std::vector<double, aligned_allocator<double, array_alignment>>& values_dest,
+							 index_vector_t& trailIndex_dest,
+							 values_vector_t& values_dest,
 							 std::vector<bool>& initialized_element_dest,
 							 int& trail_ins, int lead_ins,
 							 int storage_augm);
-
-	static void resize_to_their_limits(std::vector<int, aligned_allocator<int, array_alignment>>& trailIndex_in,
-											  std::vector<double, aligned_allocator<double, array_alignment>>& values_in,
+	//static
+	void resize_to_their_limits(index_vector_t& trailIndex_in,
+											  values_vector_t& values_in,
 											  std::vector<bool>& initialized_element_in,
 											  int new_size);
 
@@ -155,6 +165,22 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
     // Import/Export functions
 	void ImportFromDatFile(std::string filepath = "", bool row_major_format_on = true);
     void ExportToDatFile(std::string filepath = "", int precision = 6) const;
+
+
+	ChTimer<> timer0;
+	ChTimer<> timer1;
+	ChTimer<> timer2;
+	ChTimer<> timer3;
+	ChTimer<> timer4;
+	ChTimer<> timer5;
+
+	size_t counter0 = 0;
+	size_t counter1 = 0;
+	size_t counter2 = 0;
+	size_t counter3 = 0;
+	size_t counter4 = 0;
+	size_t counter5 = 0;
+
 };
 
 	

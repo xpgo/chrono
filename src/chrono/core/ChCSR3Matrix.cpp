@@ -20,12 +20,16 @@ namespace chrono{
 	ChCSR3Matrix::ChCSR3Matrix(int nrows, int ncols, bool row_major_format_on, int nonzeros):
 		ChSparseMatrix(nrows,ncols), row_major_format(row_major_format_on)
 	{
-
+		timer4.start();
+		counter4++;
 		// link dimensions to rows and column depending on format
 		leading_dimension = row_major_format ? &m_num_rows : &m_num_cols;
 		trailing_dimension = row_major_format ? &m_num_cols : &m_num_rows;
 
 		reset_arrays(*leading_dimension, *trailing_dimension, nonzeros);
+
+		//max_shifts = *leading_dimension;
+		timer4.stop();
 
 	}
 
@@ -167,7 +171,7 @@ namespace chrono{
 		m_num_rows = nrows;
 		m_num_cols = ncols;
 
-		max_shifts = *leading_dimension;
+		//max_shifts = *leading_dimension;
 
 	}
 
@@ -363,7 +367,7 @@ namespace chrono{
 		ia_file.close();
 	}
 
-	void ChCSR3Matrix::distribute_integer_range_on_vector(std::vector<int, aligned_allocator<int, array_alignment>>& vector, int initial_number, int final_number)
+	void ChCSR3Matrix::distribute_integer_range_on_vector(index_vector_t& vector, int initial_number, int final_number)
 	{
 		double delta = static_cast<double>(final_number - initial_number) / (vector.size()-1);
 		for (auto el_sel = 0; el_sel<vector.size(); el_sel++)
@@ -405,7 +409,8 @@ namespace chrono{
 		int shift_fw = 0; // 0 means no viable position found forward
 		int shift_bw = 0; // 0 means no viable position found backward
 
-
+		counter0++;
+		timer0.start();
 		//TODO: optimize?
 		// look for not initialized elements FORWARD
 		auto lead_sel_fw = lead_sel;
@@ -453,6 +458,8 @@ namespace chrono{
 			}
 		}
 
+		timer0.stop();
+
 		if (shift_bw==0 && shift_fw==0)
 		{
 			// no viable position found
@@ -474,9 +481,11 @@ namespace chrono{
 
 			if (desired_trailIndex_length>=trailIndex.capacity())
 			{
+				counter1++;
+				timer1.start();
 				auto new_capacity = std::max(static_cast<size_t>(trailIndex.capacity() * capacity_expansion_factor), desired_trailIndex_length);
-				std::vector<int, aligned_allocator<int, array_alignment>> trailIndex_new;
-				std::vector<double, aligned_allocator<double, array_alignment>> values_new;
+				index_vector_t trailIndex_new;
+				values_vector_t values_new;
 				std::vector<bool> initialized_element_new;
 
 				// resize to desired values //TODO: do not initialize elements
@@ -492,15 +501,17 @@ namespace chrono{
 				values = std::move(values_new);
 				trailIndex = std::move(trailIndex_new);
 				initialized_element = std::move(initialized_element_new);
-
+				timer1.stop();
 			}
 			else
 			{
+				counter2++;
+				timer2.start();
 				// resize to desired values
 				copy_and_distribute(trailIndex, values, initialized_element,
 									trailIndex, values, initialized_element,
 									trail_sel, lead_sel, desired_trailIndex_length - GetTrailingIndexLength());
-
+				timer2.stop();
 			}
 
 			
@@ -510,6 +521,8 @@ namespace chrono{
 		}
 		else
 		{
+			counter3++;
+			timer3.start();
 			// shift the elements in order to have a not initialized position where trail_sel points
 			// trail_sel WILL CHANGE if backward, WON'T CHANGE if forward
 			// WARNING! move_backward is actually forward (towards the end of the array)
@@ -554,6 +567,7 @@ namespace chrono{
 					leadIndex[lead_sel_fw]++;
 				}
 			}
+			timer3.stop();
 
 		}
 
@@ -561,11 +575,11 @@ namespace chrono{
 	} // end insert
 
 
-	void ChCSR3Matrix::copy_and_distribute(const std::vector<int, aligned_allocator<int, array_alignment>>& trailIndex_src,
-										   const std::vector<double, aligned_allocator<double, array_alignment>>& values_src,
+	void ChCSR3Matrix::copy_and_distribute(const index_vector_t& trailIndex_src,
+										   const values_vector_t& values_src,
 										   const std::vector<bool>& initialized_element_src,
-										   std::vector<int, aligned_allocator<int, array_alignment>>& trailIndex_dest,
-										   std::vector<double, aligned_allocator<double, array_alignment>>& values_dest,
+										   index_vector_t& trailIndex_dest,
+										   values_vector_t& values_dest,
 										   std::vector<bool>& initialized_element_dest,
 										   int& trail_ins, int lead_ins,
 										   int storage_augm)
@@ -587,7 +601,7 @@ namespace chrono{
 			if (trail_i_src == leadIndex[lead_i])
 			{
 				// evaluate until which element we have to store not-initialized elements
-				int fill_up_until = std::round(leadIndex[lead_i] + storage_delta*(lead_i - 1) + (((lead_i - 1) >= lead_ins) ? 1 : 0));
+				int fill_up_until = static_cast<int>(std::round(leadIndex[lead_i] + storage_delta*(lead_i - 1) + (((lead_i - 1) >= lead_ins) ? 1 : 0)));
 
 				// insertion point located: make space
 				if (trail_i_src == trail_ins && lead_i == lead_ins)
@@ -639,11 +653,13 @@ namespace chrono{
 
 	}
 
-	void ChCSR3Matrix::resize_to_their_limits(std::vector<int, aligned_allocator<int, array_alignment>>& trailIndex_in,
-											std::vector<double, aligned_allocator<double, array_alignment>>& values_in,
+	void ChCSR3Matrix::resize_to_their_limits(index_vector_t& trailIndex_in,
+											values_vector_t& values_in,
 											std::vector<bool>& initialized_element_in,
 											int new_size)
 	{
+		counter5++;
+		timer5.start();
 		trailIndex_in.reserve(new_size);
 		values_in.reserve(new_size);
 		initialized_element_in.reserve(new_size);
@@ -651,6 +667,12 @@ namespace chrono{
 		trailIndex_in.resize(trailIndex_in.capacity());
 		values_in.resize(values_in.capacity());
 		initialized_element_in.assign(initialized_element_in.capacity(),false);
+
+		//trailIndex_in.resize(new_size);
+		//values_in.resize(new_size);
+		//initialized_element_in.assign(new_size, false);
+
+		timer5.stop();
 	}
 
 
