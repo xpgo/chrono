@@ -437,26 +437,26 @@ namespace chrono{
 
 		// look for not initialized elements BACWARD
 		auto lead_sel_bw = lead_sel;
-		for (auto trail_i = trail_sel - 1; trail_i >= 0 && (trail_sel - trail_i) < std::min(max_shifts, std::max(shift_fw,1)); --trail_i)
+		if (OK_also_out_of_row)
 		{
-			if (!initialized_element[trail_i]) // look for not initialized elements
+			for (auto trail_i = trail_sel - 1; trail_i >= 0 && (trail_sel - trail_i) < std::min(max_shifts, std::max(shift_fw, 1)); --trail_i)
 			{
-				// check if it is out of row
-				if (!OK_also_out_of_row && trail_i < leadIndex[lead_sel])
-					break;
-
-				// check if it is in 1element row
-				if (!OK_also_onelement_rows) // check if we are out of the starting row
+				if (!initialized_element[trail_i]) // look for not initialized elements
 				{
-					// find the beginning of row that follows the one in which we have found an initialized space
-					for (; leadIndex[lead_sel_bw] > trail_i; --lead_sel_bw) {}
-					if (leadIndex[lead_sel_bw + 1] - 1 <= leadIndex[lead_sel_bw])
-						continue;
+					// check if it is in 1element row
+					if (!OK_also_onelement_rows) // check if we are out of the starting row
+					{
+						// find the beginning of row that follows the one in which we have found an initialized space
+						for (; leadIndex[lead_sel_bw] > trail_i; --lead_sel_bw) {}
+						if (leadIndex[lead_sel_bw + 1] - 1 <= leadIndex[lead_sel_bw])
+							continue;
+					}
+					shift_bw = trail_i - trail_sel;
+					break;
 				}
-				shift_bw = trail_i - trail_sel;
-				break;
 			}
 		}
+		
 
 		timer0.stop();
 
@@ -466,16 +466,7 @@ namespace chrono{
 			// some space has to be make right where trail_sel points
 			// meanwhile we give some space also to all the other rows
 			// so trail_sel WILL CHANGE
-#ifdef USE_STL_INSERT
-			trailIndex.insert(trailIndex.begin() + trail_sel, 0);
-			initialized_element.insert(initialized_element.begin() + trail_sel, 0);
-			values.insert(values.begin() + trail_sel, 0);
 
-			for (lead_sel_fw = lead_sel + 1; lead_sel_fw <= *leading_dimension; ++lead_sel_fw)
-			{
-				leadIndex[lead_sel_fw]++;
-			}
-#else
 			size_t desired_trailIndex_length = GetTrailingIndexLength()*1.2;
 			auto capacity_expansion_factor = 1.5;
 
@@ -513,10 +504,6 @@ namespace chrono{
 									trail_sel, lead_sel, desired_trailIndex_length - GetTrailingIndexLength());
 				timer2.stop();
 			}
-
-			
-
-#endif
 
 		}
 		else
