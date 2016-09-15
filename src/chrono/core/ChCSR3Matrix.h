@@ -15,7 +15,7 @@
 #ifndef CHCSR3MATRIX_H
 #define CHCSR3MATRIX_H
 
-#define ALIGNED_ALLOCATORS
+//#define ALIGNED_ALLOCATORS
 
 #include <limits>
 
@@ -24,8 +24,9 @@
 #include "ChTimer.h"
 
 namespace chrono {
+	class ChMapMatrix;
 
-/// @addtogroup chrono
+	/// @addtogroup chrono
 /// @{
 
 /* ChCSR3Matrix is a class that implements CSR3 sparse matrix format;
@@ -108,11 +109,11 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
 							 std::vector<bool>& initialized_element_dest,
 							 int& trail_ins, int lead_ins,
 							 int storage_augm);
-	//static
-	void resize_to_their_limits(index_vector_t& trailIndex_in,
-											  values_vector_t& values_in,
-											  std::vector<bool>& initialized_element_in,
-											  int new_size);
+
+    static void resize_to_their_limits(index_vector_t& trailIndex_in,
+                                       values_vector_t& values_in,
+                                       std::vector<bool>& initialized_element_in,
+                                       int new_size);
 
   public:
     ChCSR3Matrix(int nrows = 1, int ncols = 1, bool row_major_format_on = true, int nonzeros = 1);
@@ -165,21 +166,7 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
     // Import/Export functions
 	void ImportFromDatFile(std::string filepath = "", bool row_major_format_on = true);
     void ExportToDatFile(std::string filepath = "", int precision = 6) const;
-
-
-	ChTimer<> timer0;
-	ChTimer<> timer1;
-	ChTimer<> timer2;
-	ChTimer<> timer3;
-	ChTimer<> timer4;
-	ChTimer<> timer5;
-
-	size_t counter0 = 0;
-	size_t counter1 = 0;
-	size_t counter2 = 0;
-	size_t counter3 = 0;
-	size_t counter4 = 0;
-	size_t counter5 = 0;
+	void LoadFromMapMatrix(ChMapMatrix& map_mat);
 
 };
 

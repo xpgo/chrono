@@ -23,6 +23,7 @@
 
 #include "chrono_mkl/ChMklEngine.h"
 #include "chrono/core/ChCSR3Matrix.h"
+#include <core/ChMapMatrix.h>
 
 namespace chrono {
 
@@ -37,7 +38,8 @@ class ChSolverMKL : public ChSolver {
     ChSolverMKL()
         : m_engine(0, ChSparseMatrix::GENERAL),
           m_mat(1, 1),
-          m_solver_call(0),
+          m_solve_call(0),
+		  m_setup_call(0),
           m_dim(0),
           m_nnz(0),
           m_lock(false),
@@ -104,7 +106,7 @@ class ChSolverMKL : public ChSolver {
         int pardiso_message_phase33 = m_engine.PardisoCall(33, 0);
         m_timer_solve_pardiso.stop();
 
-        m_solver_call++;
+        m_solve_call++;
 
         if (pardiso_message_phase33) {
             GetLog() << "Pardiso solve+refine error code = " << pardiso_message_phase33 << "\n";
@@ -113,7 +115,7 @@ class ChSolverMKL : public ChSolver {
 
         if (verbose) {
             double res_norm = m_engine.GetResidualNorm();
-            GetLog() << " MKL solve call " << m_solver_call << "  |residual| = " << res_norm << "\n";
+            GetLog() << " MKL solve call " << m_solve_call << "  |residual| = " << res_norm << "\n";
         }
 
         // Scatter solution vector to the system descriptor.
@@ -134,7 +136,7 @@ class ChSolverMKL : public ChSolver {
         m_mat.SetSparsityPatternLock(m_lock);
 
         // Calculate problem size at first call.
-        if (m_solver_call == 0) {
+        if (m_setup_call == 0) {
             m_dim = sysd.CountActiveVariables() + sysd.CountActiveConstraints();
         }
 
@@ -143,14 +145,27 @@ class ChSolverMKL : public ChSolver {
         // Otherwise, do this only at the first call, using the default sparsity fill-in.
         if (m_nnz != 0) {
             m_mat.Reset(m_dim, m_dim, m_nnz);
-        } else if (m_solver_call == 0) {
+        } else if (m_setup_call == 0) {
             m_mat.Reset(m_dim, m_dim, static_cast<int>(m_dim * (m_dim * SPM_DEF_FULLNESS)));
         }
 
-		GetLog() << "Started assembling\n";
+		ChTimer<> ass;
+		ass.start();
         // Assemble the matrix.
-        sysd.ConvertToMatrixForm(&m_mat, nullptr);
-        m_dim = m_mat.GetNumRows();
+		if (m_setup_call == 0)
+		{
+			sysd.ConvertToMatrixForm(&m_mat_bkp, nullptr);
+			m_mat.LoadFromMapMatrix(m_mat_bkp);
+			m_dim = m_mat_bkp.GetNumRows();
+		}
+		else
+		{
+			sysd.ConvertToMatrixForm(&m_mat, nullptr);
+			m_dim = m_mat.GetNumRows();
+		}
+		ass.stop();
+		std::cout << "Assembly took: " << ass() << std::endl;
+        
 
 
         // Allow the matrix to be compressed.
@@ -170,7 +185,6 @@ class ChSolverMKL : public ChSolver {
             m_engine.UsePartialSolution(2);
 
         m_timer_setup_assembly.stop();
-		GetLog() << "Finished assembling "<< m_timer_setup_assembly() <<"\n";
 
         if (verbose) {
             GetLog() << " MKL setup n = " << m_dim << "  nnz = " << m_mat.GetNNZ() << "\n";
@@ -180,6 +194,8 @@ class ChSolverMKL : public ChSolver {
         m_timer_setup_pardiso.start();
         int pardiso_message_phase12 = m_engine.PardisoCall(12, 0);
         m_timer_setup_pardiso.stop();
+
+		m_setup_call++;
 
         if (pardiso_message_phase12 != 0) {
             GetLog() << "Pardiso analyze+reorder+factorize error code = " << pardiso_message_phase12 << "\n";
@@ -218,9 +234,11 @@ class ChSolverMKL : public ChSolver {
     Matrix m_mat;                   ///< problem matrix
     ChMatrixDynamic<double> m_rhs;  ///< right-hand side vector
     ChMatrixDynamic<double> m_sol;  ///< solution vector
+	ChMapMatrix m_mat_bkp;
     int m_dim;                      ///< problem size
     int m_nnz;                      ///< user-supplied estimate of NNZ
-    int m_solver_call;              ///< counter for calls to Solve
+    int m_solve_call;              ///< counter for calls to Solve
+    int m_setup_call;              ///< counter for calls to Setup
 
     bool m_lock;              ///< is the matrix sparsity pattern locked?
     bool m_use_perm;          ///< enable use of the permutation vector?

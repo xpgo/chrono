@@ -14,14 +14,13 @@
 
 #include <algorithm>
 #include "chrono/core/ChCSR3Matrix.h"
+#include "ChMapMatrix.h"
 
 
 namespace chrono{
 	ChCSR3Matrix::ChCSR3Matrix(int nrows, int ncols, bool row_major_format_on, int nonzeros):
 		ChSparseMatrix(nrows,ncols), row_major_format(row_major_format_on)
 	{
-		timer4.start();
-		counter4++;
 		// link dimensions to rows and column depending on format
 		leading_dimension = row_major_format ? &m_num_rows : &m_num_cols;
 		trailing_dimension = row_major_format ? &m_num_cols : &m_num_rows;
@@ -29,8 +28,6 @@ namespace chrono{
 		reset_arrays(*leading_dimension, *trailing_dimension, nonzeros);
 
 		//max_shifts = *leading_dimension;
-		timer4.stop();
-
 	}
 
 	void ChCSR3Matrix::SetElement(int row_sel, int col_sel, double insval, bool overwrite)
@@ -367,6 +364,17 @@ namespace chrono{
 		ia_file.close();
 	}
 
+	//TODO: work in progress
+	void ChCSR3Matrix::LoadFromMapMatrix(ChMapMatrix& map_mat)
+	{
+		map_mat.ConvertToCSR(leadIndex, trailIndex, values);
+		*leading_dimension = leadIndex.size()-1;
+		*trailing_dimension = *leading_dimension;
+		auto nnz = leadIndex[*leading_dimension];
+		initialized_element.assign(nnz, true);
+		isCompressed = true;
+	}
+
 	void ChCSR3Matrix::distribute_integer_range_on_vector(index_vector_t& vector, int initial_number, int final_number)
 	{
 		double delta = static_cast<double>(final_number - initial_number) / (vector.size()-1);
@@ -409,8 +417,6 @@ namespace chrono{
 		int shift_fw = 0; // 0 means no viable position found forward
 		int shift_bw = 0; // 0 means no viable position found backward
 
-		counter0++;
-		timer0.start();
 		//TODO: optimize?
 		// look for not initialized elements FORWARD
 		auto lead_sel_fw = lead_sel;
@@ -458,7 +464,6 @@ namespace chrono{
 		}
 		
 
-		timer0.stop();
 
 		if (shift_bw==0 && shift_fw==0)
 		{
@@ -472,8 +477,6 @@ namespace chrono{
 
 			if (desired_trailIndex_length>=trailIndex.capacity())
 			{
-				counter1++;
-				timer1.start();
 				auto new_capacity = std::max(static_cast<size_t>(trailIndex.capacity() * capacity_expansion_factor), desired_trailIndex_length);
 				index_vector_t trailIndex_new;
 				values_vector_t values_new;
@@ -492,24 +495,18 @@ namespace chrono{
 				values = std::move(values_new);
 				trailIndex = std::move(trailIndex_new);
 				initialized_element = std::move(initialized_element_new);
-				timer1.stop();
 			}
 			else
 			{
-				counter2++;
-				timer2.start();
 				// resize to desired values
 				copy_and_distribute(trailIndex, values, initialized_element,
 									trailIndex, values, initialized_element,
 									trail_sel, lead_sel, desired_trailIndex_length - GetTrailingIndexLength());
-				timer2.stop();
 			}
 
 		}
 		else
 		{
-			counter3++;
-			timer3.start();
 			// shift the elements in order to have a not initialized position where trail_sel points
 			// trail_sel WILL CHANGE if backward, WON'T CHANGE if forward
 			// WARNING! move_backward is actually forward (towards the end of the array)
@@ -554,7 +551,6 @@ namespace chrono{
 					leadIndex[lead_sel_fw]++;
 				}
 			}
-			timer3.stop();
 
 		}
 
@@ -640,13 +636,12 @@ namespace chrono{
 
 	}
 
+
 	void ChCSR3Matrix::resize_to_their_limits(index_vector_t& trailIndex_in,
 											values_vector_t& values_in,
 											std::vector<bool>& initialized_element_in,
 											int new_size)
 	{
-		counter5++;
-		timer5.start();
 		trailIndex_in.reserve(new_size);
 		values_in.reserve(new_size);
 		initialized_element_in.reserve(new_size);
@@ -658,11 +653,7 @@ namespace chrono{
 		//trailIndex_in.resize(new_size);
 		//values_in.resize(new_size);
 		//initialized_element_in.assign(new_size, false);
-
-		timer5.stop();
-	}
-
-
+    }
 
 }  // end namespace chrono
 
