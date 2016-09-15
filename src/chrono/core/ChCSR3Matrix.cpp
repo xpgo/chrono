@@ -15,7 +15,6 @@
 #include <algorithm>
 #include "chrono/core/ChCSR3Matrix.h"
 
-//#define USE_STL_INSERT
 
 namespace chrono{
 	ChCSR3Matrix::ChCSR3Matrix(int nrows, int ncols, bool row_major_format_on, int nonzeros):
@@ -293,7 +292,7 @@ namespace chrono{
 			}
 			if (!initialized_elements_found)
 			{
-
+				std::cout << "WARNING: no elements in ROW: " << lead_sel << std::endl;
 				return 3;
 			}
 		}
@@ -397,7 +396,8 @@ namespace chrono{
 
 	void ChCSR3Matrix::insert(int& trail_sel, const int& lead_sel)
 	{
-
+		isCompressed = false;
+		m_lock_broken = true;
 		bool OK_also_out_of_row = true; // look for viable positions also in other rows respect to the one selected
 		bool OK_also_onelement_rows = false;
 
