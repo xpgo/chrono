@@ -22,6 +22,7 @@
 #define SPM_DEF_MAXELEMENTS 10000  ///< default limit on initial number of off-diagonal elements
 
 namespace chrono {
+	class ChSystemDescriptor; // forward declaration
 
 /// Base class for all sparse matrices.
 class ChApi ChSparseMatrix {
@@ -68,8 +69,13 @@ class ChApi ChSparseMatrix {
     /// Enable/disable a lock on the matrix sparsity pattern (default: false).
     void SetSparsityPatternLock(bool val) { m_lock = val; }
 
+	/// Inform the matrix of the ChSystemDescriptor that is going to write element on it.
+	/// The matrix might perform a check on ChSystemDescriptor in order to get useful informations
+	/// such as the sparsity pattern.
+	virtual void BindToChSystemDescriptor(ChSystemDescriptor* sysd_in){}
+
     virtual void SetElement(int insrow, int inscol, double insval, bool overwrite = true) = 0;
-    virtual double GetElement(int row, int col) = 0;
+    virtual double GetElement(int row, int col) const = 0;
 
     virtual void Reset(int row, int col, int nonzeros = 0) = 0;
     virtual bool Resize(int nrows, int ncols, int nonzeros = 0) = 0;
@@ -82,20 +88,19 @@ class ChApi ChSparseMatrix {
 
     /// Paste the specified matrix into this sparse matrix at (insrow,inscol).
     virtual void PasteMatrix(ChMatrix<>* matra, int insrow, int inscol, bool overwrite = true, bool transp = false) {
-        int maxrows = matra->GetRows();
-        int maxcols = matra->GetColumns();
-        int i, j;
+        auto maxrows = matra->GetRows();
+        auto maxcols = matra->GetColumns();
 
         if (transp) {
-            for (i = 0; i < maxcols; i++) {
-                for (j = 0; j < maxrows; j++) {
+            for (auto i = 0; i < maxcols; i++) {
+                for (auto j = 0; j < maxrows; j++) {
                     if ((*matra)(j, i) != 0)
                         this->SetElement(insrow + i, inscol + j, (*matra)(j, i), overwrite);
                 }
             }
         } else {
-            for (i = 0; i < maxrows; i++) {
-                for (j = 0; j < maxcols; j++) {
+            for (auto i = 0; i < maxrows; i++) {
+                for (auto j = 0; j < maxcols; j++) {
                     if ((*matra)(i, j) != 0)
                         this->SetElement(insrow + i, inscol + j, (*matra)(i, j), overwrite);
                 }
@@ -112,8 +117,8 @@ class ChApi ChSparseMatrix {
                                     int insrow,
                                     int inscol,
                                     bool overwrite = true) {
-        for (int i = 0; i < nrows; ++i)
-            for (int j = 0; j < ncolumns; ++j)
+        for (auto i = 0; i < nrows; ++i)
+            for (auto j = 0; j < ncolumns; ++j)
                 this->SetElement(insrow + i, inscol + j, matra->GetElement(i + cliprow, j + clipcol), overwrite);
     }
 
@@ -149,8 +154,8 @@ class ChApi ChSparseMatrix {
 
   protected:
     int m_num_rows;       ///< number of rows
-    int m_num_cols;       ///< number of columns
-    int m_nnz;            ///< number of non-zero elements
+	int m_num_cols;       ///< number of columns
+	int m_nnz;            ///< number of non-zero elements
     SymmetryType m_type;  ///< matrix type
     bool m_lock;          ///< indicate whether or not the matrix sparsity pattern should be locked
 };
