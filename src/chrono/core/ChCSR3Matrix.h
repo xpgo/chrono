@@ -24,6 +24,7 @@
 #include "ChTimer.h"
 
 namespace chrono {
+	class ChSparsityPatternLearner;
 	class ChMapMatrix;
 
 	/// @addtogroup chrono
@@ -167,10 +168,81 @@ class ChApi ChCSR3Matrix : public ChSparseMatrix {
 	void ImportFromDatFile(std::string filepath = "", bool row_major_format_on = true);
     void ExportToDatFile(std::string filepath = "", int precision = 6) const;
 	void LoadFromMapMatrix(ChMapMatrix& map_mat);
+	void LoadSparsityPattern(ChSparsityPatternLearner& sparsity_dummy);
+
+
+	ChTimer<> timer_insert;
+	ChTimer<> timer_reset;
+	ChTimer<> timer_setelement;
+
+	int counter_insert = 0;
+	int counter_reset = 0;
+	int counter_setelement = 0;
 
 };
 
-	
+class ChApi ChSparsityPatternLearner : public ChSparseMatrix
+{
+protected:
+	std::vector<std::list<int>> row_lists;
+	bool row_major_format = true;
+	int* leading_dimension;
+	int* trailing_dimension;
+
+public:
+	ChSparsityPatternLearner(int nrows, int ncols, bool row_major_format_in) :
+		ChSparseMatrix(nrows, ncols)
+	{
+		row_major_format = row_major_format_in;
+		leading_dimension = row_major_format ? &m_num_rows : &m_num_cols;
+		trailing_dimension = row_major_format ? &m_num_cols : &m_num_rows;
+		row_lists.resize(*leading_dimension);
+	}
+
+	virtual ~ChSparsityPatternLearner() {}
+
+	void SetElement(int insrow, int inscol, double insval, bool overwrite = true) override
+	{
+		row_lists[insrow].push_back(inscol);
+	}
+
+	double GetElement(int row, int col) const override { return 0.0; }
+
+	void Reset(int row, int col, int nonzeros = 0) override
+	{
+		*leading_dimension = row_major_format ? row : col;
+		*trailing_dimension = row_major_format ? col : row;
+		row_lists.clear();
+		row_lists.resize(*leading_dimension);
+	}
+
+	bool Resize(int nrows, int ncols, int nonzeros = 0) override
+	{
+		Reset(nrows, ncols, nonzeros);
+		return true;
+	}
+
+	std::vector<std::list<int>>& GetSparsityPattern()
+	{
+		for (auto& list : row_lists)
+		{
+			list.sort();
+			list.unique();
+		}
+		return row_lists;
+	}
+
+	bool isRowMajor() const { return row_major_format; }
+
+	int GetNNZ() const override {
+		int nnz_temp = 0;
+		for each (auto list in row_lists)
+			nnz_temp += list.size();
+
+		const_cast<ChSparsityPatternLearner*>(this)->m_nnz = nnz_temp;
+		return nnz_temp;
+	}
+};
 
 	/// @} chrono
 

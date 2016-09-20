@@ -32,11 +32,14 @@ namespace chrono{
 
 	void ChCSR3Matrix::SetElement(int row_sel, int col_sel, double insval, bool overwrite)
 	{
+		counter_setelement++;
+		timer_setelement.start();
 		auto lead_sel = row_major_format ? row_sel : col_sel;
 		auto trail_sel = row_major_format ? col_sel : row_sel;
 
 		if (insval == 0 && !m_lock) //TODO: do we really want to insert 0 while sparsity is locked? if so, then add || m_lock
 			return;
+
 		int trail_i;
 		for (trail_i = leadIndex[lead_sel]; trail_i<leadIndex[lead_sel+1]; ++trail_i)
 		{
@@ -49,7 +52,7 @@ namespace chrono{
 				initialized_element[trail_i] = true;
 				trailIndex[trail_i] = trail_sel;
 				values[trail_i] = insval;
-				//VerifyMatrix();
+				timer_setelement.stop();
 				return;
 			}
 
@@ -63,7 +66,7 @@ namespace chrono{
 				initialized_element[trail_i] = true;
 				trailIndex[trail_i] = trail_sel;
 				values[trail_i] = insval;
-				//VerifyMatrix();
+				timer_setelement.stop();
 				return;
 			}
 
@@ -73,7 +76,7 @@ namespace chrono{
 			if (trailIndex[trail_i] == trail_sel)
 			{
 				(overwrite) ? values[trail_i] = insval : values[trail_i] += insval;
-				//VerifyMatrix();
+				timer_setelement.stop();
 				return;
 			}
 		}
@@ -85,7 +88,7 @@ namespace chrono{
 		trailIndex[trail_i] = trail_sel;
 		values[trail_i] = insval;
 
-		//VerifyMatrix();
+		timer_setelement.stop();
 
 	}
 
@@ -158,11 +161,12 @@ namespace chrono{
 		{
 			if (nonzeros == 0)
 				nonzeros = GetTrailingIndexLength();
+
 			reset_arrays(lead_dim_new, trail_dim_new, nonzeros); // breaks also the sparsity lock
 		}
 		else
 		{
-			std::fill(values.begin(), values.end(), 0);
+			std::fill(values.begin(), values.begin()+leadIndex[*leading_dimension]-1, 0);
 		}
 
 		m_num_rows = nrows;
@@ -213,6 +217,7 @@ namespace chrono{
 
 		initialized_element.assign(trail_i_dest, true);
 		isCompressed = true;
+		m_lock_broken = false;
 		return trail_i_dest!= trail_i;
 	}
 
@@ -241,6 +246,7 @@ namespace chrono{
 			leadIndex[lead_i + 1] = trail_i_dest;
 		}
 		initialized_element.assign(trail_i_dest, true);
+		m_lock_broken = false;
 		isCompressed = true;
 	}
 
@@ -375,6 +381,30 @@ namespace chrono{
 		isCompressed = true;
 	}
 
+	void ChCSR3Matrix::LoadSparsityPattern(ChSparsityPatternLearner& sparsity_dummy)
+	{
+		auto& row_lists = sparsity_dummy.GetSparsityPattern();
+		*leading_dimension = sparsity_dummy.isRowMajor() ? sparsity_dummy.GetNumRows() : sparsity_dummy.GetNumColumns();
+		*trailing_dimension = sparsity_dummy.isRowMajor() ? sparsity_dummy.GetNumColumns() : sparsity_dummy.GetNumRows();
+
+		auto nnz = sparsity_dummy.GetNNZ();
+
+		leadIndex.resize(*leading_dimension+1);
+		trailIndex.resize(nnz);
+
+		leadIndex[0] = 0;
+		for (auto lead_sel = 0; lead_sel<*leading_dimension; ++lead_sel )
+		{
+			leadIndex[lead_sel + 1] = leadIndex[lead_sel] + row_lists[lead_sel].size();
+			std::copy(row_lists[lead_sel].begin(), row_lists[lead_sel].end(), trailIndex.begin() + leadIndex[lead_sel]);
+		}
+
+		values.resize(nnz);
+		initialized_element.assign(nnz, true);
+		m_lock_broken = false;
+		isCompressed = true;
+	}
+
 	void ChCSR3Matrix::distribute_integer_range_on_vector(index_vector_t& vector, int initial_number, int final_number)
 	{
 		double delta = static_cast<double>(final_number - initial_number) / (vector.size()-1);
@@ -386,6 +416,8 @@ namespace chrono{
 
 	void ChCSR3Matrix::reset_arrays(int lead_dim, int trail_dim, int nonzeros)
 	{
+		counter_reset++;
+		timer_reset.start();
 		// break sparsity lock
 		m_lock_broken = true;
 
@@ -404,10 +436,14 @@ namespace chrono{
 		distribute_integer_range_on_vector(leadIndex, 0, nonzeros);
 
 		isCompressed = false;
+		timer_reset.stop();
+
 	}
 
 	void ChCSR3Matrix::insert(int& trail_sel, const int& lead_sel)
 	{
+		counter_insert++;
+		timer_insert.start();
 		isCompressed = false;
 		m_lock_broken = true;
 		bool OK_also_out_of_row = true; // look for viable positions also in other rows respect to the one selected
@@ -553,7 +589,7 @@ namespace chrono{
 			}
 
 		}
-
+		timer_insert.stop();
 		// let the returning function store the value, takes care of initialize element and so on...
 	} // end insert
 

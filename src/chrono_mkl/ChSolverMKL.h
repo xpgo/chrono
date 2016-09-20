@@ -25,6 +25,10 @@
 #include "chrono/core/ChCSR3Matrix.h"
 #include <core/ChMapMatrix.h>
 
+#define AUTO_MATRIX_SWITCH
+//#define LEARN_PATTERN
+
+
 namespace chrono {
 
 /// @addtogroup mkl_module
@@ -37,6 +41,9 @@ class ChSolverMKL : public ChSolver {
   public:
     ChSolverMKL()
         : m_engine(0, ChSparseMatrix::GENERAL),
+#ifdef LEARN_PATTERN
+		  sparsity_dummy(1, 1, true),
+#endif
           m_mat(1, 1),
           m_solve_call(0),
 		  m_setup_call(0),
@@ -44,7 +51,8 @@ class ChSolverMKL : public ChSolver {
           m_nnz(0),
           m_lock(false),
           m_use_perm(false),
-          m_use_rhs_sparsity(false) {}
+          m_use_rhs_sparsity(false)
+		  {}
 
     ~ChSolverMKL() {}
 
@@ -151,20 +159,58 @@ class ChSolverMKL : public ChSolver {
 
 		ChTimer<> ass;
 		ass.start();
+#ifdef AUTO_MATRIX_SWITCH
         // Assemble the matrix.
 		if (m_setup_call == 0)
 		{
-			sysd.ConvertToMatrixForm(&m_mat_bkp, nullptr);
-			m_mat.LoadFromMapMatrix(m_mat_bkp);
-			m_dim = m_mat_bkp.GetNumRows();
+			ChTimer<> map_matrix_dummy_timer;
+			map_matrix_dummy_timer.start();
+			auto& matCSR = static_cast<ChCSR3Matrix&>(m_mat);
+			sysd.ConvertToMatrixForm(&map_matrix_dummy, nullptr);
+			matCSR.LoadFromMapMatrix(map_matrix_dummy);
+			m_dim = map_matrix_dummy.GetNumRows();
+			map_matrix_dummy_timer.stop();
+			std::cout << "|- map matrix assembly took: " << map_matrix_dummy_timer() << std::endl;
 		}
 		else
 		{
 			sysd.ConvertToMatrixForm(&m_mat, nullptr);
 			m_dim = m_mat.GetNumRows();
 		}
+#endif
+#ifdef LEARN_PATTERN
+		if (m_setup_call == 0)
+		{
+			ChTimer<> pattern_learning_timer;
+			pattern_learning_timer.start();
+			sparsity_dummy.Reset(m_dim, m_dim);
+			sysd.ConvertToMatrixForm(&sparsity_dummy, nullptr);
+			m_dim = sparsity_dummy.GetNumRows();
+			m_mat.LoadSparsityPattern(sparsity_dummy);
+			pattern_learning_timer.stop();
+			std::cout << "|- learning pattern took: " << pattern_learning_timer() << std::endl;
+		}
+
+		sysd.ConvertToMatrixForm(&m_mat, nullptr);
+		m_dim = m_mat.GetNumRows();
+#endif
+
 		ass.stop();
-		std::cout << "Assembly took: " << ass() << std::endl;
+		std::cout << "Whole assembly took: " << ass() << std::endl;
+		auto& matCSR = static_cast<ChCSR3Matrix&>(m_mat);
+		std::cout
+			<< "|- reset: " << matCSR.counter_reset << " x " << matCSR.timer_reset() / matCSR.counter_reset << " = " << matCSR.timer_reset() << std::endl
+			<< "|- setelement: " << matCSR.counter_setelement << " x " << matCSR.timer_setelement() / matCSR.counter_setelement << " = " << matCSR.timer_setelement() << std::endl
+			<< "|- - insert: " << matCSR.counter_insert << " x " << matCSR.timer_insert() / matCSR.counter_insert << " = " << matCSR.timer_insert() << std::endl
+			<< std::endl;
+
+		matCSR.timer_insert.reset();
+		matCSR.timer_reset.reset();
+		matCSR.timer_setelement.reset();
+		matCSR.counter_insert = 0;
+		matCSR.counter_reset = 0;
+		matCSR.counter_setelement = 0;
+		ass.reset();
         
 
 
@@ -234,7 +280,15 @@ class ChSolverMKL : public ChSolver {
     Matrix m_mat;                   ///< problem matrix
     ChMatrixDynamic<double> m_rhs;  ///< right-hand side vector
     ChMatrixDynamic<double> m_sol;  ///< solution vector
-	ChMapMatrix m_mat_bkp;
+
+#ifdef AUTO_MATRIX_SWITCH
+	ChMapMatrix map_matrix_dummy;
+#endif
+
+#ifdef LEARN_PATTERN
+	ChSparsityPatternLearner sparsity_dummy;
+#endif
+
     int m_dim;                      ///< problem size
     int m_nnz;                      ///< user-supplied estimate of NNZ
     int m_solve_call;              ///< counter for calls to Solve
