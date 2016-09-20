@@ -103,38 +103,39 @@ void ChMapMatrix::ConvertToDense(ChMatrixDynamic<double>& mat) {
     }
 }
 
-void ChMapMatrix::ConvertToCSR(std::vector<int>& ia, std::vector<int>& ja, std::vector<double>& a) const {
-    ia.resize(m_num_rows + 1);
-    ja.resize(m_nnz);
-    a.resize(m_nnz);
-
-    // Loop over all rows, accumulating the number of non-zero elements.
-    ia[0] = 0;
-    int nnz = 0;
-    for (int ir = 0; ir < m_num_rows; ir++) {
-        // Update row index array.
-        ia[ir + 1] = ia[ir] + m_rows[ir].m_nnz;
-
-        // Copy the keys for the row data into a vector and sort them.
-        std::vector<int> col_idx;
-        col_idx.reserve(m_rows[ir].m_nnz);
-        for (auto& it : m_rows[ir].m_data) {
-            col_idx.push_back(it.first);
-        }
-        std::sort(col_idx.begin(), col_idx.end());
-
-        // Extract the non-zero elements in the row, in ascending order of their keys.
-        // Note that we need not test the return iterator from find here (key guaranteed to exist).
-        // Update the column index and value arrays.
-        for (auto ic : col_idx) {
-            ja[nnz] = ic;
-            a[nnz] = m_rows[ir].m_data.find(ic)->second;
-            nnz++;
-        }
-    }
-
-    m_CSR_current = true;
-}
+//template <class index_vector_t, class value_vector_t>
+//void ChMapMatrix::ConvertToCSR(index_vector_t& ia, index_vector_t& ja, value_vector_t& a) const {
+//    ia.resize(m_num_rows + 1);
+//    ja.resize(m_nnz);
+//    a.resize(m_nnz);
+//
+//    // Loop over all rows, accumulating the number of non-zero elements.
+//    ia[0] = 0;
+//    int nnz = 0;
+//    for (int ir = 0; ir < m_num_rows; ir++) {
+//        // Update row index array.
+//        ia[ir + 1] = ia[ir] + m_rows[ir].m_nnz;
+//
+//        // Copy the keys for the row data into a vector and sort them.
+//        std::vector<int> col_idx;
+//        col_idx.reserve(m_rows[ir].m_nnz);
+//        for (auto& it : m_rows[ir].m_data) {
+//            col_idx.push_back(it.first);
+//        }
+//        std::sort(col_idx.begin(), col_idx.end());
+//
+//        // Extract the non-zero elements in the row, in ascending order of their keys.
+//        // Note that we need not test the return iterator from find here (key guaranteed to exist).
+//        // Update the column index and value arrays.
+//        for (auto ic : col_idx) {
+//            ja[nnz] = ic;
+//            a[nnz] = m_rows[ir].m_data.find(ic)->second;
+//            nnz++;
+//        }
+//    }
+//
+//    m_CSR_current = true;
+//}
 
 int* ChMapMatrix::GetCSR_LeadingIndexArray() const
 {

@@ -15,7 +15,7 @@
 #ifndef CHCSR3MATRIX_H
 #define CHCSR3MATRIX_H
 
-//#define ALIGNED_ALLOCATORS
+#define ALIGNED_ALLOCATORS
 
 #include <limits>
 

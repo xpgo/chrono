@@ -14,7 +14,8 @@
 
 #include <algorithm>
 #include "chrono/core/ChCSR3Matrix.h"
-#include "ChMapMatrix.h"
+#include "chrono/core/ChMapMatrix.h"
+
 
 
 namespace chrono{
