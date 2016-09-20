@@ -22,6 +22,7 @@
 #define SPM_DEF_MAXELEMENTS 10000  ///< default limit on initial number of off-diagonal elements
 
 namespace chrono {
+	class ChSystemDescriptor; // forward declaration
 
 /// Base class for all sparse matrices.
 class ChApi ChSparseMatrix {
@@ -67,6 +68,11 @@ class ChApi ChSparseMatrix {
 
     /// Enable/disable a lock on the matrix sparsity pattern (default: false).
     void SetSparsityPatternLock(bool val) { m_lock = val; }
+
+	/// Inform the matrix of the ChSystemDescriptor that is going to write element on it.
+	/// The matrix might perform a check on ChSystemDescriptor in order to get useful informations
+	/// such as the sparsity pattern.
+	virtual void BindToChSystemDescriptor(ChSystemDescriptor* sysd_in){}
 
     virtual void SetElement(int insrow, int inscol, double insval, bool overwrite = true) = 0;
     virtual double GetElement(int row, int col) const = 0;
