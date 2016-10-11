@@ -133,15 +133,13 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     static constexpr std::array<std::array<int, 4>, 4> edge_num = { {{1,2,0,1},{2,1,3,2},{0,2,4,0},{1,0,5,1}} };
 
     // Geometric variables
-    double element_area0 = -1;
     double thickness = -1;
+    double thickness0 = -1;
     std::array<ChVector<double>, 3> edge_versors0;
-    std::array<double, 3> edge_length0;
 
     std::shared_ptr<ChMaterialShellTri_3> m_material;
 
     // internal use
-    ChMatrixNM<double, 3, 3> L_block;
     ChMatrixNM<double, 3, 3> main_projectors;
     ChMatrixNM<double, 3, 3> neigh_projectors;
     ChMatrixNM<double, 18, 18> stiffness_matrix;
@@ -152,6 +150,31 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
         SUPPORTED = 2,
         SYMMETRIC = 3
     } edge_bc[3] = { DEFAULT, DEFAULT, DEFAULT };
+
+
+    ChVector<double> z_versor;
+    std::array<double, 3> edge_length = {-1,-1,-1};
+    ChMatrix33<double> rotGL;
+    ChMatrixNM<double, 2, 3> edge_normal_vers;
+    ChMatrixNM<double, 3, 2> gradient_shape_function;
+    ChMatrixNM<double, 3, 2> gradient_local;
+    ChMatrixNM<double, 3, 1> gradient_side_n;
+    ChMatrixNM<double, 3, 1> L_block;
+    ChMatrix33<double> c_proj;
+    double element_area = -1;
+
+    ChVector<double> z_versor0;
+    std::array<double, 3> edge_length0 = { -1,-1,-1 };
+    ChMatrix33<double> rotGL0;
+    ChMatrixNM<double, 2, 3> edge_normal_vers0;
+    ChMatrixNM<double, 3, 2> gradient_shape_function0;
+    ChMatrixNM<double, 3, 2> gradient_local0;
+    ChMatrixNM<double, 3, 1> gradient_side_n0;
+    ChMatrixNM<double, 3, 1> L_block0;
+    ChMatrix33<double> c_proj0;
+    double element_area0 = -1;
+
+    size_t update_counter = 0;
 
 
     // Geometric and connectivity informations
@@ -175,6 +198,16 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     void getNodeM(ChMatrix<double>& node_mass, int node_sel, double factor = 1.0);
     void getNodeK(ChMatrix<double>& node_damp, int node_sel, double factor = 1.0);
     void getElementMR(ChMatrix<>& H, double Mfactor, double Kfactor);
+    void GetElementData(const ChVector<>& P1_in, const ChVector<>& P2_in, const ChVector<>& P3_in,
+                        ChMatrix<>* gradient_local,
+                        ChVector<>* z_versor,
+                        double area,
+                        ChMatrix<>* gradient_shape_function,
+                        ChMatrix<>* edge_normal_vers,
+                        std::array<double, 3>* edge_length, 
+                        ChMatrix33<>* rotGL,
+                        ChMatrix<>* c_proj,
+                        ChMatrix<>* gradient_side_n);
 
 
 public:

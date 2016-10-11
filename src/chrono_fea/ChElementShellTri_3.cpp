@@ -76,6 +76,13 @@ namespace fea {
     void ChElementShellTri_3::initializeElement()
     {
 
+        ChVector<double> vectX;
+        ChVector<double> vectY;
+        ChVector<double> vectZ;
+
+
+
+
         // store edge versors
         for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
         {
@@ -226,56 +233,197 @@ namespace fea {
         //}
     }
 
-    void ChElementShellTri_3::Update()
+    void ChElementShellTri_3::GetElementData(const ChVector<>& P1_in, const ChVector<>& P2_in, const ChVector<>& P3_in,
+                                             ChMatrix<>* gradient_local, ChVector<>* z_versor, double area, ChMatrix<>* gradient_shape_function, ChMatrix<>* edge_normal_vers, std::array<double,3>* edge_length, ChMatrix33<>* rotGL, ChMatrix<>* c_proj, ChMatrix<>* gradient_side_n)
     {
-        /* ************** Compute the stiffness matrix ************** */
-        // compute r_i^M
-        std::array<double, 3> stiff_ratio;
-        for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
-        {
-            if (neighbouring_elements[edge_sel])
-                stiff_ratio[edge_sel] = 1 / (1 + (m_material->Get_E() * pow(thickness, 3) * GetHeight(edge_sel)) / (neighbouring_elements[edge_sel]->m_material->Get_E() * pow(neighbouring_elements[edge_sel]->thickness, 3) * GetNeighbourHeight(edge_sel)));
-            else if (edge_bc[edge_sel] == CLAMPED) // only clamped edge BC supported
-                stiff_ratio[edge_sel] = 1;
-            else
-                stiff_ratio[edge_sel] = 0;
-        }
+        //ChVector<double> z_versor;
+        //std::array<double, 3> edge_length;
+        //ChMatrix33<double> rotGL;
+        //ChMatrixNM<double, 2, 3> edge_normal_vers;
+        //ChMatrixNM<double, 3, 2> gradient_shape_function;
+        //ChMatrix33<double> c_proj;
+        //ChMatrixNM<double,3,2> gradient_local;
 
-        // compute normal to plane
-        std::array<ChVector<double>, 4> t;
-        for (auto elem_sel = 0; elem_sel < 4; ++elem_sel)
-        {
-            if (all_nodes[elem_sel + 2]) // check if neighbour exists before trying to compute area
-            {
-                t[elem_sel].Cross(GetEdgeVector(0, elem_sel-1), GetEdgeVector(1, elem_sel-1));
-                t[elem_sel].Normalize();
-            }
-        }
 
-        // compute J
-        ChMatrixNM<double, 3, 18> B_bend;
-        ChMatrixNM<double, 3, 3> Lt_temp;
-        for (auto edge_sel = 0; edge_sel < 3; ++edge_sel)
-        {
-            for (auto node_sel = 0; node_sel < 3; ++node_sel)
-            {
-                computeLt(Lt_temp, -1, t, stiff_ratio[edge_sel] * main_projectors(edge_sel, node_sel));
-                B_bend.PasteSumMatrix(&Lt_temp, 0, node_sel * 3);
-                computeLt(Lt_temp, edge_sel, t, stiff_ratio[edge_sel] * neigh_projectors(edge_sel, node_sel));
-                B_bend.PasteSumMatrix(&Lt_temp, 0, neigh_to_local_numbering[edge_sel+1][node_sel] * 3);
-            }
-        }
 
-        // Update bending stiffness matrix
-        ChMatrixNM<double, 18, 18> K_bend;
-        ChMatrixNM<double, 18, 3> mat_temp;
-        mat_temp.MatrTMultiply(B_bend, m_material->GetConsitutiveMatrixBending());
-        K_bend.MatrMultiply(mat_temp, B_bend);
+        // edge vectors
+        ChVector<double> e_vect1;
+        ChVector<double> e_vect2;
+        ChVector<double> e_vect3;
 
-        /* ************** Compute the membrane stiffness matrix ************** */
+        e_vect1.Sub(P1_in, P2_in);
+        e_vect3.Sub(P1_in, P3_in);
+        e_vect3.Sub(P2_in, P1_in);
+
+
+        (*edge_length)[0] = e_vect1.Length();
+        (*edge_length)[1] = e_vect2.Length();
+        (*edge_length)[2] = e_vect3.Length();
+
+        // local Cartesian axis
+        ChVector<double> x_versor;
+        ChVector<double> y_versor;
+        
+        z_versor->Cross(e_vect3, -e_vect2);
+        auto lambda = z_versor->Length();
+        area = lambda / 2; //TODO: strange fact...
+        z_versor->Dot(1 / lambda);
+        x_versor = e_vect3;
+        x_versor.Normalize();
+        y_versor.Cross(*z_versor, x_versor);
+
+        // rotation matrix from Local coordinates to Global coordinates
+        rotGL->PasteVector(x_versor, 0, 0);
+        rotGL->PasteVector(y_versor, 0, 1);
+        rotGL->PasteVector(*z_versor, 0, 2);
+
+        ChMatrix33<double> rotLG;
+        rotLG.FastInvert(rotGL); //TODO: can be done in-place on rotGL?
+
+        ChMatrix33<double> nodes_local;
+        //nodes_local.PasteVector(rotLG.Matr_x_Vect(P1_in - P1_in) , 0, 0); 
+        nodes_local.PasteVector(rotLG.Matr_x_Vect(P2_in - P1_in), 0, 0);
+        nodes_local.PasteVector(rotLG.Matr_x_Vect(P3_in - P1_in), 0, 0);
+
+        // normal-to-edge vectors
+        ChVector<double> n_vect1;
+        ChVector<double> n_vect2;
+        ChVector<double> n_vect3;
+
+        ChMatrixNM<double, 2, 3> edge_normal_vect;
+        edge_normal_vect(0, 0) = + nodes_local(1, 2) - nodes_local(1, 1);
+        edge_normal_vect(0, 1) = + nodes_local(1, 0) - nodes_local(1, 2);
+        edge_normal_vect(0, 2) = + nodes_local(1, 1) - nodes_local(1, 0);
+        edge_normal_vect(1, 0) = - nodes_local(0, 2) + nodes_local(0, 1);
+        edge_normal_vect(1, 1) = - nodes_local(0, 0) + nodes_local(0, 2);
+        edge_normal_vect(1, 2) = - nodes_local(0, 1) + nodes_local(0, 0);
+
+        // gradient shape function
+        gradient_shape_function->CopyFromMatrixT(edge_normal_vect);
+        *gradient_shape_function *= -1/2/area;
+
+
+        // gradients (local frame)
+        ChMatrix33<double> nodes_glob;
+        nodes_glob.PasteVector(P1_in, 0, 0);
+        nodes_glob.PasteVector(P2_in, 0, 1);
+        nodes_glob.PasteVector(P3_in, 0, 2);
+        gradient_local->MatrMultiply(nodes_glob, *gradient_shape_function);
+
+        double norm_temp;
+        norm_temp = sqrt(pow((*edge_normal_vers)(0, 0), 2) + pow((*edge_normal_vers)(1, 0), 2));
+        (*edge_normal_vers)(0, 0) /= norm_temp;
+        (*edge_normal_vers)(1, 0) /= norm_temp;
+        norm_temp = sqrt(pow((*edge_normal_vers)(0, 1), 2) + pow((*edge_normal_vers)(1, 1), 2));
+        (*edge_normal_vers)(0, 1) /= norm_temp;
+        (*edge_normal_vers)(1, 1) /= norm_temp;
+        norm_temp = sqrt(pow((*edge_normal_vers)(0, 2), 2) + pow((*edge_normal_vers)(1, 2), 2));
+        (*edge_normal_vers)(0, 2) /= norm_temp;
+        (*edge_normal_vers)(1, 2) /= norm_temp;
+
+        // gradients (side frame)
+        ChMatrixNM<double, 2, 1> edge_normal_vers_temp;
+        edge_normal_vers_temp(0, 0) = -(*edge_normal_vers)(0, 2);
+        edge_normal_vers_temp(1, 0) = -(*edge_normal_vers)(1, 2);
+        gradient_side_n->MatrMultiply(*gradient_local, edge_normal_vers_temp);
+
+        // C projections
+        ChMatrix33<double> c_temp1;
+        c_temp1.PasteVector(e_vect1, 0, 0);
+        c_temp1.PasteVector(e_vect2, 0, 1);
+        c_temp1.PasteVector(e_vect3, 0, 2);
+
+        ChMatrix33<double> c_temp2;
+        c_temp2.PasteVector(e_vect1/ (*edge_length)[0], 0, 0);
+        c_temp2.PasteVector(e_vect2/ (*edge_length)[1], 0, 1);
+        c_temp2.PasteVector(e_vect3/ (*edge_length)[2], 0, 2);
+
+        c_proj->MatrTMultiply(c_temp1, c_temp2);
+        *c_proj *= 1 / 2 / area;
         
 
-        stiffness_matrix = K_bend;
+    }
+
+    void ChElementShellTri_3::Update()
+    {
+        ChMatrixNM<double,18,1> lambda_gamma;
+        ChMatrixNM<double,3,1> L_main_undeformed;
+        ChMatrixNM<double, 3, 18> Bb;
+        ChMatrixNM<double, 3, 18> Bm;
+
+        GetElementData(all_nodes[0]->GetPos(), all_nodes[1]->GetPos(), all_nodes[2]->GetPos(),
+                       &gradient_local, &z_versor, element_area, &gradient_shape_function, &edge_normal_vers, &edge_length, &rotGL, &c_proj, &gradient_side_n);
+        update_counter++;
+        
+
+        for (auto edge_sel = 0; edge_sel<3; edge_sel++)
+        {
+            // compute lamba*gamma
+            lambda_gamma.PasteVector(z_versor*c_proj0(0,edge_sel), 0, 0);
+            lambda_gamma.PasteVector(z_versor*c_proj0(1,edge_sel), 3, 0);
+            lambda_gamma.PasteVector(z_versor*c_proj0(2,edge_sel), 6, 0);
+
+            for (auto node_sel = 0; node_sel<3; node_sel++)
+            {
+                if (neighbouring_elements[node_sel])
+                {
+                    lambda_gamma.PasteSumVector(neighbouring_elements[node_sel]->z_versor*neighbouring_elements[node_sel]->c_proj0(node_sel, 2),node_sel+3,0);
+                }
+            }
+
+            lambda_gamma.MatrTranspose();
+
+            // compute L block
+            L_main_undeformed(0, 0) = pow(gradient_shape_function0(edge_sel, 0), 2);
+            L_main_undeformed(1, 0) = pow(gradient_shape_function0(edge_sel, 1), 2);
+            L_main_undeformed(2, 0) = 2*gradient_shape_function0(edge_sel, 0)*gradient_shape_function0(edge_sel, 1);
+
+            // relative stiffness
+            // TODO: relate rM to Young mod and thickness
+            double riM = 0.5;
+
+            // curvature matrix
+            
+            ChMatrixNM<double, 3, 18> Bb_temp;
+            Bb_temp.MatrMultiply(L_main_undeformed*(riM / edge_length0[edge_sel]), lambda_gamma);
+            Bb.PasteSumMatrix(&Bb_temp,0,0);
+
+            ChMatrixNM<double, 3, 3> Bm_temp;
+            Bb_temp.PasteVector(gradient_local.ClipVector(0, 0)*gradient_shape_function0(edge_sel, 0), 0, 0);
+            Bb_temp.PasteVector(gradient_local.ClipVector(0, 1)*gradient_shape_function0(edge_sel, 1), 0, 1);
+            Bb_temp.PasteVector(gradient_local.ClipVector(0, 1)*gradient_shape_function0(edge_sel, 0) +
+                                gradient_local.ClipVector(0, 0)*gradient_shape_function0(edge_sel, 1), 0, 2);
+            Bb.PasteTranspMatrix(&Bb_temp, 0, edge_sel * 3);
+        }
+
+        
+        Bb *= 4 * element_area0;
+        
+        // constitutive matrix //TODO: to be moved elsewhere
+        double nu = 0.5;
+        double YoungMod = 210e9;
+        ChMatrixNM<double, 3, 3> constitutive_matrix;
+        constitutive_matrix(0, 0) = 1;
+        constitutive_matrix(0, 1) = nu;
+        constitutive_matrix(1, 0) = nu;
+        constitutive_matrix(1, 1) = 1;
+        constitutive_matrix(2, 2) = (1 - nu)/2;
+        constitutive_matrix *= YoungMod / (1 - nu*nu);
+
+
+        // stiffness matrix
+        ChMatrixNM<double, 3, 18> temp;
+        temp.MatrMultiply(constitutive_matrix, Bm);
+        temp *= thickness0;
+        stiffness_matrix.MatrTMultiply(Bm, temp);
+        temp.MatrMultiply(constitutive_matrix, Bb);
+        temp *= pow(thickness0,3)/12;
+        ChMatrixNM<double, 18, 18> stiffness_matrix_membr;
+        stiffness_matrix_membr.MatrTMultiply(Bm, temp);
+        stiffness_matrix += stiffness_matrix_membr;
+
+
+
     }
 
 
@@ -439,8 +587,8 @@ namespace fea {
     {
         m_material->UpdateConsitutiveMatrices();
         updateBC();
-        element_area0 = GetArea0();
-        initializeElement();
+        GetElementData(all_nodes[0]->GetX0(), all_nodes[1]->GetX0(), all_nodes[2]->GetX0(),
+                       &gradient_local0, &z_versor0, element_area0, &gradient_shape_function0, &edge_normal_vers0, &edge_length0, &rotGL0, &c_proj0, &gradient_side_n0);
 
         // Inform the system about which nodes take part to the computation
         //TODO: do I have to put also neighbouring nodes?
