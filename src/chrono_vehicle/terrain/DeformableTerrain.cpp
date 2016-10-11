@@ -29,9 +29,9 @@
 #include "chrono_vehicle/ChVehicleModelData.h"
 #include "chrono_vehicle/terrain/DeformableTerrain.h"
 
-#include "thirdparty/Easy_BMP/EasyBMP.h"
-#include "thirdparty/rapidjson/document.h"
-#include "thirdparty/rapidjson/filereadstream.h"
+#include "chrono_thirdparty/Easy_BMP/EasyBMP.h"
+#include "chrono_thirdparty/rapidjson/document.h"
+#include "chrono_thirdparty/rapidjson/filereadstream.h"
 
 using namespace rapidjson;
 
@@ -451,7 +451,7 @@ void DeformableSoil::SetupAuxData() {
 }
 
 // Reset the list of forces, and fills it with forces from a soil contact model.
-void DeformableSoil::UpdateInternalForces() {
+void DeformableSoil::ComputeInternalForces() {
 
     // Readibility aliases
     std::vector<ChVector<> >& vertices = m_trimesh_shape->GetMesh().getCoordsVertices();
@@ -494,9 +494,10 @@ void DeformableSoil::UpdateInternalForces() {
     // Perform ray-hit test to detect the contact point sinkage
     // 
     
-    collision::ChCollisionSystem::ChRayhitResult mrayhit_result;
-
+    
+//#pragma omp parallel for
     for (int i=0; i< vertices.size(); ++i) {
+        collision::ChCollisionSystem::ChRayhitResult mrayhit_result;
         p_sigma[i] = 0;
         p_sinkage_elastic[i] = 0;
         p_step_plastic_flow[i]=0;
@@ -510,15 +511,18 @@ void DeformableSoil::UpdateInternalForces() {
         p_hit_level[i] = 1e9;
         double p_hit_offset = 1e9;
 
+        // DO THE RAY-HIT TEST HERE:
         this->GetSystem()->GetCollisionSystem()->RayHit(from,to,mrayhit_result);
+
         if (mrayhit_result.hit == true) {
+
+            ChContactable* contactable = mrayhit_result.hitModel->GetContactable();
+
             p_hit_level[i] = plane.TransformLocalToParent(mrayhit_result.abs_hitPoint).y;
             p_hit_offset = -p_hit_level[i] + p_level_initial[i];
 
-            if (ChContactable* contactable = dynamic_cast<ChContactable*>(mrayhit_result.hitModel->GetPhysicsItem())) {
-                p_speeds[i] = contactable->GetContactPointSpeed(vertices[i]);
-            }
-            
+            p_speeds[i] = contactable->GetContactPointSpeed(vertices[i]);
+
             ChVector<> T = -p_speeds[i];
             T = plane.TransformDirectionParentToLocal(T);
             T.y=0;
@@ -564,13 +568,22 @@ void DeformableSoil::UpdateInternalForces() {
                 Fn = N * p_area[i] * p_sigma[i];
                 Ft = T * p_area[i] * p_tau[i];
 
-                if (ChBody* rigidbody = dynamic_cast<ChBody*>(mrayhit_result.hitModel->GetPhysicsItem())) {
+                if (ChBody* rigidbody = dynamic_cast<ChBody*>(contactable)) {
                     // [](){} Trick: no deletion for this shared ptr, since 'rigidbody' was not a new ChBody() 
                     // object, but an already used pointer because mrayhit_result.hitModel->GetPhysicsItem() 
                     // cannot return it as shared_ptr, as needed by the ChLoadBodyForce:
                     std::shared_ptr<ChBody> srigidbody(rigidbody, [](ChBody*){}); 
                     std::shared_ptr<ChLoadBodyForce> mload(
                         new ChLoadBodyForce(srigidbody, Fn + Ft, false, vertices[i], false));
+                    this->Add(mload);
+                }
+                if (ChLoadableUV* surf = dynamic_cast<ChLoadableUV*>(contactable)) {
+                    // [](){} Trick: no deletion for this shared ptr
+                    std::shared_ptr<ChLoadableUV> ssurf(surf, [](ChLoadableUV*){});
+                    std::shared_ptr<ChLoad<ChLoaderForceOnSurface>> mload(
+                        new ChLoad<ChLoaderForceOnSurface>(ssurf));
+                    mload->loader.SetForce( Fn +Ft );
+                    mload->loader.SetApplication(0.5, 0.5); //***TODO*** set UV, now just in middle
                     this->Add(mload);
                 }
                 

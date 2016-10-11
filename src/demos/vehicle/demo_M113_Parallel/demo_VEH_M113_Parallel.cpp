@@ -26,7 +26,7 @@
 // Chrono::Parallel header files
 #include "chrono_parallel/physics/ChSystemParallel.h"
 #include "chrono_parallel/solver/ChSystemDescriptorParallel.h"
-#include "chrono_parallel/collision/ChCNarrowphaseRUtils.h"
+#include "chrono_parallel/collision/ChNarrowphaseRUtils.h"
 
 // Chrono::Parallel OpenGL header files
 //#undef CHRONO_OPENGL
@@ -44,11 +44,10 @@
 // Chrono vehicle header files
 #include "chrono_vehicle/ChVehicleModelData.h"
 #include "chrono_vehicle/driver/ChDataDriver.h"
-#include "chrono_vehicle/tracked_vehicle/ChTrackSubsysDefs.h"
 
 // M113 model header files
-#include "models/vehicle/m113/M113_SimplePowertrain.h"
-#include "models/vehicle/m113/M113_Vehicle.h"
+#include "chrono_models/vehicle/m113/M113_SimplePowertrain.h"
+#include "chrono_models/vehicle/m113/M113_Vehicle.h"
 
 using namespace chrono;
 using namespace chrono::collision;
@@ -129,7 +128,7 @@ double time_hold = 0.2;
 // Solver parameters
 double time_step = 1e-3;  // 2e-4;
 
-double tolerance = 0.1;
+double tolerance = 0.01;
 
 int max_iteration_bilateral = 1000;  // 1000;
 int max_iteration_normal = 0;
@@ -301,7 +300,7 @@ int main(int argc, char* argv[]) {
     system->GetSettings()->solver.contact_force_model = ChSystemDEM::PlainCoulomb;
 #endif
 
-    system->GetSettings()->collision.bins_per_axis = I3(10, 10, 10);
+    system->GetSettings()->collision.bins_per_axis = vec3(10, 10, 10);
 
 #endif
 
@@ -361,22 +360,21 @@ int main(int argc, char* argv[]) {
         vertical_offset = CreateParticles(system);
     }
 
-
     // --------------------------
     // Construct the M113 vehicle
     // --------------------------
 
     // Create and initialize vehicle system
-    M113_Vehicle vehicle(true, SINGLE_PIN, system);
+    M113_Vehicle vehicle(true, TrackShoeType::SINGLE_PIN, system);
     ////vehicle.SetStepsize(0.0001);
 
-    vehicle.SetChassisVisType(NONE);
-    vehicle.SetRoadWheelVisType(MESH);
-    vehicle.SetIdlerVisType(MESH);
-    vehicle.SetSprocketVisType(MESH);
-    vehicle.SetTrackShoeVisType(MESH);
-
     vehicle.Initialize(ChCoordsys<>(initLoc, initRot));
+
+    vehicle.SetChassisVisualizationType(VisualizationType::NONE);
+    vehicle.SetSprocketVisualizationType(VisualizationType::MESH);
+    vehicle.SetIdlerVisualizationType(VisualizationType::MESH);
+    vehicle.SetRoadWheelAssemblyVisualizationType(VisualizationType::MESH);
+    vehicle.SetTrackShoeVisualizationType(VisualizationType::MESH);
 
     ////vehicle.SetCollide(TrackCollide::NONE);
     ////vehicle.SetCollide(TrackCollide::WHEELS_LEFT | TrackCollide::WHEELS_RIGHT);
@@ -384,7 +382,7 @@ int main(int argc, char* argv[]) {
 
     // Create the powertrain system
     M113_SimplePowertrain powertrain;
-    powertrain.Initialize(vehicle.GetChassis(), vehicle.GetDriveshaft());
+    powertrain.Initialize(vehicle.GetChassisBody(), vehicle.GetDriveshaft());
 
     // Create the driver system
     ChDataDriver driver(vehicle, vehicle::GetDataFile("M113/driver/Acceleration.txt"));
@@ -453,9 +451,9 @@ int main(int argc, char* argv[]) {
         }
 
         // Release the vehicle chassis at the end of the hold time.
-        if (vehicle.GetChassis()->GetBodyFixed() && time > time_hold) {
+        if (vehicle.GetChassisBody()->GetBodyFixed() && time > time_hold) {
             std::cout << std::endl << "Release vehicle t = " << time << std::endl;
-            vehicle.GetChassis()->SetBodyFixed(false);
+            vehicle.GetChassisBody()->SetBodyFixed(false);
         }
 
         // Update modules (process inputs from other modules)

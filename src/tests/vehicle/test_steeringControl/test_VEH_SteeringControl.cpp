@@ -64,7 +64,7 @@ struct Data {
 };
 
 // Type of tire model
-TireModelType tire_model = RIGID;
+TireModelType tire_model = TireModelType::RIGID;
 
 // Input file names for the path-follower driver model
 std::string steering_controller_file("generic/driver/SteeringController.json");
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
 
     // Create and initialize the powertrain system
     SimplePowertrain powertrain(vehicle::GetDataFile(simplepowertrain_file));
-    powertrain.Initialize(vehicle.GetChassis(), vehicle.GetDriveshaft());
+    powertrain.Initialize(vehicle.GetChassisBody(), vehicle.GetDriveshaft());
 
     // Create and initialize the tires
     int num_axles = vehicle.GetNumberAxles();
@@ -126,13 +126,13 @@ int main(int argc, char* argv[]) {
     std::vector<std::shared_ptr<ChTire> > tires(num_wheels);
     for (int i = 0; i < num_wheels; i++) {
         switch (tire_model) {
-            case RIGID:
+            case TireModelType::RIGID:
                 tires[i] = std::make_shared<RigidTire>(vehicle::GetDataFile(rigidtire_file));
                 break;
-            case LUGRE:
+            case TireModelType::LUGRE:
                 tires[i] = std::make_shared<LugreTire>(vehicle::GetDataFile(lugretire_file));
                 break;
-            case FIALA:
+            case TireModelType::FIALA:
                 tires[i] = std::make_shared<FialaTire>(vehicle::GetDataFile(fialatire_file));
                 break;
         }
@@ -167,6 +167,7 @@ int main(int argc, char* argv[]) {
     double steering_input;
     double braking_input;
 
+    std::cout << "Total number of steps:  " << num_steps_settling + num_steps << std::endl;
     for (int it = 0; it < num_steps_settling + num_steps; it++) {
         bool settling = (it < num_steps_settling);
 
@@ -174,7 +175,7 @@ int main(int argc, char* argv[]) {
         if (!settling) {
             const ChVector<> sentinel = driver.GetSteeringController().GetSentinelLocation();
             const ChVector<> target = driver.GetSteeringController().GetTargetLocation();
-            const ChVector<> vehicle_location = vehicle.GetChassisPos();
+            const ChVector<> vehicle_location = vehicle.GetVehiclePos();
             ChVector<> vehicle_target;
             tracker.calcClosestPoint(vehicle_location, vehicle_target);
             ChVector<> vehicle_err = vehicle_target - vehicle_location;
@@ -223,6 +224,8 @@ int main(int argc, char* argv[]) {
         terrain.Advance(step_size);
         for (int i = 0; i < num_wheels; i++)
             tires[i]->Advance(step_size);
+
+        std::cout << '\r' << std::fixed << std::setprecision(6) << time << "  (" << it << ")" << std::flush;
     }
 
     processData(csv, data);

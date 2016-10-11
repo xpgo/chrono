@@ -18,10 +18,11 @@
 #include "chrono_fea/ChElementShellReissner4.h"
 #include "chrono_fea/ChElementTetra_4.h"
 #include "chrono_fea/ChElementBrick_9.h"
-#include "chrono_fea/ChElementBeamANCF.h"
+#include "chrono_fea/ChElementCableANCF.h"
 #include "chrono_fea/ChElementBeamEuler.h"
 #include "chrono_fea/ChFaceTetra_4.h"
 #include "chrono_fea/ChFaceBrick_9.h"
+#include "chrono_fea/ChFaceHexa_8.h"
 #include "chrono_fea/ChMesh.h"
 
 #include <unordered_map>
@@ -64,6 +65,66 @@ ChPhysicsItem* ChContactTriangleXYZ::GetPhysicsItem() {
     return (ChPhysicsItem*)container->GetMesh();
 }
 
+// interface to ChLoadableUV
+
+// Gets all the DOFs packed in a single vector (position part).
+void ChContactTriangleXYZ::LoadableGetStateBlock_x(int block_offset, ChVectorDynamic<>& mD) {
+    mD.PasteVector(mnode1->GetPos(), block_offset, 0);
+    mD.PasteVector(mnode2->GetPos(), block_offset + 3, 0);
+    mD.PasteVector(mnode3->GetPos(), block_offset + 6, 0);
+}
+// Gets all the DOFs packed in a single vector (velocity part).
+void ChContactTriangleXYZ::LoadableGetStateBlock_w(int block_offset, ChVectorDynamic<>& mD) {
+    mD.PasteVector(mnode1->GetPos_dt(), block_offset, 0);
+    mD.PasteVector(mnode2->GetPos_dt(), block_offset + 3, 0);
+    mD.PasteVector(mnode3->GetPos_dt(), block_offset + 6, 0);
+}
+// Get the pointers to the contained ChVariables, appending to the mvars vector.
+void ChContactTriangleXYZ::LoadableGetVariables(std::vector<ChVariables*>& mvars) {
+    mvars.push_back(&mnode1->Variables());
+    mvars.push_back(&mnode2->Variables());
+    mvars.push_back(&mnode3->Variables());
+}
+
+// Evaluate N'*F , where N is the shape function evaluated at (U,V) coordinates of the surface.
+void ChContactTriangleXYZ::ComputeNF(
+    const double U,              // parametric coordinate in surface
+    const double V,              // parametric coordinate in surface
+    ChVectorDynamic<>& Qi,       // Return result of Q = N'*F  here
+    double& detJ,                // Return det[J] here
+    const ChVectorDynamic<>& F,  // Input F vector, size is =n. field coords.
+    ChVectorDynamic<>* state_x,  // if != 0, update state (pos. part) to this, then evaluate Q
+    ChVectorDynamic<>* state_w   // if != 0, update state (speed part) to this, then evaluate Q
+    ) {
+    ChMatrixNM<double, 1, 3> N;
+    // shape functions (U and V in 0..1 as triangle integration)
+    N(0) = 1-U-V;
+    N(1) = U;
+    N(2) = V;
+
+    // determinant of jacobian is also =2*areaoftriangle, also length of cross product of sides
+    ChVector<> p0 = GetNode1()->GetPos();
+    ChVector<> p1 = GetNode2()->GetPos();
+    ChVector<> p2 = GetNode3()->GetPos();
+    detJ = (Vcross(p2-p0,p1-p0)).Length(); 
+
+    ChVector<> tmp;
+    ChVector<> Fv = F.ClipVector(0, 0);
+    tmp = N(0) * Fv;
+    Qi.PasteVector(tmp, 0, 0);
+    tmp = N(1) * Fv;
+    Qi.PasteVector(tmp, 3, 0);
+    tmp = N(2) * Fv;
+    Qi.PasteVector(tmp, 6, 0);
+}
+
+ChVector<> ChContactTriangleXYZ::ComputeNormal(const double U, const double V)
+{
+    ChVector<> p0 = GetNode1()->GetPos();
+    ChVector<> p1 = GetNode2()->GetPos();
+    ChVector<> p2 = GetNode3()->GetPos();
+    return Vcross(p1-p0, p2-p0).GetNormalized();
+}
 
 //////////////////////////////////////////////////////////////////////////////
 ////  ChContactTriangleXYZROT
@@ -94,7 +155,79 @@ ChPhysicsItem* ChContactTriangleXYZROT::GetPhysicsItem() {
     return (ChPhysicsItem*)container->GetMesh();
 }
 
+// interface to ChLoadableUV
 
+// Gets all the DOFs packed in a single vector (position part).
+void ChContactTriangleXYZROT::LoadableGetStateBlock_x(int block_offset, ChVectorDynamic<>& mD) {
+    mD.PasteVector(mnode1->GetPos(), block_offset, 0);
+    mD.PasteQuaternion(mnode1->GetRot(), block_offset + 3, 0);
+    mD.PasteVector(mnode2->GetPos(), block_offset + 7, 0);
+    mD.PasteQuaternion(mnode2->GetRot(), block_offset + 10, 0);
+    mD.PasteVector(mnode3->GetPos(), block_offset + 14, 0);
+    mD.PasteQuaternion(mnode3->GetRot(), block_offset + 17, 0);
+}
+// Gets all the DOFs packed in a single vector (velocity part).
+void ChContactTriangleXYZROT::LoadableGetStateBlock_w(int block_offset, ChVectorDynamic<>& mD) {
+    mD.PasteVector(mnode1->GetPos_dt(), block_offset, 0);
+    mD.PasteVector(mnode1->GetWvel_loc(), block_offset + 3, 0);
+    mD.PasteVector(mnode2->GetPos_dt(), block_offset + 6, 0);
+    mD.PasteVector(mnode2->GetWvel_loc(), block_offset + 9, 0);
+    mD.PasteVector(mnode3->GetPos_dt(), block_offset + 12, 0);
+    mD.PasteVector(mnode3->GetWvel_loc(), block_offset + 15, 0);
+}
+// Get the pointers to the contained ChVariables, appending to the mvars vector.
+void ChContactTriangleXYZROT::LoadableGetVariables(std::vector<ChVariables*>& mvars) {
+    mvars.push_back(&mnode1->Variables());
+    mvars.push_back(&mnode2->Variables());
+    mvars.push_back(&mnode3->Variables());
+}
+
+// Evaluate N'*F , where N is the shape function evaluated at (U,V) coordinates of the surface.
+void ChContactTriangleXYZROT::ComputeNF(
+    const double U,              // parametric coordinate in surface
+    const double V,              // parametric coordinate in surface
+    ChVectorDynamic<>& Qi,       // Return result of Q = N'*F  here
+    double& detJ,                // Return det[J] here
+    const ChVectorDynamic<>& F,  // Input F vector, size is =n. field coords.
+    ChVectorDynamic<>* state_x,  // if != 0, update state (pos. part) to this, then evaluate Q
+    ChVectorDynamic<>* state_w   // if != 0, update state (speed part) to this, then evaluate Q
+    ) {
+    ChMatrixNM<double, 1, 3> N;
+    // shape functions (U and V in 0..1 as triangle integration)
+    N(0) = 1-U-V;
+    N(1) = U;
+    N(2) = V;
+
+    // determinant of jacobian is also =2*areaoftriangle, also length of cross product of sides
+    ChVector<> p0 = GetNode1()->GetPos();
+    ChVector<> p1 = GetNode2()->GetPos();
+    ChVector<> p2 = GetNode3()->GetPos();
+    detJ = (Vcross(p2-p0,p1-p0)).Length(); 
+
+    ChVector<> tmp;
+    ChVector<> Fv = F.ClipVector(0, 0);
+    ChVector<> Mv = F.ClipVector(3, 0);
+    tmp = N(0) * Fv;
+    Qi.PasteVector(tmp, 0, 0);
+    tmp = N(0) * Mv;
+    Qi.PasteVector(tmp, 3, 0);
+    tmp = N(1) * Fv;
+    Qi.PasteVector(tmp, 6, 0);
+    tmp = N(1) * Mv;
+    Qi.PasteVector(tmp, 9, 0);
+    tmp = N(2) * Fv;
+    Qi.PasteVector(tmp, 12, 0);
+    tmp = N(2) * Mv;
+    Qi.PasteVector(tmp, 15, 0);
+}
+
+ChVector<> ChContactTriangleXYZROT::ComputeNormal(const double U, const double V)
+{
+    ChVector<> p0 = GetNode1()->GetPos();
+    ChVector<> p1 = GetNode2()->GetPos();
+    ChVector<> p2 = GetNode3()->GetPos();
+    return Vcross(p1-p0, p2-p0).GetNormalized();
+}
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -216,7 +349,7 @@ void ChContactSurfaceMesh::AddFacesFromBoundary(double sphere_swept, bool ccw) {
     /// Case4. ANCF BEAMS (handles as a skinny triangle, with sphere swept radii, i.e. a capsule):
     ///
     for (unsigned int ie= 0; ie< this->mmesh->GetNelements(); ++ie) {
-        if (auto mbeam = std::dynamic_pointer_cast<ChElementBeamANCF>(mmesh->GetElement(ie))) {
+        if (auto mbeam = std::dynamic_pointer_cast<ChElementCableANCF>(mmesh->GetElement(ie))) {
             std::shared_ptr<ChNodeFEAxyzD> nA = mbeam->GetNodeA();
             std::shared_ptr<ChNodeFEAxyzD> nB = mbeam->GetNodeB();
 
@@ -299,6 +432,40 @@ void ChContactSurfaceMesh::AddFacesFromBoundary(double sphere_swept, bool ccw) {
         }
     }
 
+    ///
+    /// Case7. Outer surface boundaries of 8-node hexahedron brick meshes:
+    ///
+
+    std::multimap<std::array<ChNodeFEAxyz*, 4>, ChFaceHexa_8> face_map_hexa;
+
+    for (unsigned int ie = 0; ie < this->mmesh->GetNelements(); ++ie) {
+        if (auto mbrick = std::dynamic_pointer_cast<ChElementHexa_8>(mmesh->GetElement(ie))) {
+            for (int nface = 0; nface < 6; ++nface) {
+                ChFaceHexa_8 mface(mbrick, nface);
+                std::array<ChNodeFEAxyz*, 4> mface_key = {mface.GetNodeN(0).get(), mface.GetNodeN(1).get(),
+                                                          mface.GetNodeN(2).get(), mface.GetNodeN(3).get()};
+                std::sort(mface_key.begin(), mface_key.end());
+                face_map_hexa.insert({ mface_key, mface });
+            }
+        }
+    }
+    for (unsigned int ie = 0; ie < this->mmesh->GetNelements(); ++ie) {
+        if (auto mbrick = std::dynamic_pointer_cast<ChElementHexa_8>(mmesh->GetElement(ie))) {
+            for (int nface = 0; nface < 6; ++nface) { // Each of the 6 faces of a brick
+                ChFaceHexa_8 mface(mbrick, nface); // Create a face of the element
+                std::array<ChNodeFEAxyz*, 4> mface_key = {mface.GetNodeN(0).get(), mface.GetNodeN(1).get(),
+                    mface.GetNodeN(2).get(), mface.GetNodeN(3).get() };
+                std::sort(mface_key.begin(), mface_key.end());
+                if (face_map_hexa.count(mface_key) == 1) {
+                    // Found a face that is not shared.. so it is a boundary face: Make two triangles out of that face
+                    triangles.push_back({{mface.GetNodeN(0).get(), mface.GetNodeN(1).get(), mface.GetNodeN(2).get()}});
+                    triangles.push_back({ { mface.GetNodeN(0).get(), mface.GetNodeN(2).get(), mface.GetNodeN(3).get() } });
+                    triangles_ptrs.push_back({{mface.GetNodeN(0), mface.GetNodeN(1), mface.GetNodeN(2)}});
+                    triangles_ptrs.push_back({ { mface.GetNodeN(0), mface.GetNodeN(2), mface.GetNodeN(3) } });
+                }
+            }
+        }
+    }
 
     //
     // Compute triangles connectivity 

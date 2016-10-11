@@ -127,7 +127,7 @@ void VehicleNode::Initialize() {
     // Receive terrain height information
     // ----------------------------------
 
-    // Receive terrain height and half-length of the container
+    // Receive terrain height and longitudinal offset (in X direction)
     double init_dim[2];
     MPI_Status status;
     MPI_Recv(init_dim, 2, MPI_DOUBLE, TERRAIN_NODE_RANK, 0, MPI_COMM_WORLD, &status);
@@ -136,18 +136,21 @@ void VehicleNode::Initialize() {
     cout << m_prefix << " Received container half-length = " << init_dim[1] << endl;
 
     // Set initial vehicle position and orientation
-    ChVector<> init_loc(2.75 - init_dim[1], 0, 0.6 + init_dim[0]);
+    ChVector<> init_loc(2.75 - init_dim[1], 0, 0.52 + init_dim[0]);
     ChQuaternion<> init_rot(1, 0, 0, 0);
 
     // --------------------------------------------
     // Create and initialize subsystems
     // --------------------------------------------
 
-    m_vehicle = new HMMWV_Vehicle(m_system, m_chassis_fixed);
-    m_vehicle->Initialize(ChCoordsys<>(init_loc, init_rot));
+    std::vector<double> init_omega(4, m_init_ang_vel);
+
+    m_vehicle = new HMMWV_VehicleFull(m_system, m_chassis_fixed);
+    m_vehicle->SetInitWheelAngVel(init_omega);
+    m_vehicle->Initialize(ChCoordsys<>(init_loc, init_rot), m_init_fwd_vel);
 
     m_powertrain = new HMMWV_Powertrain;
-    m_powertrain->Initialize(m_vehicle->GetChassis(), m_vehicle->GetDriveshaft());
+    m_powertrain->Initialize(m_vehicle->GetChassisBody(), m_vehicle->GetDriveshaft());
 
     m_driver = new MyDriver(*m_vehicle, m_delay);
     m_driver->Initialize();
@@ -265,10 +268,10 @@ void VehicleNode::OutputData(int frame) {
 
         // Position, orientation, velocity of the chassis reference frame
         // (relative to absolute frame)
-        const ChVector<>& pos = m_vehicle->GetChassisPos();
-        const ChQuaternion<>& rot = m_vehicle->GetChassisRot();
-        const ChVector<>& lin_vel = m_vehicle->GetChassis()->GetFrame_REF_to_abs().GetPos_dt();
-        const ChVector<>& ang_vel = m_vehicle->GetChassis()->GetFrame_REF_to_abs().GetWvel_par();
+        const ChVector<>& pos = m_vehicle->GetVehiclePos();
+        const ChQuaternion<>& rot = m_vehicle->GetChassis()->GetRot();
+        const ChVector<>& lin_vel = m_vehicle->GetChassisBody()->GetFrame_REF_to_abs().GetPos_dt();
+        const ChVector<>& ang_vel = m_vehicle->GetChassisBody()->GetFrame_REF_to_abs().GetWvel_par();
 
         // Current driver inputs
         double steering = m_driver->GetSteering();
