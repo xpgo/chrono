@@ -37,7 +37,7 @@ void beam_element()
     my_system.Set_G_acc(ChVector<>(0, 0, -9.8));
 
     // Create the Irrlicht visualization (open the Irrlicht device, bind a simple user interface, etc.)
-    irrlicht::ChIrrApp application(&my_system, L"ANCF Shells", core::dimension2d<u32>(800, 600), false, true);
+    irrlicht::ChIrrApp application(&my_system, L"BST Shell - Beam", core::dimension2d<u32>(800, 600), false, true);
 
     // Easy shortcuts to add camera, lights, logo and sky in Irrlicht scene:
     application.AddTypicalLogo();
@@ -197,12 +197,8 @@ void beam_element()
                 std::cout << "np" << ", ";
         }
         std::cout << "\b\b]" << std::endl;
-        std::cout << "Area0: " << elem_temp->GetArea0() << std::endl;
         std::cout << "EdgeLength0: " << "{" << elem_temp->edge_length0[0] << ", " << elem_temp->edge_length0[1] << ", " << elem_temp->edge_length0[2] << "}" << std::endl;
-        std::cout << "EdgeVers0_0: " << "{" << elem_temp->edge_versors0[0](0) << ", " << elem_temp->edge_versors0[0](1) << ", " << elem_temp->edge_versors0[0](2) << "}" << std::endl;
-        std::cout << "EdgeVers0_1: " << "{" << elem_temp->edge_versors0[1](0) << ", " << elem_temp->edge_versors0[1](1) << ", " << elem_temp->edge_versors0[1](2) << "}" << std::endl;
-        std::cout << "EdgeVers0_2: " << "{" << elem_temp->edge_versors0[2](0) << ", " << elem_temp->edge_versors0[2](1) << ", " << elem_temp->edge_versors0[2](2) << "}" << std::endl;
-        std::cout << "ElemNormal: " << "{" << elem_temp->edge_versors0[2](0) << ", " << elem_temp->edge_versors0[2](1) << ", " << elem_temp->edge_versors0[2](2) << "}" << std::endl;
+        GetLog() << "ElemNormal: " << elem_temp->z_versor0 <<"\n";
         std::cout << std::endl;
     }
 
@@ -292,7 +288,7 @@ void patch_element()
     my_system.Set_G_acc(ChVector<>(0, 0, -9.8));
 
     // Create the Irrlicht visualization (open the Irrlicht device, bind a simple user interface, etc.)
-    irrlicht::ChIrrApp application(&my_system, L"ANCF Shells", core::dimension2d<u32>(800, 600), false, true);
+    irrlicht::ChIrrApp application(&my_system, L"BST Shell - Patch element", core::dimension2d<u32>(800, 600), false, true);
 
     // Easy shortcuts to add camera, lights, logo and sky in Irrlicht scene:
     application.AddTypicalLogo();
@@ -337,17 +333,7 @@ void patch_element()
         nodes_list.close();
     }
 
-    for (auto cont = 0; cont < my_mesh->GetNnodes(); cont++)
-    {
-        std::cout << "Node: " << my_mesh->GetNode(cont)->GetID() << std::endl;
-        std::cout << "X0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(0);
-        std::cout << "; X: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(0) << std::endl;
-        std::cout << "Y0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(1);
-        std::cout << "; Y: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(1) << std::endl;
-        std::cout << "Z0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(2);
-        std::cout << "; Z: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(2) << std::endl;
-        std::cout << std::endl;
-    }
+
 
     // create Elements
     auto material = std::make_shared<ChMaterialShellTri_3>(210e9, 0.3, 7850);
@@ -356,6 +342,11 @@ void patch_element()
     auto element1 = std::make_shared<ChElementShellTri_3>();
     auto element2 = std::make_shared<ChElementShellTri_3>();
     auto element3 = std::make_shared<ChElementShellTri_3>();
+
+    main_element->SetMaterial(material);
+    element1->SetMaterial(material);
+    element2->SetMaterial(material);
+    element3->SetMaterial(material);
 
 
     main_element->SetNodes(std::dynamic_pointer_cast<ChNodeFEAxyz>(node1),
@@ -379,9 +370,9 @@ void patch_element()
                        std::dynamic_pointer_cast<ChNodeFEAxyz>(node3),
                        std::dynamic_pointer_cast<ChNodeFEAxyz>(node5));
 
-    element3->SetNodes(std::dynamic_pointer_cast<ChNodeFEAxyz>(node3),
-                       std::dynamic_pointer_cast<ChNodeFEAxyz>(node2),
-                       std::dynamic_pointer_cast<ChNodeFEAxyz>(node4));
+    element3->SetNodes(std::dynamic_pointer_cast<ChNodeFEAxyz>(node2),
+                       std::dynamic_pointer_cast<ChNodeFEAxyz>(node1),
+                       std::dynamic_pointer_cast<ChNodeFEAxyz>(node6));
 
     main_element->neighbouring_elements[0] = element1;
     main_element->neighbouring_elements[1] = element2;
@@ -409,29 +400,44 @@ void patch_element()
 
     // Add mesh to the system
     my_system.Add(my_mesh);
+
+
+    element1->GetElementData(element1->all_nodes[0]->GetX0(), element1->all_nodes[1]->GetX0(), element1->all_nodes[2]->GetX0(),
+                             &element1->edge_length0,
+                             &element1->z_versor0,
+                             &element1->element_area0,
+                             &element1->rotGL0,
+                             &element1->gradient_shape_function0,
+                             &element1->gradient_local0,
+                             &element1->gradient_side_n0,
+                             &element1->edge_normal_vers0,
+                             &element1->c_proj0);
+
+    element2->GetElementData(element2->all_nodes[0]->GetX0(), element2->all_nodes[1]->GetX0(), element2->all_nodes[2]->GetX0(),
+                             &element2->edge_length0,
+                             &element2->z_versor0,
+                             &element2->element_area0,
+                             &element2->rotGL0,
+                             &element2->gradient_shape_function0,
+                             &element2->gradient_local0,
+                             &element2->gradient_side_n0,
+                             &element2->edge_normal_vers0,
+                             &element2->c_proj0);
+
+    element3->GetElementData(element3->all_nodes[0]->GetX0(), element3->all_nodes[1]->GetX0(), element3->all_nodes[2]->GetX0(),
+                             &element3->edge_length0,
+                             &element3->z_versor0,
+                             &element3->element_area0,
+                             &element3->rotGL0,
+                             &element3->gradient_shape_function0,
+                             &element3->gradient_local0,
+                             &element3->gradient_side_n0,
+                             &element3->edge_normal_vers0,
+                             &element3->c_proj0);
+
     my_system.SetupInitial();
 
-    for (auto elem_sel = 0; elem_sel < my_mesh->GetNelements(); elem_sel++)
-    {
-        auto elem_temp = std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(elem_sel));
-        std::cout << "Elem: " << elem_temp->GetID() << std::endl;
-        std::cout << "Nodes: [";
-        for (auto node_sel = 0; node_sel<6; ++node_sel)
-        {
-            if (elem_temp->all_nodes[node_sel])
-                std::cout << elem_temp->all_nodes[node_sel]->GetID() << ", ";
-            else
-                std::cout << "np" << ", ";
-        }
-        std::cout << "\b\b]" << std::endl;
-        std::cout << "Area0: " << elem_temp->GetArea0() << std::endl;
-        std::cout << "EdgeLength0: " << "{" << elem_temp->edge_length0[0] << ", " << elem_temp->edge_length0[1] << ", " << elem_temp->edge_length0[2] << "}" << std::endl;
-        std::cout << "EdgeVers0_0: " << "{" << elem_temp->edge_versors0[0](0) << ", " << elem_temp->edge_versors0[0](1) << ", " << elem_temp->edge_versors0[0](2) << "}" << std::endl;
-        std::cout << "EdgeVers0_1: " << "{" << elem_temp->edge_versors0[1](0) << ", " << elem_temp->edge_versors0[1](1) << ", " << elem_temp->edge_versors0[1](2) << "}" << std::endl;
-        std::cout << "EdgeVers0_2: " << "{" << elem_temp->edge_versors0[2](0) << ", " << elem_temp->edge_versors0[2](1) << ", " << elem_temp->edge_versors0[2](2) << "}" << std::endl;
-        std::cout << "ElemNormal: " << "{" << elem_temp->edge_versors0[2](0) << ", " << elem_temp->edge_versors0[2](1) << ", " << elem_temp->edge_versors0[2](2) << "}" << std::endl;
-        std::cout << std::endl;
-    }
+
 
 
 
@@ -472,18 +478,56 @@ void patch_element()
     application.AssetUpdateAll();
 
     // Set up integrator
-    my_system.SetIntegrationType(ChSystem::INT_HHT);
-    auto mystepper = std::static_pointer_cast<ChTimestepperHHT>(my_system.GetTimestepper());
-    mystepper->SetAlpha(-0.2);
-    mystepper->SetMaxiters(100);
-    mystepper->SetAbsTolerances(1e-5);
-    mystepper->SetMode(ChTimestepperHHT::POSITION);
-    mystepper->SetScaling(true);
-    mystepper->SetVerbose(true);
+    //my_system.SetIntegrationType(ChSystem::INT_HHT);
+    //auto mystepper = std::static_pointer_cast<ChTimestepperHHT>(my_system.GetTimestepper());
+    //mystepper->SetAlpha(-0.2);
+    //mystepper->SetMaxiters(100);
+    //mystepper->SetAbsTolerances(1e-5);
+    //mystepper->SetMode(ChTimestepperHHT::POSITION);
+    //mystepper->SetScaling(true);
+    //mystepper->SetVerbose(true);
+
+
 
 
     ChMatrixDynamic<double> H;
     ChMatrixDynamic<double> Fi;
+    std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(0))->all_nodes[1]->SetPos(ChVector<double>(1,0.1,0));
+
+
+
+
+    for (auto cont = 0; cont < my_mesh->GetNnodes(); cont++)
+    {
+        std::cout << "Node: " << my_mesh->GetNode(cont)->GetID() << std::endl;
+        std::cout << "X0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(0);
+        std::cout << "; X: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(0) << std::endl;
+        std::cout << "Y0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(1);
+        std::cout << "; Y: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(1) << std::endl;
+        std::cout << "Z0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(2);
+        std::cout << "; Z: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(2) << std::endl;
+        std::cout << std::endl;
+    }
+
+    for (auto elem_sel = 0; elem_sel < my_mesh->GetNelements(); elem_sel++)
+    {
+        auto elem_temp = std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(elem_sel));
+        std::cout << "Elem: " << elem_temp->GetID() << std::endl;
+        std::cout << "Nodes: [";
+        for (auto node_sel = 0; node_sel<6; ++node_sel)
+        {
+            if (elem_temp->all_nodes[node_sel])
+                std::cout << elem_temp->all_nodes[node_sel]->GetID() << ", ";
+            else
+                std::cout << "np" << ", ";
+        }
+        std::cout << "\b\b]" << std::endl;
+        std::cout << "EdgeLength0: " << "{" << elem_temp->edge_length0[0] << ", " << elem_temp->edge_length0[1] << ", " << elem_temp->edge_length0[2] << "}" << std::endl;
+        GetLog() << "ElemNormal: " << elem_temp->z_versor0 << "\n";
+        std::cout << std::endl;
+    }
+
+
     my_mesh->GetElement(0)->ComputeInternalForces(Fi);
     my_mesh->GetElement(0)->ComputeKRMmatricesGlobal(H, 1, 0, 0);
 

@@ -126,7 +126,7 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     /// - each row ('i') refers to an element; (0: main, 1: element0, 2: element1, 3: element2)
     /// - the j-th column refers to the node number in the neighbours' local numeration
     /// - neigh_to_local_numbering[i][j] tells in which position in 'all_nodes' we can find the j-th node of the i-th element
-    static constexpr std::array<std::array<int, 3>, 4> neigh_to_local_numbering = { {{0,1,2},{3,2,1},{4,0,2},{5,1,0}} };
+    static constexpr std::array<std::array<int, 3>, 4> neigh_to_local_numbering = { {{0,1,2},{2,1,3},{0,2,4},{1,0,5}} };
 
     /// each row ('i') refers to an element; (0: main, 1: element0, 2: element1, 3: element2)
     /// the n-th edge goes of element 'i' goes from edge_num[i][n] to edge_num[i][n+1]
@@ -134,24 +134,23 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
 
     // Geometric variables
     double thickness = -1;
-    double thickness0 = -1;
-    std::array<ChVector<double>, 3> edge_versors0;
+    double thickness0 = 0.025;
 
     std::shared_ptr<ChMaterialShellTri_3> m_material;
 
     // internal use
-    ChMatrixNM<double, 3, 3> main_projectors;
-    ChMatrixNM<double, 3, 3> neigh_projectors;
     ChMatrixNM<double, 18, 18> stiffness_matrix;
-    enum boundary_conditions
+
+    enum class boundary_conditions
     {
-        DEFAULT = 0,
-        CLAMPED = 1,
-        SUPPORTED = 2,
-        SYMMETRIC = 3
-    } edge_bc[3] = { DEFAULT, DEFAULT, DEFAULT };
+        DEFAULT,
+        CLAMPED,
+        SUPPORTED,
+        SYMMETRIC
+    } edge_bc[3] = {boundary_conditions::DEFAULT, boundary_conditions::DEFAULT, boundary_conditions::DEFAULT };
 
 
+    //TODO: many of these variables below are only for debug purpose
     ChVector<double> z_versor;
     std::array<double, 3> edge_length = {-1,-1,-1};
     ChMatrix33<double> rotGL;
@@ -159,7 +158,6 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     ChMatrixNM<double, 3, 2> gradient_shape_function;
     ChMatrixNM<double, 3, 2> gradient_local;
     ChMatrixNM<double, 3, 1> gradient_side_n;
-    ChMatrixNM<double, 3, 1> L_block;
     ChMatrix33<double> c_proj;
     double element_area = -1;
 
@@ -170,28 +168,16 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     ChMatrixNM<double, 3, 2> gradient_shape_function0;
     ChMatrixNM<double, 3, 2> gradient_local0;
     ChMatrixNM<double, 3, 1> gradient_side_n0;
-    ChMatrixNM<double, 3, 1> L_block0;
     ChMatrix33<double> c_proj0;
     double element_area0 = -1;
+
+    std::array<ChMatrixNM<double,3,1>,3> L_block0;
+
 
     size_t update_counter = 0;
 
 
-    // Geometric and connectivity informations
-    static int inline GetNodeOfEdge(int edge_sel, int node_sel, int elem_sel = 0);
-    inline void GetEdgeVector0(ChVector<double>& vect, int edge_sel, int elem_sel = 0) const;
-    ChVector<double> GetEdgeVector0(int edge_sel, int elem_sel) const;
-    inline void GetEdgeVector(ChVector<double>& vect, int edge_sel, int elem_sel = 0) const;
-    ChVector<double> GetEdgeVector(int edge_sel, int elem_sel = 0) const;
-    inline double GetEdgeVersor0(ChVector<double>& vers, int edge_sel, int elem_sel = 0) const;
-    double GetHeight(int edge_sel) const;
-    double GetNeighbourHeight(int edge_sel) const;
-    double GetArea() const;
-    double GetArea0();
-
     // internal functions
-    void initializeElement(); ///< sets up all the constant intermediate variables that will be used throughout all the iterations
-    void computeLt(ChMatrix<double>& mat_temp, int elem_sel, std::array<ChVector<double>, 4>& t, double scale);
     int countNeighbours() const; ///< counts how many neighbours are actually connected to this element
     void updateBC(); //TODO: find other ways to implement boundary conditions
     void updateElementMass(int node_sel);
@@ -199,16 +185,15 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     void getNodeK(ChMatrix<double>& node_damp, int node_sel, double factor = 1.0);
     void getElementMR(ChMatrix<>& H, double Mfactor, double Kfactor);
     void GetElementData(const ChVector<>& P1_in, const ChVector<>& P2_in, const ChVector<>& P3_in,
-                        ChMatrix<>* gradient_local,
+                        std::array<double, 3>* edge_length,
                         ChVector<>* z_versor,
-                        double area,
-                        ChMatrix<>* gradient_shape_function,
-                        ChMatrix<>* edge_normal_vers,
-                        std::array<double, 3>* edge_length, 
+                        double* area,
                         ChMatrix33<>* rotGL,
-                        ChMatrix<>* c_proj,
-                        ChMatrix<>* gradient_side_n);
-
+                        ChMatrix<>* gradient_shape_function,
+                        ChMatrix<>* gradient_local,
+                        ChMatrix<>* gradient_side_n,
+                        ChMatrix<>* edge_normal_vers,
+                        ChMatrix<>* c_proj);
 
 public:
     ChElementShellTri_3(){}
@@ -228,10 +213,11 @@ public:
     void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor, double Mfactor) override;
     void ComputeInternalForces(ChMatrixDynamic<>& Fi) override;
     void SetMaterial(std::shared_ptr<ChMaterialShellTri_3> material) { m_material = material; }
+
     void SetupInitial(ChSystem* system) override;
 
     /// Gets the number of nodes used by this element.
-    int GetNnodes() override { return 3+countNeighbours(); }
+    int GetNnodes() override { return 3 + countNeighbours(); }
 
     /// Gets the number of coordinates in the field used by the referenced nodes.
     /// This is for example the size (n.of rows/columns) of the local stiffness matrix.
