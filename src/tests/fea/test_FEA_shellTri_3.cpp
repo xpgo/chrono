@@ -358,8 +358,6 @@ void patch_element()
                                        std::dynamic_pointer_cast<ChNodeFEAxyz>(node6));
 
     my_mesh->AddElement(main_element);
-    std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(0))->UpdateConnectivity(my_mesh);
-
 
 
     element1->SetNodes(std::dynamic_pointer_cast<ChNodeFEAxyz>(node3),
@@ -402,7 +400,7 @@ void patch_element()
     my_system.Add(my_mesh);
 
 
-    element1->GetElementData(element1->all_nodes[0]->GetX0(), element1->all_nodes[1]->GetX0(), element1->all_nodes[2]->GetX0(),
+    element1->getElementData(element1->all_nodes[0]->GetX0(), element1->all_nodes[1]->GetX0(), element1->all_nodes[2]->GetX0(),
                              &element1->edge_length0,
                              &element1->z_versor0,
                              &element1->element_area0,
@@ -413,7 +411,7 @@ void patch_element()
                              &element1->edge_normal_vers0,
                              &element1->c_proj0);
 
-    element2->GetElementData(element2->all_nodes[0]->GetX0(), element2->all_nodes[1]->GetX0(), element2->all_nodes[2]->GetX0(),
+    element2->getElementData(element2->all_nodes[0]->GetX0(), element2->all_nodes[1]->GetX0(), element2->all_nodes[2]->GetX0(),
                              &element2->edge_length0,
                              &element2->z_versor0,
                              &element2->element_area0,
@@ -424,7 +422,7 @@ void patch_element()
                              &element2->edge_normal_vers0,
                              &element2->c_proj0);
 
-    element3->GetElementData(element3->all_nodes[0]->GetX0(), element3->all_nodes[1]->GetX0(), element3->all_nodes[2]->GetX0(),
+    element3->getElementData(element3->all_nodes[0]->GetX0(), element3->all_nodes[1]->GetX0(), element3->all_nodes[2]->GetX0(),
                              &element3->edge_length0,
                              &element3->z_versor0,
                              &element3->element_area0,

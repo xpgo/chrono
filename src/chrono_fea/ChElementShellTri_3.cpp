@@ -4,74 +4,10 @@
 namespace chrono {
 namespace fea {
 
-    //double ChElementShellTri_3::GetArea0()
-    //{
-    //    if (element_area0<0)
-    //    {
-    //        ChVector<double> vect_temp;
-    //        vect_temp.Cross(GetEdgeVector0(0, -1), GetEdgeVector0(1, -1));
-    //        element_area0 = vect_temp.Length() / 2;
-    //    }
-
-    //    std::cout << element_area0 << std::endl;
-    //    
-    //    return element_area0;
-    //}
-
-    //double ChElementShellTri_3::GetArea() const
-    //{
-    //    ChVector<double> vect_temp;
-    //    vect_temp.Cross(GetEdgeVector(0, -1), GetEdgeVector(1, -1));
-    //    return vect_temp.Length() / 2;
-    //}
-
-    //void ChElementShellTri_3::GetEdgeVector0(ChVector<double>& vect, int edge_sel, int elem_sel) const
-    //{
-    //    vect.Sub(all_nodes[GetNodeOfEdge(edge_sel, 1, elem_sel)]->GetX0(), all_nodes[GetNodeOfEdge(edge_sel, 0, elem_sel)]->GetX0());
-    //}
-
-    //ChVector<double> ChElementShellTri_3::GetEdgeVector0(int edge_sel, int elem_sel) const
-    //{
-    //    ChVector<double> vect;
-    //    vect.Sub(all_nodes[GetNodeOfEdge(edge_sel, 1, elem_sel)]->GetX0(), all_nodes[GetNodeOfEdge(edge_sel, 0, elem_sel)]->GetX0());
-    //    return vect;
-    //}
-
-    //void ChElementShellTri_3::GetEdgeVector(ChVector<double>& vect, int edge_sel, int elem_sel) const
-    //{
-    //    vect.Sub(all_nodes[GetNodeOfEdge(edge_sel, 1, elem_sel)]->GetPos(), all_nodes[GetNodeOfEdge(edge_sel, 0, elem_sel)]->GetPos());
-    //}
-
-    //ChVector<double> ChElementShellTri_3::GetEdgeVector(int edge_sel, int elem_sel) const
-    //{
-    //    ChVector<double> vect;
-    //    vect.Sub(all_nodes[GetNodeOfEdge(edge_sel, 1, elem_sel)]->GetPos(), all_nodes[GetNodeOfEdge(edge_sel, 0, elem_sel)]->GetPos());
-    //    return vect;
-    //}
-
-    //double ChElementShellTri_3::GetEdgeVersor0(ChVector<double>& vers, int edge_sel, int elem_sel) const
-    //{
-    //    GetEdgeVector0(vers, edge_sel, elem_sel);
-    //    double norm = vers.Length();
-    //    vers.Scale(1 / norm);
-    //    return norm;
-    //}
-
-    //int ChElementShellTri_3::GetNodeOfEdge(int edge_sel, int node_sel, int elem_sel)
-    //{
-    //    return edge_num[elem_sel+1][edge_sel + node_sel];
-    //}
-
-    //double ChElementShellTri_3::GetHeight(int edge_sel) const
-    //{
-    //    return 2 * GetArea() / GetEdgeVector(edge_sel, -1).Length();
-    //}
-
-    //double ChElementShellTri_3::GetNeighbourHeight(int edge_sel) const
-    //{
-    //    return 2 * neighbouring_elements[edge_sel]->GetArea() / GetEdgeVector(edge_sel, -1).Length();
-    //}
-
+int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering)
+{
+    return neigh_to_local_numbering[element][neighbour_numbering];
+}
 
     int ChElementShellTri_3::countNeighbours() const
     {
@@ -154,7 +90,7 @@ namespace fea {
         //}
     }
 
-    void ChElementShellTri_3::GetElementData(const ChVector<>& P1_in, const ChVector<>& P2_in, const ChVector<>& P3_in,
+    void ChElementShellTri_3::getElementData(const ChVector<>& P1_in, const ChVector<>& P2_in, const ChVector<>& P3_in,
                                              std::array<double, 3>* edge_length,
                                              ChVector<>* z_versor,
                                              double* area,
@@ -294,7 +230,28 @@ namespace fea {
         ChMatrixNM<double, 3, 18> Bb;
         ChMatrixNM<double, 3, 18> Bm;
 
-        GetElementData(all_nodes[0]->GetPos(), all_nodes[1]->GetPos(), all_nodes[2]->GetPos(),
+        ChVector<double> z_versor;
+        std::array<double, 3> edge_length = { -1,-1,-1 };
+        ChMatrix33<double> rotGL;
+        ChMatrixNM<double, 2, 3> edge_normal_vers;
+        ChMatrixNM<double, 3, 2> gradient_shape_function;
+        ChMatrixNM<double, 3, 2> gradient_local;
+        ChMatrixNM<double, 3, 1> gradient_side_n;
+        ChMatrix33<double> c_proj;
+        double element_area = -1;
+
+        // variables that hold values for neighbours
+        ChVector<double> z_versor_adj;
+        std::array<double, 3> edge_length_adj = { -1,-1,-1 };
+        ChMatrix33<double> rotGL_adj;
+        ChMatrixNM<double, 2, 3> edge_normal_vers_adj;
+        ChMatrixNM<double, 3, 2> gradient_shape_function_adj;
+        ChMatrixNM<double, 3, 2> gradient_local_adj;
+        ChMatrixNM<double, 3, 1> gradient_side_n_adj;
+        ChMatrix33<double> c_proj_adj;
+        double element_area_adj = -1;
+
+        getElementData(all_nodes[0]->GetPos(), all_nodes[1]->GetPos(), all_nodes[2]->GetPos(),
                        &edge_length,
                        &z_versor,
                        &element_area,
@@ -312,18 +269,18 @@ namespace fea {
         {
             //TODO: should be done only once per Update()
 
-            neighbouring_elements[edge_sel]->GetElementData(neighbouring_elements[edge_sel]->all_nodes[0]->GetPos(),
-                                                            neighbouring_elements[edge_sel]->all_nodes[1]->GetPos(),
-                                                            neighbouring_elements[edge_sel]->all_nodes[2]->GetPos(),
-                                                            &neighbouring_elements[edge_sel]->edge_length,
-                                                            &neighbouring_elements[edge_sel]->z_versor,
-                                                            &neighbouring_elements[edge_sel]->element_area,
-                                                            &neighbouring_elements[edge_sel]->rotGL,
-                                                            &neighbouring_elements[edge_sel]->gradient_shape_function,
-                                                            &neighbouring_elements[edge_sel]->gradient_local,
-                                                            &neighbouring_elements[edge_sel]->gradient_side_n,
-                                                            &neighbouring_elements[edge_sel]->edge_normal_vers,
-                                                            &neighbouring_elements[edge_sel]->c_proj);
+            getElementData(all_nodes[getLocalNodeNumber(edge_sel + 1, 0)]->GetPos(),
+                           all_nodes[getLocalNodeNumber(edge_sel + 1, 1)]->GetPos(),
+                           all_nodes[getLocalNodeNumber(edge_sel + 1, 2)]->GetPos(),
+                           &edge_length_adj,
+                           &z_versor_adj,
+                           &element_area_adj,
+                           &rotGL_adj,
+                           &gradient_shape_function_adj,
+                           &gradient_local_adj,
+                           &gradient_side_n_adj,
+                           &edge_normal_vers_adj,
+                           &c_proj_adj);
 
 
             // compute lamba*gamma
@@ -336,8 +293,8 @@ namespace fea {
             {
                 for (auto node_sel = 0; node_sel < 3; node_sel++)
                 {
-                    lambda_gamma.PasteSumVector(neighbouring_elements[edge_sel]->z_versor*neighbouring_elements[edge_sel]->c_proj0(node_sel, 2),
-                                                neigh_to_local_numbering[edge_sel + 1][node_sel]*3, 0);
+                    lambda_gamma.PasteSumVector(z_versor_adj*neighbouring_elements[edge_sel]->c_proj0(node_sel, 2),
+                                                getLocalNodeNumber(edge_sel + 1,node_sel)*3, 0);
 
                 }
             }
@@ -366,26 +323,14 @@ namespace fea {
         
         Bb *= 4.0f * element_area0;
         
-        // constitutive matrix //TODO: to be moved elsewhere
-        double nu = 0.5f;
-        double YoungMod = 210e9;
-        ChMatrixNM<double, 3, 3> constitutive_matrix;
-        constitutive_matrix(0, 0) = 1.0f;
-        constitutive_matrix(0, 1) = nu;
-        constitutive_matrix(1, 0) = nu;
-        constitutive_matrix(1, 1) = 1.0f;
-        constitutive_matrix(2, 2) = (1.0f - nu)/2.0f;
-        constitutive_matrix *= YoungMod / (1.0f - nu*nu);
-
-
         // stiffness matrix
-        ChMatrixNM<double, 3, 18> temp;
         // membrane
-        temp.MatrMultiply(constitutive_matrix, Bm);
+        ChMatrixNM<double, 3, 18> temp;
+        temp.MatrMultiply(m_material->GetConsitutiveMatrix(), Bm);
         temp *= thickness0;
         stiffness_matrix.MatrTMultiply(Bm, temp);
         // bending
-        temp.MatrMultiply(constitutive_matrix, Bb);
+        temp.MatrMultiply(m_material->GetConsitutiveMatrix(), Bb);
         temp *= pow(thickness0,3)/12.0f;
         ChMatrixNM<double, 18, 18> stiffness_matrix_temp;
         stiffness_matrix_temp.MatrTMultiply(Bb, temp);
@@ -545,7 +490,7 @@ namespace fea {
         m_material->UpdateConsitutiveMatrices();
         updateBC();
 
-        GetElementData(all_nodes[0]->GetX0(), all_nodes[1]->GetX0(), all_nodes[2]->GetX0(),
+        getElementData(all_nodes[0]->GetX0(), all_nodes[1]->GetX0(), all_nodes[2]->GetX0(),
                        &edge_length0,
                        &z_versor0,
                        &element_area0,

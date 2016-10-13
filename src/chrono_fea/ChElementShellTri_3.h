@@ -32,36 +32,38 @@ namespace fea {
             double nu,   ///< Poisson ratio
             double rho
         ) :
-            m_rho(rho),
-            m_E(E),
-            m_nu(nu)
+            m_density(rho),
+            m_YoungModulus(E),
+            m_PoissonRatio(nu)
         {
             UpdateConsitutiveMatrices();
         }
 
         /// Return the elasticity moduli
-        double Get_E() const { return m_E; }
-        void Set_E(double E_in) { m_E = E_in; UpdateConsitutiveMatrices(); }
+        double Get_E() const { return m_YoungModulus; }
+        void Set_E(double E_in) { m_YoungModulus = E_in; UpdateConsitutiveMatrices(); }
 
         /// Return the Poisson ratio
-        double Get_nu() const { return m_nu; }
-        void Set_nu(double nu_in) { m_nu = nu_in; UpdateConsitutiveMatrices();
+        double Get_nu() const { return m_PoissonRatio; }
+        void Set_nu(double nu_in) { m_PoissonRatio = nu_in; UpdateConsitutiveMatrices();
         }
 
         /// Return the density
-        double Get_rho() const { return m_rho; }
-        void Set_rho(double rho_in) { m_rho = rho_in; UpdateConsitutiveMatrices();
+        double Get_rho() const { return m_density; }
+        void Set_rho(double rho_in) { m_density = rho_in; UpdateConsitutiveMatrices();
         }
 
         void UpdateConsitutiveMatrices()
         {
-            updateDbend();
-            updateDmembr();
+            constitutive_matrix(0, 0) = 1.0f;
+            constitutive_matrix(0, 1) = m_PoissonRatio;
+            constitutive_matrix(1, 0) = m_PoissonRatio;
+            constitutive_matrix(1, 1) = 1.0f;
+            constitutive_matrix(2, 2) = (1.0f - m_PoissonRatio) / 2.0f;
+            constitutive_matrix *= m_YoungModulus / (1.0f - m_PoissonRatio*m_PoissonRatio);
         }
 
-        ChMatrixNM<double, 3, 3>& GetConsitutiveMatrixBending() { return Dbend; };
-        ChMatrixNM<double, 3, 3>& GetConsitutiveMatrixMembrane() { return Dmembr; };
-
+        const ChMatrixNM<double, 3, 3>& GetConsitutiveMatrix() const { return constitutive_matrix; };
 
         /// The FE code will evaluate this function to compute 
         /// u,v stresses/torques given the u,v strains/curvatures.
@@ -77,34 +79,13 @@ namespace fea {
         //    const ChVector<>& kur_u,
         //    const ChVector<>& kur_v);
 
-    protected:
-        void updateDbend()
-        {
-            double Dbend_multiplier = m_E / 12 / (1 - m_nu*m_nu);
-            Dbend(0, 0) = Dbend_multiplier;
-            Dbend(0, 1) = m_nu*Dbend_multiplier;
-            Dbend(1, 0) = m_nu*Dbend_multiplier;
-            Dbend(1, 1) = Dbend_multiplier;
-            Dbend(2, 2) = Dbend_multiplier*(1-m_nu)/2;
-        }
-
-        void updateDmembr()
-        {
-            double Dmembr_multiplier = m_E / (1 - m_nu*m_nu);
-            Dmembr(0, 0) = Dmembr_multiplier;
-            Dmembr(0, 1) = m_nu*Dmembr_multiplier;
-            Dmembr(1, 0) = m_nu*Dmembr_multiplier;
-            Dmembr(1, 1) = Dmembr_multiplier;
-            Dmembr(2, 2) = Dmembr_multiplier*(1 - m_nu) / 2;
-        }
-
     private:
 
-        ChMatrixNM<double, 3, 3> Dbend;
-        ChMatrixNM<double, 3, 3> Dmembr;
-        double m_rho = 7850;    ///< density
-        double m_E = 210e9; ///< elasticity moduli
-        double m_nu = 0.3;  ///< Poisson ratio
+        ChMatrixNM<double, 3, 3> constitutive_matrix;
+
+        double m_density = 7850;    ///< density
+        double m_YoungModulus = 210e9; ///< elasticity moduli
+        double m_PoissonRatio = 0.3;  ///< Poisson ratio
     };
 
 
@@ -116,7 +97,7 @@ namespace fea {
 /// so the curvature is computed using position of adjacent out-of-element nodes.
 class ChApiFea ChElementShellTri_3 : public ChElementShell {
 private:
-public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
+public: // TODO: PUBLIC ONLY FOR DEBUG PURPOSE!!!!
 
     std::array<std::shared_ptr<ChNodeFEAxyz>,6> all_nodes; ///< the first three elements are the nodes of the current element [main_nodes]; last three are the neighbours' node [neigh_nodes]
     std::array<std::shared_ptr<ChElementShellTri_3>, 3> neighbouring_elements; ///< neighbour elements
@@ -151,15 +132,7 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
 
 
     //TODO: many of these variables below are only for debug purpose
-    ChVector<double> z_versor;
-    std::array<double, 3> edge_length = {-1,-1,-1};
-    ChMatrix33<double> rotGL;
-    ChMatrixNM<double, 2, 3> edge_normal_vers;
-    ChMatrixNM<double, 3, 2> gradient_shape_function;
-    ChMatrixNM<double, 3, 2> gradient_local;
-    ChMatrixNM<double, 3, 1> gradient_side_n;
-    ChMatrix33<double> c_proj;
-    double element_area = -1;
+    
 
     ChVector<double> z_versor0;
     std::array<double, 3> edge_length0 = { -1,-1,-1 };
@@ -177,6 +150,7 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     size_t update_counter = 0;
 
 
+    static int getLocalNodeNumber(int element, int neighbour_numbering);
     // internal functions
     int countNeighbours() const; ///< counts how many neighbours are actually connected to this element
     void updateBC(); //TODO: find other ways to implement boundary conditions
@@ -184,7 +158,7 @@ public: // TODO: IT IS PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     void getNodeM(ChMatrix<double>& node_mass, int node_sel, double factor = 1.0);
     void getNodeK(ChMatrix<double>& node_damp, int node_sel, double factor = 1.0);
     void getElementMR(ChMatrix<>& H, double Mfactor, double Kfactor);
-    void GetElementData(const ChVector<>& P1_in, const ChVector<>& P2_in, const ChVector<>& P3_in,
+    void getElementData(const ChVector<>& P1_in, const ChVector<>& P2_in, const ChVector<>& P3_in,
                         std::array<double, 3>* edge_length,
                         ChVector<>* z_versor,
                         double* area,
