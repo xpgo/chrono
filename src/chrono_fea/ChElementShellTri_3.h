@@ -40,17 +40,17 @@ namespace fea {
         }
 
         /// Return the elasticity moduli
-        double Get_E() const { return m_YoungModulus; }
-        void Set_E(double E_in) { m_YoungModulus = E_in; UpdateConsitutiveMatrices(); }
+        double GetYoungModulus() const { return m_YoungModulus; }
+        void SetYoungModulus(double E_in) { m_YoungModulus = E_in; UpdateConsitutiveMatrices(); }
 
         /// Return the Poisson ratio
-        double Get_nu() const { return m_PoissonRatio; }
-        void Set_nu(double nu_in) { m_PoissonRatio = nu_in; UpdateConsitutiveMatrices();
+        double GetPoissonRatio() const { return m_PoissonRatio; }
+        void SetPoissonRation(double nu_in) { m_PoissonRatio = nu_in; UpdateConsitutiveMatrices();
         }
 
         /// Return the density
-        double Get_rho() const { return m_density; }
-        void Set_rho(double rho_in) { m_density = rho_in; UpdateConsitutiveMatrices();
+        double GetDensity() const { return m_density; }
+        void SetDensity(double rho_in) { m_density = rho_in; UpdateConsitutiveMatrices();
         }
 
         void UpdateConsitutiveMatrices()
@@ -120,11 +120,12 @@ public: // TODO: PUBLIC ONLY FOR DEBUG PURPOSE!!!!
     std::shared_ptr<ChMaterialShellTri_3> m_material;
 
     // internal use
-    ChMatrixNM<double, 18, 18> stiffness_matrix;
+    ChMatrixDynamic<double> stiffness_matrix = { 18, 18 };
 
     enum class boundary_conditions
     {
         DEFAULT,
+        FREE,
         CLAMPED,
         SUPPORTED,
         SYMMETRIC
@@ -136,12 +137,15 @@ public: // TODO: PUBLIC ONLY FOR DEBUG PURPOSE!!!!
 
     ChVector<double> z_versor0;
     std::array<double, 3> edge_length0 = { -1,-1,-1 };
+    std::array<double, 3> heights0 = { -1,-1,-1 };
     ChMatrix33<double> rotGL0;
     ChMatrixNM<double, 2, 3> edge_normal_vers0;
     ChMatrixNM<double, 3, 2> gradient_shape_function0;
     ChMatrixNM<double, 3, 2> gradient_local0;
     ChMatrixNM<double, 3, 1> gradient_side_n0;
     ChMatrix33<double> c_proj0;
+    ChMatrix33<double> c_proj0_adj;
+
     double element_area0 = -1;
 
     std::array<ChMatrixNM<double,3,1>,3> L_block0;
@@ -151,23 +155,25 @@ public: // TODO: PUBLIC ONLY FOR DEBUG PURPOSE!!!!
 
 
     static int getLocalNodeNumber(int element, int neighbour_numbering);
+    int getPositionInMatrix(int element, int neighbour_numbering);
     // internal functions
     int countNeighbours() const; ///< counts how many neighbours are actually connected to this element
     void updateBC(); //TODO: find other ways to implement boundary conditions
-    void updateElementMass(int node_sel);
     void getNodeM(ChMatrix<double>& node_mass, int node_sel, double factor = 1.0);
-    void getNodeK(ChMatrix<double>& node_damp, int node_sel, double factor = 1.0);
-    void getElementMR(ChMatrix<>& H, double Mfactor, double Kfactor);
+    void getNodeR(ChMatrix<double>& node_damp, int node_sel, double factor);
     void getElementData(const ChVector<>& P1_in, const ChVector<>& P2_in, const ChVector<>& P3_in,
                         std::array<double, 3>* edge_length,
                         ChVector<>* z_versor,
                         double* area,
+                        std::array<double, 3>* height,
                         ChMatrix33<>* rotGL,
                         ChMatrix<>* gradient_shape_function,
                         ChMatrix<>* gradient_local,
                         ChMatrix<>* gradient_side_n,
                         ChMatrix<>* edge_normal_vers,
                         ChMatrix<>* c_proj);
+
+    double getStiffnessR() const;
 
 public:
     ChElementShellTri_3(){}
@@ -182,11 +188,11 @@ public:
     /// Finds the neighbouring elements and nodes
     /// To be called after that ALL the elements in the mesh have their main nodes set.
     void UpdateConnectivity(std::shared_ptr<ChMesh> mesh);
-    void SetBC(int BC_on_edge1, int BC_on_edge2, int BC_on_edge3);
+    void SetBC(boundary_conditions BC_on_edge1, boundary_conditions BC_on_edge2, boundary_conditions BC_on_edge3);
 
     void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor, double Mfactor) override;
     void ComputeInternalForces(ChMatrixDynamic<>& Fi) override;
-    void SetMaterial(std::shared_ptr<ChMaterialShellTri_3> material) { m_material = material; }
+    void SetMaterial(std::shared_ptr<ChMaterialShellTri_3>& material) { m_material = material; }
 
     void SetupInitial(ChSystem* system) override;
 
@@ -211,40 +217,40 @@ public:
 
     /// Sets only the nodes of the main element; the neighbouring will be added by SetupInitial()
     void SetNodes(std::shared_ptr<ChNodeFEAxyz> node0,
-        std::shared_ptr<ChNodeFEAxyz> node1,
-        std::shared_ptr<ChNodeFEAxyz> node2);
+                  std::shared_ptr<ChNodeFEAxyz> node1,
+                  std::shared_ptr<ChNodeFEAxyz> node2);
 
     /// Sets only the nodes of the main element; the neighbouring will be added by SetupInitial()
     void SetNodes(std::shared_ptr<ChNodeFEAxyz> node0,
-        std::shared_ptr<ChNodeFEAxyz> node1,
-        std::shared_ptr<ChNodeFEAxyz> node2,
-        std::shared_ptr<ChNodeFEAxyz> node3,
-        std::shared_ptr<ChNodeFEAxyz> node4,
-        std::shared_ptr<ChNodeFEAxyz> node5);
+                  std::shared_ptr<ChNodeFEAxyz> node1,
+                  std::shared_ptr<ChNodeFEAxyz> node2,
+                  std::shared_ptr<ChNodeFEAxyz> node3,
+                  std::shared_ptr<ChNodeFEAxyz> node4,
+                  std::shared_ptr<ChNodeFEAxyz> node5);
 
     /// Inform the current element of which nodes are in its neighbourhood
     void SetNeighbouringNodes(std::shared_ptr<ChNodeFEAxyz> node3,
-        std::shared_ptr<ChNodeFEAxyz> node4,
-        std::shared_ptr<ChNodeFEAxyz> node5);
+                              std::shared_ptr<ChNodeFEAxyz> node4,
+                              std::shared_ptr<ChNodeFEAxyz> node5);
 
 
     //TODO: temporary definition of abstract functions. Needed since we are inheriting from ChElementShell
     void EvaluateSectionDisplacement(const double u,
-        const double v,
-        const ChMatrix<>& displ,
-        ChVector<>& u_displ,
-        ChVector<>& u_rotaz) override {}
+                                     const double v,
+                                     const ChMatrix<>& displ,
+                                     ChVector<>& u_displ,
+                                     ChVector<>& u_rotaz) override {}
 
     void EvaluateSectionFrame(const double u,
-        const double v,
-        const ChMatrix<>& displ,
-        ChVector<>& point,
-        ChQuaternion<>& rot) override {}
+                              const double v,
+                              const ChMatrix<>& displ,
+                              ChVector<>& point,
+                              ChQuaternion<>& rot) override {}
 
     void EvaluateSectionPoint(const double u,
-        const double v,
-        const ChMatrix<>& displ,
-        ChVector<>& point) override {}
+                              const double v,
+                              const ChMatrix<>& displ,
+                              ChVector<>& point) override {}
 
     void EvaluateSectionVelNorm(double U, double V, ChVector<> &Result) override {}
 

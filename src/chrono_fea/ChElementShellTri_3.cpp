@@ -4,10 +4,28 @@
 namespace chrono {
 namespace fea {
 
-int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering)
-{
-    return neigh_to_local_numbering[element][neighbour_numbering];
-}
+    int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering)
+    {
+        return neigh_to_local_numbering[element][neighbour_numbering];
+    }
+
+    int ChElementShellTri_3::getPositionInMatrix(int element, int neighbour_numbering)
+    {
+        auto pos = neigh_to_local_numbering[element][neighbour_numbering];
+        if (element==0 || neighbour_numbering!=2)
+            return pos;
+
+        assert(all_nodes[element + 2]);
+
+        for (auto pos_temp = pos-1; pos_temp>2; pos_temp--)
+        {
+            if (!all_nodes[pos_temp])
+                pos--;
+        }
+
+        return pos;
+
+    }
 
     int ChElementShellTri_3::countNeighbours() const
     {
@@ -32,68 +50,32 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
 
         if (all_nodes[2]->GetFixed() && all_nodes[0]->GetFixed())
             edge_bc[1] = boundary_conditions::CLAMPED;
-    }
 
-    void ChElementShellTri_3::updateElementMass(int node_sel)
-    {
-        mass = element_area0 * thickness * m_material->Get_rho();
-        for (auto diag_sel = 0; diag_sel < 3; diag_sel++)
-        {
-            all_nodes[diag_sel]->SetMass(mass / 3);
-        }
+        // if there is no adjacent element and no bc is specified, then the edge is assumed free
+        for (auto node_sel = 0; node_sel<3; node_sel++)
+            if (!all_nodes[node_sel+3] && edge_bc[node_sel] == boundary_conditions::DEFAULT)
+                edge_bc[node_sel] = boundary_conditions::FREE;
     }
 
     void ChElementShellTri_3::getNodeM(ChMatrix<double>& node_mass, int node_sel, double factor)
     {
-        if (node_mass.GetColumns() != 3 || node_mass.GetRows() != 3)
-            node_mass.Resize(3, 3);
-
-        updateElementMass(node_sel);
+        node_mass.Resize(3, 3);
+        mass = element_area0 * thickness0 * m_material->GetDensity();
+        all_nodes[node_sel]->SetMass(mass / 3);
         node_mass.FillDiag(all_nodes[node_sel]->GetMass() * factor);
     }
 
-    void ChElementShellTri_3::getNodeK(ChMatrix<double>& node_damp, int node_sel, double factor)
+    void ChElementShellTri_3::getNodeR(ChMatrix<double>& node_damp, int node_sel, double factor)
     {
-        if (node_damp.GetColumns() != 3 || node_damp.GetRows() != 3)
-            node_damp.Resize(3, 3);
-
+        node_damp.Resize(3, 3);
         node_damp.FillDiag(1e-3);
-    }
-
-    void ChElementShellTri_3::getElementMR(ChMatrix<>& H, double Mfactor, double Kfactor)
-    {
-        H.Resize(GetNdofs(), GetNdofs());
-
-        //// Fill the H matrix with damping and mass; K and M supposed diagonal-block
-        //ChMatrix33<double> node_mat;
-        //for (auto main_node_sel = 0; main_node_sel<3; main_node_sel++)
-        //{
-        //    getNodeK(node_mat, main_node_sel, Kfactor);
-        //    H.PasteSumMatrix(&node_mat, main_node_sel * 3, main_node_sel * 3);
-        //    getNodeM(node_mat, main_node_sel, Mfactor);
-        //    H.PasteSumMatrix(&node_mat, main_node_sel * 3, main_node_sel * 3);
-        //}
-
-        //int offset_diag = 0;
-        //for (auto diag_sel = 0; diag_sel<3; ++diag_sel)
-        //{
-        //    if (neighbouring_elements[diag_sel].get() == nullptr)
-        //    {
-        //        offset_diag++;
-        //        continue;
-        //    }
-
-        //    neighbouring_elements[diag_sel]->getNodeK(node_mat, neighbour_node_not_shared[diag_sel], Kfactor);
-        //    H.PasteSumMatrix(&node_mat, (diag_sel + 3 - offset_diag) * 3, (diag_sel + 3 - offset_diag) * 3);
-        //    neighbouring_elements[diag_sel]->getNodeM(node_mat, neighbour_node_not_shared[diag_sel], Mfactor);
-        //    H.PasteSumMatrix(&node_mat, (diag_sel + 3 - offset_diag) * 3, (diag_sel + 3 - offset_diag) * 3);
-        //}
     }
 
     void ChElementShellTri_3::getElementData(const ChVector<>& P1_in, const ChVector<>& P2_in, const ChVector<>& P3_in,
                                              std::array<double, 3>* edge_length,
                                              ChVector<>* z_versor,
                                              double* area,
+                                             std::array<double, 3>* height,
                                              ChMatrix33<>* rotGL,
                                              ChMatrix<>* gradient_shape_function,
                                              ChMatrix<>* gradient_local,
@@ -133,6 +115,13 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
         x_versor = e_vect3;
         x_versor.Normalize();
         y_versor.Cross(*z_versor, x_versor);
+
+        if (height)
+        {
+            (*height)[0] = *area/(*edge_length)[0]*2.0f;
+            (*height)[1] = *area/(*edge_length)[1]*2.0f;
+            (*height)[2] = *area/(*edge_length)[2]*2.0f;
+        }
 
         if (rotGL || gradient_shape_function || gradient_local)
         {
@@ -219,19 +208,25 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
             c_proj->MatrTMultiply(c_temp1, c_temp2);
             *c_proj *= 0.5f / *area;
         }
-        
-        
 
     }
 
+    double ChElementShellTri_3::getStiffnessR() const
+    {
+        return m_material->GetYoungModulus() / (1 - m_material->GetPoissonRatio()*m_material->GetPoissonRatio());
+    }
+
+
     void ChElementShellTri_3::Update()
     {
-        ChMatrixNM<double,18,1> lambda_gamma;
-        ChMatrixNM<double, 3, 18> Bb;
-        ChMatrixNM<double, 3, 18> Bm;
+        auto mat_dimension = GetNdofs();
+        ChMatrixDynamic<double> lambda_gamma(mat_dimension,1);
+        ChMatrixDynamic<double> Bb(3, mat_dimension);
+        ChMatrixDynamic<double> Bm(3, mat_dimension);
 
         ChVector<double> z_versor;
-        std::array<double, 3> edge_length = { -1,-1,-1 };
+        std::array<double, 3> edge_length;
+        std::array<double, 3> height;
         ChMatrix33<double> rotGL;
         ChMatrixNM<double, 2, 3> edge_normal_vers;
         ChMatrixNM<double, 3, 2> gradient_shape_function;
@@ -242,7 +237,8 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
 
         // variables that hold values for neighbours
         ChVector<double> z_versor_adj;
-        std::array<double, 3> edge_length_adj = { -1,-1,-1 };
+        std::array<double, 3> edge_length_adj;
+        std::array<double, 3> height_adj;
         ChMatrix33<double> rotGL_adj;
         ChMatrixNM<double, 2, 3> edge_normal_vers_adj;
         ChMatrixNM<double, 3, 2> gradient_shape_function_adj;
@@ -251,37 +247,27 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
         ChMatrix33<double> c_proj_adj;
         double element_area_adj = -1;
 
-        getElementData(all_nodes[0]->GetPos(), all_nodes[1]->GetPos(), all_nodes[2]->GetPos(),
+        getElementData(all_nodes[0]->GetPos(), 
+                       all_nodes[1]->GetPos(), 
+                       all_nodes[2]->GetPos(),
                        &edge_length,
                        &z_versor,
                        &element_area,
+                       &height,
                        &rotGL,
                        &gradient_shape_function,
                        &gradient_local,
                        &gradient_side_n,
                        &edge_normal_vers,
                        &c_proj );
-
-        update_counter++;
         
+        double riM;
+
+        auto thickness = element_area0*thickness0 / element_area;
+        double thickness_adj = -1;
 
         for (auto edge_sel = 0; edge_sel<3; edge_sel++)
         {
-            //TODO: should be done only once per Update()
-
-            getElementData(all_nodes[getLocalNodeNumber(edge_sel + 1, 0)]->GetPos(),
-                           all_nodes[getLocalNodeNumber(edge_sel + 1, 1)]->GetPos(),
-                           all_nodes[getLocalNodeNumber(edge_sel + 1, 2)]->GetPos(),
-                           &edge_length_adj,
-                           &z_versor_adj,
-                           &element_area_adj,
-                           &rotGL_adj,
-                           &gradient_shape_function_adj,
-                           &gradient_local_adj,
-                           &gradient_side_n_adj,
-                           &edge_normal_vers_adj,
-                           &c_proj_adj);
-
 
             // compute lamba*gamma
             lambda_gamma.FillElem(0);
@@ -289,28 +275,68 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
             lambda_gamma.PasteVector(z_versor*c_proj0(1,edge_sel), 3, 0);
             lambda_gamma.PasteVector(z_versor*c_proj0(2,edge_sel), 6, 0);
 
-            if (neighbouring_elements[edge_sel]) //TODO: the numbering of neighbours is not predictable: next line must be changed accordingly
+            if (all_nodes[edge_sel+3] &&
+                (edge_bc[edge_sel] == boundary_conditions::DEFAULT ||
+                 edge_bc[edge_sel] == boundary_conditions::SUPPORTED ||
+                 edge_bc[edge_sel] == boundary_conditions::SYMMETRIC))
             {
+                //TODO: should be done only once per Update()
+                getElementData(all_nodes[getLocalNodeNumber(edge_sel + 1, 0)]->GetPos(),
+                               all_nodes[getLocalNodeNumber(edge_sel + 1, 1)]->GetPos(),
+                               all_nodes[getLocalNodeNumber(edge_sel + 1, 2)]->GetPos(),
+                               &edge_length_adj,
+                               &z_versor_adj,
+                               &element_area_adj,
+                               &height_adj,
+                               &rotGL_adj,
+                               &gradient_shape_function_adj,
+                               &gradient_local_adj,
+                               &gradient_side_n_adj,
+                               &edge_normal_vers_adj,
+                               &c_proj_adj);
+
+                thickness_adj = neighbouring_elements[edge_sel]->element_area0*neighbouring_elements[edge_sel]->thickness0 / element_area_adj;
+
                 for (auto node_sel = 0; node_sel < 3; node_sel++)
                 {
-                    lambda_gamma.PasteSumVector(z_versor_adj*neighbouring_elements[edge_sel]->c_proj0(node_sel, 2),
-                                                getLocalNodeNumber(edge_sel + 1,node_sel)*3, 0);
+                    lambda_gamma.PasteSumVector(z_versor_adj*c_proj0_adj(node_sel, edge_sel),
+                                                getPositionInMatrix(edge_sel + 1, node_sel) * 3, 0);
 
                 }
+
             }
 
-            
+            //GetLog() << lambda_gamma << "\n";
 
-            // relative stiffness
-            // TODO: relate rM to Young mod and thickness
-            double riM = 0.5f;
+
+            switch (edge_bc[edge_sel])
+            {
+                case boundary_conditions::DEFAULT:
+                case boundary_conditions::SUPPORTED:
+                    riM = 1.0f / ((getStiffnessR() * pow(thickness,3)/ height[edge_sel]) / (neighbouring_elements[edge_sel]->getStiffnessR()* pow(thickness_adj, 3) / height_adj[2]) + 1.0f);
+                    //riM = 0.5; //TODO: compatibility with MATLAB
+                    break;
+                case boundary_conditions::FREE:
+                    riM = 0; break;
+                case boundary_conditions::CLAMPED:
+                    riM = 1; break;
+                    break;
+                case boundary_conditions::SYMMETRIC:
+                    assert(0); //TODO: to be implemented
+                    riM = -1;
+                    break;
+                default:
+                    assert(0); // unhandled boundary condition
+                    riM = -1;
+                    break;
+            }
 
             // curvature matrix
-            
-            ChMatrixNM<double, 3, 18> Bb_temp;
+            ChMatrixDynamic<double> Bb_temp(3, mat_dimension);
             Bb_temp.MatrMultiplyT(L_block0[edge_sel], lambda_gamma);
             Bb_temp *= riM / edge_length0[edge_sel];
             Bb.PasteSumMatrix(&Bb_temp,0,0);
+
 
             ChMatrixNM<double, 3, 3> Bm_temp;
             Bm_temp.PasteVector(gradient_local.ClipVector(0, 0)*gradient_shape_function0(edge_sel, 0), 0, 0);
@@ -325,14 +351,14 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
         
         // stiffness matrix
         // membrane
-        ChMatrixNM<double, 3, 18> temp;
+        ChMatrixDynamic<double> temp(3, mat_dimension);
         temp.MatrMultiply(m_material->GetConsitutiveMatrix(), Bm);
         temp *= thickness0;
         stiffness_matrix.MatrTMultiply(Bm, temp);
         // bending
         temp.MatrMultiply(m_material->GetConsitutiveMatrix(), Bb);
         temp *= pow(thickness0,3)/12.0f;
-        ChMatrixNM<double, 18, 18> stiffness_matrix_temp;
+        ChMatrixDynamic<double> stiffness_matrix_temp(mat_dimension, mat_dimension);
         stiffness_matrix_temp.MatrTMultiply(Bb, temp);
         stiffness_matrix += stiffness_matrix_temp;
         stiffness_matrix *= element_area0;
@@ -389,50 +415,35 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
         }
     }
 
-    void ChElementShellTri_3::SetBC(int BC_on_edge1, int BC_on_edge2, int BC_on_edge3)
+    void ChElementShellTri_3::SetBC(boundary_conditions BC_on_edge1, boundary_conditions BC_on_edge2, boundary_conditions BC_on_edge3)
     {
-        edge_bc[0] = static_cast<boundary_conditions>(BC_on_edge1);
-        edge_bc[1] = static_cast<boundary_conditions>(BC_on_edge2);
-        edge_bc[2] = static_cast<boundary_conditions>(BC_on_edge3);
+        edge_bc[0] = BC_on_edge1;
+        edge_bc[1] = BC_on_edge2;
+        edge_bc[2] = BC_on_edge3;
     }
 
     void ChElementShellTri_3::ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor, double Mfactor)
     {
         // WARNING: the stiffness matrix is supposed to be already updated since ComputeInternalForces()
-        // should have been called previously
+        // should have been previously called
 
-        H.Resize(GetNdofs(), GetNdofs());
+        H.CopyFromMatrix(stiffness_matrix);
 
-        // the N-W corner is always present
-        H.PasteClippedMatrix(&stiffness_matrix, 0, 0, 9, 9, 0, 0);
-
-        // TODO: check if the stiffness matrix is symmetric? I think it isn't...
-        int offset_row = 0;
-        int offset_col;
-        for (auto row_sel = 0; row_sel < 3; row_sel++)
+        // Fill the H matrix with damping and mass; M and R supposed diagonal-block
+        ChMatrix33<double> node_mat;
+        int offset = 0;
+        for (auto node_sel = 0; node_sel<6; node_sel++)
         {
-            if (neighbouring_elements[row_sel].get() == nullptr)
-            {
-                offset_row++;
+            if (!all_nodes[node_sel])
                 continue;
-            }
 
-            offset_col = 0;
-            for (auto col_sel = 0; col_sel < 3; col_sel++)
-            {
-                if (neighbouring_elements[row_sel].get() == nullptr)
-                {
-                    offset_col++;
-                    continue;
-                }
-
-                H.PasteClippedMatrix(&stiffness_matrix, row_sel * 3, col_sel * 3, 3, 3, (row_sel - offset_row) * 3, (col_sel - offset_col) * 3);
-            }
+            getNodeR(node_mat, node_sel, Kfactor);
+            H.PasteSumMatrix(&node_mat, offset * 3, offset * 3);
+            getNodeM(node_mat, node_sel, Mfactor);
+            H.PasteSumMatrix(&node_mat, offset * 3, offset * 3);
+            offset++;
         }
 
-        H.MatrScale(Kfactor);
-
-        getElementMR(H, Mfactor, Kfactor);
     }
 
     void ChElementShellTri_3::ComputeInternalForces(ChMatrixDynamic<>& Fi)
@@ -441,59 +452,59 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
         // TODO: it shouldn't be necessary since K it is updated during Update() call
         Update();
 
-        ChMatrixNM<double, 18, 1> disp_glob;
+        auto mat_dimension = GetNdofs();
+        ChMatrixDynamic<double> disp_glob(mat_dimension, 1);
+
         // paste main_nodes position vectors
+        auto offset = 0;
         for (auto node_sel = 0; node_sel < 6; node_sel++)
         {
-            if (!all_nodes[node_sel])
+            if (all_nodes[node_sel])
             {
-                disp_glob(node_sel * 3) = 0;
-                disp_glob(node_sel * 3 + 1) = 0;
-                disp_glob(node_sel * 3 + 2) = 0;
+                disp_glob.PasteVector(all_nodes[node_sel]->GetPos() - all_nodes[node_sel]->GetX0(), offset * 3, 0);
+                offset++;
             }
-            else
-                disp_glob.PasteVector(all_nodes[node_sel]->GetPos() - all_nodes[node_sel]->GetX0(), node_sel * 3, 0);
         }
 
+        Fi.Resize(mat_dimension, 1);
+        Fi.MatrMultiply(stiffness_matrix, disp_glob);
         
-        if (GetNdofs() == 18)
-        {
-            Fi.Resize(18, 1);
-            Fi.MatrMultiply(stiffness_matrix, disp_glob);
-        }
-        else
-        {
-            Fi.Resize(GetNdofs(), 1);
-
-            ChMatrixNM<double, 18, 1> Fi_temp;
-            Fi_temp.MatrMultiply(stiffness_matrix, disp_glob);
-
-            // paste forces of the three main nodes
-            Fi.PasteClippedMatrix(&Fi_temp, 0, 0, 9, 1, 0, 0);
-
-            // paste forces of the present neigh nodes
-            int offset_row = 0;
-            for (auto neigh_elem_sel = 0; neigh_elem_sel < 3; neigh_elem_sel++)
-            {
-                if (neighbouring_elements[neigh_elem_sel])
-                {
-                    Fi.PasteClippedMatrix(&Fi_temp, (neigh_elem_sel + 3) * 3, 0, 3, 1, (neigh_elem_sel + 3 - offset_row) * 3, 0);
-                }
-                else
-                    offset_row++;
-            }
-        }
     }
 
     void ChElementShellTri_3::SetupInitial(ChSystem* system)
     {
-        m_material->UpdateConsitutiveMatrices();
         updateBC();
 
+        // compute the projections of the neighbours at t0 instead of querying the neighbour
+        ChMatrix33<double> c_proj0_adj_temp;
+        for (auto edge_sel = 0; edge_sel<3; ++edge_sel)
+        {
+            if (!all_nodes[edge_sel+3])
+                continue;
+
+            getElementData(all_nodes[getLocalNodeNumber(edge_sel + 1, 0)]->GetX0(),
+                           all_nodes[getLocalNodeNumber(edge_sel + 1, 1)]->GetX0(),
+                           all_nodes[getLocalNodeNumber(edge_sel + 1, 2)]->GetX0(),
+                           &edge_length0,
+                           &z_versor0,
+                           &element_area0,
+                           &heights0,
+                           &rotGL0,
+                           &gradient_shape_function0,
+                           &gradient_local0,
+                           &gradient_side_n0,
+                           &edge_normal_vers0,
+                           &c_proj0_adj_temp);
+
+            c_proj0_adj.PasteClippedMatrix(&c_proj0_adj_temp, 0, 2, 3, 1, 0, edge_sel);
+        }
+
+        // compute data for main element at t0
         getElementData(all_nodes[0]->GetX0(), all_nodes[1]->GetX0(), all_nodes[2]->GetX0(),
                        &edge_length0,
                        &z_versor0,
                        &element_area0,
+                       &heights0,
                        &rotGL0,
                        &gradient_shape_function0,
                        &gradient_local0,
@@ -509,13 +520,17 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
             L_block0[edge_sel](2) = 2 * gradient_shape_function0(edge_sel, 0)*gradient_shape_function0(edge_sel, 1);
         }
 
-        // Inform the system about which nodes take part to the computation
-        //TODO: do I have to put also neighbouring nodes?
+        // resize stiffness matrix depending on actual number of nodes involved
+        auto mat_dimension = GetNdofs();
+        stiffness_matrix.Resize(mat_dimension, mat_dimension);
+
+        // Inform the system about the nodes that take part to the computation
+        // include also neighbouring nodes
         std::vector<ChVariables*> vars;
-        for (auto node_sel : all_nodes)
+        for (auto node_sel = 0 ; node_sel<6; node_sel++)
         {
-            if (node_sel)
-                vars.push_back(&node_sel->Variables());
+            if (all_nodes[node_sel])
+                vars.push_back(&all_nodes[node_sel]->Variables());
         }
 
         Kmatr.SetVariables(vars);
@@ -549,7 +564,21 @@ int ChElementShellTri_3::getLocalNodeNumber(int element, int neighbour_numbering
 
     void ChElementShellTri_3::ComputeMmatrixGlobal(ChMatrix<>& M)
     {
-        getElementMR(M, 1.0, 0.0);
+        auto mat_dimension = GetNdofs();
+        M.Resize(mat_dimension, mat_dimension);
+
+        // Fill the H matrix with mass matrix
+        ChMatrix33<double> node_mat;
+        int offset = 0;
+        for (auto node_sel = 0; node_sel<6; node_sel++)
+        {
+            if (!all_nodes[node_sel])
+                continue;
+
+            getNodeM(node_mat, node_sel, 1.0f);
+            M.PasteSumMatrix(&node_mat, offset * 3, offset * 3);
+            offset++;
+        }
     }
 
 

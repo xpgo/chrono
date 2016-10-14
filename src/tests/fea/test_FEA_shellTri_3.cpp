@@ -19,6 +19,8 @@
 // basic file operations
 #include <fstream>
 #include <chrono_fea/ChVisualizationFEAmesh.h>
+#include <core/ChCSR3Matrix.h>
+#include <chrono_mkl/ChSolverMKL.h>
 
 #define DUMP_LISTS false
 
@@ -68,15 +70,11 @@ void beam_element()
 
     // x coordinates
     for (size_t col_sel = 0; col_sel < cols_x; col_sel++)
-    {
         loc_x_generator(col_sel) = col_sel*x_step;
-    }
 
     // y coordinates
     for (size_t row_sel = 0; row_sel < rows_y; row_sel++)
-    {
         loc_y_generator(row_sel) = row_sel*y_step;
-    }
 
     // create nodes
     for (size_t row_sel = 0; row_sel < rows_y; row_sel++)
@@ -88,6 +86,13 @@ void beam_element()
             if (col_sel == 0) // fix the base nodes
                 node->SetFixed(true);
 
+            if (col_sel==cols_x-1)
+            {
+                std::cout << "tip node: " << node->GetID() << std::endl;
+                node->SetForce(ChVector<>(0,0, 10000));
+            }
+           
+
             //if (col_sel == cols_x-1)
             //    node->SetPos(ChVector<>(loc_x_generator(col_sel), loc_y_generator(row_sel), -0.1));
 
@@ -95,33 +100,17 @@ void beam_element()
         }
     }
 
-
-    if (DUMP_LISTS)
-    {
-        std::ofstream nodes_list;
-        nodes_list.open("nodes_list.txt");
-        nodes_list << "# Nodes list[NODEID, X, Y, Z]" << std::endl;
-        for (size_t node_sel = 0; node_sel < my_mesh->GetNnodes(); ++node_sel)
-        {
-            nodes_list << my_mesh->GetNode(node_sel).get() << ", "
-                << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(node_sel))->GetPos().x << ", "
-                << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(node_sel))->GetPos().y << ", "
-                << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(node_sel))->GetPos().z << std::endl;
-        }
-        nodes_list.close();
-    }
-
-    for (auto cont = 0; cont < my_mesh->GetNnodes(); cont++)
-    {
-        std::cout << "Node: " << my_mesh->GetNode(cont)->GetID() << std::endl;
-        std::cout << "X0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(0);
-        std::cout << "; X: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(0) << std::endl;
-        std::cout << "Y0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(1);
-        std::cout << "; Y: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(1) << std::endl;
-        std::cout << "Z0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(2);
-        std::cout << "; Z: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(2) << std::endl;
-        std::cout << std::endl;
-    }
+    //for (auto cont = 0; cont < my_mesh->GetNnodes(); cont++)
+    //{
+    //    std::cout << "Node: " << my_mesh->GetNode(cont)->GetID() << std::endl;
+    //    std::cout << "X0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(0);
+    //    std::cout << "; X: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(0) << std::endl;
+    //    std::cout << "Y0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(1);
+    //    std::cout << "; Y: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(1) << std::endl;
+    //    std::cout << "Z0: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetX0()(2);
+    //    std::cout << "; Z: " << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(cont))->GetPos()(2) << std::endl;
+    //    std::cout << std::endl;
+    //}
 
     // create Elements
     auto material = std::make_shared<ChMaterialShellTri_3>(210e9, 0.3, 7850);
@@ -151,22 +140,6 @@ void beam_element()
         }
     }
 
-
-    if (DUMP_LISTS)
-    {
-        std::ofstream elem_list;
-        elem_list.open("elem_list.txt");
-        elem_list << "# Element list [ELEMENTID, NODE1, NODE2, NODE3]" << std::endl;
-        for (size_t elem_sel = 0; elem_sel < my_mesh->GetNelements(); ++elem_sel)
-        {
-            elem_list << std::dynamic_pointer_cast<ChElementGeneric>(my_mesh->GetElement(elem_sel))->GetID() << ", "
-                << my_mesh->GetElement(elem_sel)->GetNodeN(0)->GetID() << ", "
-                << my_mesh->GetElement(elem_sel)->GetNodeN(1)->GetID() << ", "
-                << my_mesh->GetElement(elem_sel)->GetNodeN(2)->GetID() << std::endl;
-        }
-
-        elem_list.close();
-    }
 
     // Switch off mesh class gravity
     my_mesh->SetAutomaticGravity(false);
@@ -240,15 +213,21 @@ void beam_element()
     application.AssetBindAll();
     application.AssetUpdateAll();
 
+    auto mkl_solver = new ChSolverMKL<>();
+    my_system.ChangeSolverSpeed(mkl_solver);
+    mkl_solver->SetSparsityPatternLock(true);
+    mkl_solver->SetVerbose(true);
+    mkl_solver->ForceSparsityPatternUpdate();
+
     // Set up integrator
-    my_system.SetIntegrationType(ChSystem::INT_HHT);
-    auto mystepper = std::static_pointer_cast<ChTimestepperHHT>(my_system.GetTimestepper());
-    mystepper->SetAlpha(-0.2);
-    mystepper->SetMaxiters(100);
-    mystepper->SetAbsTolerances(1e-5);
-    mystepper->SetMode(ChTimestepperHHT::POSITION);
-    mystepper->SetScaling(true);
-    mystepper->SetVerbose(true);
+    //my_system.SetIntegrationType(ChSystem::INT_HHT);
+    //auto mystepper = std::static_pointer_cast<ChTimestepperHHT>(my_system.GetTimestepper());
+    //mystepper->SetAlpha(-0.2);
+    //mystepper->SetMaxiters(100);
+    //mystepper->SetAbsTolerances(1e-5);
+    //mystepper->SetMode(ChTimestepperHHT::POSITION);
+    //mystepper->SetScaling(true);
+    my_system.GetTimestepper()->SetVerbose(true);
 
 
     ChMatrixDynamic<double> H;
@@ -265,6 +244,8 @@ void beam_element()
     //    my_system.DoStepDynamics(step_size);
     //}
 
+
+
     application.SetTimestep(0.001);
     application.BeginScene();
     application.DrawAll();
@@ -274,7 +255,20 @@ void beam_element()
         application.BeginScene();
         application.DrawAll();
         application.DoStep();
-        application.EndScene();
+
+        for (auto row_y_sel = 0; row_y_sel < rows_y; row_y_sel++)
+        {
+            for (auto col_x_sel = 0; col_x_sel < cols_x; col_x_sel++)
+            {
+                GetLog() << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(row_y_sel *cols_x +col_x_sel))->GetPos()(2) << " ";
+            }
+            GetLog() << "\n";
+        }
+
+        my_mesh->GetElement(0)->ComputeInternalForces(Fi);
+        my_mesh->GetElement(0)->ComputeKRMmatricesGlobal(H, 1, 0, 0);
+
+        GetLog() << Fi;
     }
 }
 
@@ -316,24 +310,6 @@ void patch_element()
     my_mesh->AddNode(node4);
     my_mesh->AddNode(node5);
     my_mesh->AddNode(node6);
-
-
-    if (DUMP_LISTS)
-    {
-        std::ofstream nodes_list;
-        nodes_list.open("nodes_list.txt");
-        nodes_list << "# Nodes list[NODEID, X, Y, Z]" << std::endl;
-        for (size_t node_sel = 0; node_sel < my_mesh->GetNnodes(); ++node_sel)
-        {
-            nodes_list << my_mesh->GetNode(node_sel).get() << ", "
-                << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(node_sel))->GetPos().x << ", "
-                << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(node_sel))->GetPos().y << ", "
-                << std::dynamic_pointer_cast<ChNodeFEAxyz>(my_mesh->GetNode(node_sel))->GetPos().z << std::endl;
-        }
-        nodes_list.close();
-    }
-
-
 
     // create Elements
     auto material = std::make_shared<ChMaterialShellTri_3>(210e9, 0.3, 7850);
@@ -404,6 +380,7 @@ void patch_element()
                              &element1->edge_length0,
                              &element1->z_versor0,
                              &element1->element_area0,
+                             &element1->heights0,
                              &element1->rotGL0,
                              &element1->gradient_shape_function0,
                              &element1->gradient_local0,
@@ -415,6 +392,7 @@ void patch_element()
                              &element2->edge_length0,
                              &element2->z_versor0,
                              &element2->element_area0,
+                             &element2->heights0,
                              &element2->rotGL0,
                              &element2->gradient_shape_function0,
                              &element2->gradient_local0,
@@ -426,6 +404,7 @@ void patch_element()
                              &element3->edge_length0,
                              &element3->z_versor0,
                              &element3->element_area0,
+                             &element3->heights0,
                              &element3->rotGL0,
                              &element3->gradient_shape_function0,
                              &element3->gradient_local0,
@@ -488,11 +467,7 @@ void patch_element()
 
 
 
-    ChMatrixDynamic<double> H;
-    ChMatrixDynamic<double> Fi;
-    std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(0))->all_nodes[1]->SetPos(ChVector<double>(1,0.1,0));
-
-
+    std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(0))->all_nodes[3]->SetPos(ChVector<double>(1,1,0.1));
 
 
     for (auto cont = 0; cont < my_mesh->GetNnodes(); cont++)
@@ -525,6 +500,12 @@ void patch_element()
         std::cout << std::endl;
     }
 
+    //std::dynamic_pointer_cast<ChElementShellTri_3>(my_mesh->GetElement(0))->SetBC(ChElementShellTri_3::boundary_conditions::FREE,
+    //                                                                              ChElementShellTri_3::boundary_conditions::DEFAULT,
+    //                                                                              ChElementShellTri_3::boundary_conditions::DEFAULT);
+
+    ChMatrixDynamic<double> H;
+    ChMatrixDynamic<double> Fi;
 
     my_mesh->GetElement(0)->ComputeInternalForces(Fi);
     my_mesh->GetElement(0)->ComputeKRMmatricesGlobal(H, 1, 0, 0);
@@ -554,7 +535,8 @@ void patch_element()
 
 int main(int argc, char* argv[]) {
     
-    patch_element();
+    //patch_element();
+    beam_element();
 
     
     return 0;
