@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -12,12 +12,12 @@
 // Authors: Alessandro Tasora, Radu Serban
 // =============================================================================
 
-#include <float.h>
-#include <math.h>
+#include <cfloat>
+#include <cmath>
 #include <memory.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "chrono/geometry/ChLine.h"
 
@@ -25,17 +25,35 @@ namespace chrono {
 namespace geometry {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChLine> a_registration_ChLine;
+//CH_FACTORY_REGISTER(ChLine)  // NO! Abstract class!
 
 ChLine::ChLine(const ChLine& source) {
     closed = source.closed;
     complexityU = source.complexityU;
 }
 
-int ChLine::FindNearestLinePoint(ChVector<>& point, double& resU, double approxU, double tol) const {
+void ChLine::Derive(ChVector<>& dir, const double parU) const {
+    double bdf = 10e-9;
+    double uA = 0, uB = 0;
+
+    if (parU > 0.5) {
+        uB = parU;
+        uA = parU - bdf;
+    } else {
+        uB = parU + bdf;
+        uA = parU;
+    }
+    ChVector<> vA, vB;
+    Evaluate(vA, uA);
+    Evaluate(vB, uB);
+    dir = (vB - vA) * (1 / bdf);
+}
+
+
+bool ChLine::FindNearestLinePoint(ChVector<>& point, double& resU, double approxU, double tol) const {
     double mu;
     int points = 20;
-    int closed = FALSE;
+    bool closed = false;
     double bestU = 0;
     double bestdist = 9999999;
     double dist, d1, d2;
@@ -86,7 +104,7 @@ int ChLine::FindNearestLinePoint(ChVector<>& point, double& resU, double approxU
     d2 = Vlength(Vsub(vres, point));
     vp2 = vres;
 
-    while (TRUE) {
+    while (true) {
         iters++;
 
         if (nrU < 0) {
@@ -126,16 +144,16 @@ int ChLine::FindNearestLinePoint(ChVector<>& point, double& resU, double approxU
 
         if ((Vlength(Vsub(vp1, vp2)) <= tol) || (dist <= tol)) {
             resU = bestU;
-            return TRUE;
+            return true;
         }
         if (iters > maxiters) {
             resU = bestU;
-            return FALSE;
+            return false;
         }
     }
 
     resU = bestU;
-    return TRUE;
+    return true;
 }
 
 double ChLine::CurveCurveDist(ChLine* compline, int samples) const {
@@ -257,25 +275,25 @@ double ChLine::Length(int sampling) const {
 
 // Draw into the current graph viewport of a ChFile_ps file
 
-int ChLine::DrawPostscript(ChFile_ps* mfle, int markpoints, int bezier_interpolate) {
-    ChPageVect mp1;
+bool ChLine::DrawPostscript(ChFile_ps* mfle, int markpoints, int bezier_interpolate) {
+    ChVector2<> mp1;
     ChVector<> mv1;
 
     mfle->GrSave();
-    mfle->ClipRectangle(mfle->Get_G_p(), mfle->Get_Gs_p(), PS_SPACE_PAGE);
+    mfle->ClipRectangle(mfle->Get_G_p(), mfle->Get_Gs_p(), ChFile_ps::Space::PAGE);
     // start a line, move cursor to beginning
     mfle->StartLine();
     this->Evaluate(mv1, 0.0);
-    mp1.x = mv1.x;
-    mp1.y = mv1.y;
+    mp1.x() = mv1.x();
+    mp1.y() = mv1.y();
     mp1 = mfle->To_page_from_graph(mp1);
     mfle->MoveTo(mp1);
     double maxpoints = this->Get_complexity() * 10;
     // add points into line
     for (int i = 1; i <= maxpoints; i++) {
         this->Evaluate(mv1, ((double)i) / ((double)maxpoints));
-        mp1.x = mv1.x;
-        mp1.y = mv1.y;
+        mp1.x() = mv1.x();
+        mp1.y() = mv1.y();
         mp1 = mfle->To_page_from_graph(mp1);
         mfle->AddLinePoint(mp1);
     }
@@ -285,7 +303,7 @@ int ChLine::DrawPostscript(ChFile_ps* mfle, int markpoints, int bezier_interpola
     mfle->PaintStroke();  // draw it!
     mfle->GrRestore();    // restore old modes, with old clipping
 
-    return TRUE;
+    return true;
 }
 
 }  // end namespace geometry

@@ -1,20 +1,22 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2012 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHCAMERA_H
 #define CHCAMERA_H
 
-
-#include "assets/ChAsset.h"
-#include "core/ChVector.h"
+#include "chrono/assets/ChAsset.h"
+#include "chrono/core/ChVector.h"
 
 namespace chrono {
 
@@ -22,8 +24,6 @@ namespace chrono {
 /// with basic settings
 
 class ChApi ChCamera : public ChAsset {
-    // Chrono RTTI, needed for serialization
-    CH_RTTI(ChCamera, ChAsset);
 
   private:
     //
@@ -112,7 +112,7 @@ class ChApi ChCamera : public ChAsset {
     virtual void ArchiveOUT(ChArchiveOut& marchive)
     {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChCamera>();
         // serialize parent class
         ChAsset::ArchiveOUT(marchive);
         // serialize all member data:
@@ -129,7 +129,7 @@ class ChApi ChCamera : public ChAsset {
     virtual void ArchiveIN(ChArchiveIn& marchive) 
     {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChCamera>();
         // deserialize parent class
         ChAsset::ArchiveIN(marchive);
         // stream in all member data:
@@ -143,9 +143,8 @@ class ChApi ChCamera : public ChAsset {
     }
 };
 
-//////////////////////////////////////////////////////
-//////////////////////////////////////////////////////
+CH_CLASS_VERSION(ChCamera,0)
 
-}  // END_OF_NAMESPACE____
+}  // end namespace chrono
 
 #endif

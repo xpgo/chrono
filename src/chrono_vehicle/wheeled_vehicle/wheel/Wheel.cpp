@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -20,6 +20,7 @@
 
 #include "chrono_vehicle/wheeled_vehicle/wheel/Wheel.h"
 #include "chrono_vehicle/ChVehicleModelData.h"
+#include "chrono_vehicle/utils/ChUtilsJSON.h"
 
 #include "chrono_thirdparty/rapidjson/filereadstream.h"
 
@@ -27,16 +28,6 @@ using namespace rapidjson;
 
 namespace chrono {
 namespace vehicle {
-
-// -----------------------------------------------------------------------------
-// This utility function returns a ChVector from the specified JSON array
-// -----------------------------------------------------------------------------
-static ChVector<> loadVector(const Value& a) {
-    assert(a.IsArray());
-    assert(a.Size() == 3);
-
-    return ChVector<>(a[0u].GetDouble(), a[1u].GetDouble(), a[2u].GetDouble());
-}
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
@@ -49,7 +40,7 @@ Wheel::Wheel(const std::string& filename) : ChWheel(""), m_radius(0), m_width(0)
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     Create(d);
 
@@ -70,7 +61,7 @@ void Wheel::Create(const rapidjson::Document& d) {
 
     // Read mass and inertia
     m_mass = d["Mass"].GetDouble();
-    m_inertia = loadVector(d["Inertia"]);
+    m_inertia = LoadVectorJSON(d["Inertia"]);
 
     // Check how to visualize this wheel.
     if (d.HasMember("Visualization")) {

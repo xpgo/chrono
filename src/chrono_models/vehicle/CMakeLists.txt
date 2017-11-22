@@ -12,6 +12,7 @@ message(STATUS "Models for the VEHICLE module...")
 
 set(CVM_COMMON_FILES
     ../ChApiModels.h
+    ChVehicleModelDefs.h
 )
 source_group("" FILES ${CVM_COMMON_FILES})
 
@@ -30,22 +31,30 @@ set(CVM_HMMWV_FILES
     hmmwv/HMMWV_Driveline2WD.h
     hmmwv/HMMWV_Driveline4WD.cpp
     hmmwv/HMMWV_Driveline4WD.h
+    hmmwv/HMMWV_RigidTire.cpp
+    hmmwv/HMMWV_RigidTire.h
     hmmwv/HMMWV_FialaTire.cpp
     hmmwv/HMMWV_FialaTire.h
     hmmwv/HMMWV_LugreTire.cpp
     hmmwv/HMMWV_LugreTire.h
+    hmmwv/HMMWV_Pac02Tire.cpp
+    hmmwv/HMMWV_Pac02Tire.h
+    hmmwv/HMMWV_Pac89Tire.cpp
+    hmmwv/HMMWV_Pac89Tire.h
+    hmmwv/HMMWV_TMeasyTire.cpp
+    hmmwv/HMMWV_TMeasyTire.h
     hmmwv/HMMWV_PitmanArm.cpp
     hmmwv/HMMWV_PitmanArm.h
     hmmwv/HMMWV_Powertrain.cpp
     hmmwv/HMMWV_Powertrain.h
     hmmwv/HMMWV_RackPinion.cpp
     hmmwv/HMMWV_RackPinion.h
-    hmmwv/HMMWV_RigidTire.cpp
-    hmmwv/HMMWV_RigidTire.h
     hmmwv/HMMWV_SimpleDriveline.cpp
     hmmwv/HMMWV_SimpleDriveline.h
     hmmwv/HMMWV_SimplePowertrain.cpp
     hmmwv/HMMWV_SimplePowertrain.h
+    hmmwv/HMMWV_SimpleMapPowertrain.cpp
+    hmmwv/HMMWV_SimpleMapPowertrain.h
     hmmwv/HMMWV_Vehicle.h
     hmmwv/HMMWV_VehicleFull.cpp
     hmmwv/HMMWV_VehicleFull.h
@@ -58,7 +67,7 @@ if(ENABLE_MODULE_FEA)
   set(CVM_HMMWV_FEA_FILES
       hmmwv/HMMWV_ANCFTire.cpp
       hmmwv/HMMWV_ANCFTire.h
-	  hmmwv/HMMWV_ReissnerTire.cpp
+      hmmwv/HMMWV_ReissnerTire.cpp
       hmmwv/HMMWV_ReissnerTire.h
   )
 else()
@@ -88,18 +97,24 @@ set(CVM_GENERIC_FILES
     generic/Generic_RackPinion.cpp
     generic/Generic_RigidTire.h
     generic/Generic_RigidTire.cpp
-	generic/Generic_FialaTire.h
-	generic/Generic_FialaTire.cpp
+    generic/Generic_FialaTire.h
+    generic/Generic_FialaTire.cpp
     generic/Generic_SimplePowertrain.h
     generic/Generic_SimplePowertrain.cpp
-	generic/Generic_SimpleMapPowertrain.cpp
-	generic/Generic_SimpleMapPowertrain.h
+    generic/Generic_SimpleMapPowertrain.cpp
+    generic/Generic_SimpleMapPowertrain.h
     generic/Generic_SolidAxle.cpp
     generic/Generic_SolidAxle.h
     generic/Generic_Vehicle.cpp
     generic/Generic_Vehicle.h
     generic/Generic_Wheel.h
     generic/Generic_Wheel.cpp
+    generic/Generic_SimpleDriveline.cpp
+    generic/Generic_SimpleDriveline.h
+    generic/Generic_RigidSuspension.h
+    generic/Generic_RigidSuspension.cpp
+    generic/Generic_RigidPinnedAxle.h
+    generic/Generic_RigidPinnedAxle.cpp
 )
 source_group("generic" FILES ${CVM_GENERIC_FILES})
 
@@ -138,6 +153,34 @@ set(CVM_M113_FILES
 )
 source_group("m113" FILES ${CVM_M113_FILES})
 
+set(CVM_M113_A_FILES
+    m113a/M113a_BrakeSimple.h
+    m113a/M113a_Chassis.cpp
+    m113a/M113a_Chassis.h
+    m113a/M113a_DrivelineBDS.cpp
+    m113a/M113a_DrivelineBDS.h
+    m113a/M113a_Idler.cpp
+    m113a/M113a_Idler.h
+    m113a/M113a_RoadWheel.cpp
+    m113a/M113a_RoadWheel.h
+    m113a/M113a_ShaftsPowertrain.cpp
+    m113a/M113a_ShaftsPowertrain.h
+    m113a/M113a_SimpleDriveline.cpp
+    m113a/M113a_SimpleDriveline.h
+    m113a/M113a_SimplePowertrain.cpp
+    m113a/M113a_SimplePowertrain.h
+    m113a/M113a_SprocketSinglePin.cpp
+    m113a/M113a_SprocketSinglePin.h
+    m113a/M113a_Suspension.cpp
+    m113a/M113a_Suspension.h
+    m113a/M113a_TrackAssemblySinglePin.cpp
+    m113a/M113a_TrackAssemblySinglePin.h
+    m113a/M113a_TrackShoeSinglePin.cpp
+    m113a/M113a_TrackShoeSinglePin.h
+    m113a/M113a_Vehicle.cpp
+    m113a/M113a_Vehicle.h
+ )
+source_group("m113a" FILES ${CVM_M113_A_FILES})
 
 # ----------------------------------------------------------------------------
 # Add the Chrono_vehicle_models library
@@ -162,6 +205,7 @@ add_library(ChronoModels_vehicle SHARED
     ${CVM_HMMWV_FEA_FILES}
     ${CVM_GENERIC_FILES}
     ${CVM_M113_FILES}
+    ${CVM_M113_A_FILES}
  )
 
 set_target_properties(ChronoModels_vehicle PROPERTIES
@@ -177,5 +221,5 @@ install(TARGETS ChronoModels_vehicle
         ARCHIVE DESTINATION lib64)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
-        DESTINATION include/chrono_vehicle/models/vehicle
+        DESTINATION include/chrono_models/vehicle
         FILES_MATCHING PATTERN "*.h")

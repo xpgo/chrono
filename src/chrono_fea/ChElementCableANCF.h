@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -71,7 +71,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
     virtual int GetNdofs() override { return 2 * 6; }
     virtual int GetNodeNdofs(int n) override { return 6; }
 
-    virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
+    virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) override { return nodes[n]; }
 
     virtual void SetNodes(std::shared_ptr<ChNodeFEAxyzD> nodeA, std::shared_ptr<ChNodeFEAxyzD> nodeB) {
         assert(nodeA);
@@ -104,7 +104,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
     std::shared_ptr<ChNodeFEAxyzD> GetNodeB() { return nodes[1]; }
 
     /// Fills the N shape function matrix with the
-    /// values of shape functions at abscyssa 'xi'.
+    /// values of shape functions at abscissa 'xi'.
     /// Note, xi=0 at node1, xi=+1 at node2.
     /// NOTE! actually N should be a 3row, 12 column sparse matrix,
     /// as  N = [s1*eye(3) s2*eye(3) s3*eye(3) s4*eye(3)]; ,
@@ -120,7 +120,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
     };
 
     /// Fills the N shape function derivative matrix with the
-    /// values of shape function derivatives at abscyssa 'xi'.
+    /// values of shape function derivatives at abscissa 'xi'.
     /// Note, xi=0 at node1, xi=+1 at node2.
     /// NOTE! to avoid wasting zero and repeated elements, here
     /// it stores only the four values in a 1 row, 4 columns matrix!
@@ -141,7 +141,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
         Ndd(3) = (-2 + 6 * xi) / l;
     };
 
-    virtual void Update() {
+    virtual void Update() override {
         // parent class update:
         ChElementGeneric::Update();
     };
@@ -150,7 +150,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
     /// field values at the nodes of the element, with proper ordering.
     /// If the D vector has not the size of this->GetNdofs(), it will be resized.
     ///  {x_a y_a z_a Dx_a Dx_a Dx_a x_b y_b z_b Dx_b Dy_b Dz_b}
-    virtual void GetStateBlock(ChMatrixDynamic<>& mD) {
+    virtual void GetStateBlock(ChMatrixDynamic<>& mD) override {
         mD.Reset(12, 1);
 
         mD.PasteVector(this->nodes[0]->GetPos(), 0, 0);
@@ -189,93 +189,93 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
 
             // Add part of the Jacobian stemming from elastic forces
             for (int inode = 0; inode < 2; ++inode) {
-                pos[inode].x += diff;
+                pos[inode].x() += diff;
                 this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                  F1);
                 Kcolumn = (F0 - F1) * (1.0 / diff) * Kfactor;
-                this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 0 + inode * 6);
-                pos[inode].x -= diff;
+                this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 0 + inode * 6);
+                pos[inode].x() -= diff;
 
-                pos[inode].y += diff;
+                pos[inode].y() += diff;
                 this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                  F1);
                 Kcolumn = (F0 - F1) * (1.0 / diff) * Kfactor;
-                this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 1 + inode * 6);
-                pos[inode].y -= diff;
+                this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 1 + inode * 6);
+                pos[inode].y() -= diff;
 
-                pos[inode].z += diff;
+                pos[inode].z() += diff;
                 this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                  F1);
                 Kcolumn = (F0 - F1) * (1.0 / diff) * Kfactor;
-                this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 2 + inode * 6);
-                pos[inode].z -= diff;
+                this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 2 + inode * 6);
+                pos[inode].z() -= diff;
 
-                D[inode].x += diff;
+                D[inode].x() += diff;
                 this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                  F1);
                 Kcolumn = (F0 - F1) * (1.0 / diff) * Kfactor;
-                this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 3 + inode * 6);
-                D[inode].x -= diff;
+                this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 3 + inode * 6);
+                D[inode].x() -= diff;
 
-                D[inode].y += diff;
+                D[inode].y() += diff;
                 this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                  F1);
                 Kcolumn = (F0 - F1) * (1.0 / diff) * Kfactor;
-                this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 4 + inode * 6);
-                D[inode].y -= diff;
+                this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 4 + inode * 6);
+                D[inode].y() -= diff;
 
-                D[inode].z += diff;
+                D[inode].z() += diff;
                 this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                  F1);
                 Kcolumn = (F0 - F1) * (1.0 / diff) * Kfactor;
-                this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 5 + inode * 6);
-                D[inode].z -= diff;
+                this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 5 + inode * 6);
+                D[inode].z() -= diff;
             }
 
             // Add part of the Jacobian stemming from internal damping forces, if selected by user.
             if (m_use_damping) {
                 for (int inode = 0; inode < 2; ++inode) {
-                    pos_dt[inode].x += diff;
+                    pos_dt[inode].x() += diff;
                     this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                      F1);
                     Kcolumn = (F0 - F1) * (1.0 / diff) * Rfactor;
-                    this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 0 + inode * 6);
-                    pos_dt[inode].x -= diff;
+                    this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 0 + inode * 6);
+                    pos_dt[inode].x() -= diff;
 
-                    pos_dt[inode].y += diff;
+                    pos_dt[inode].y() += diff;
                     this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                      F1);
                     Kcolumn = (F0 - F1) * (1.0 / diff) * Rfactor;
-                    this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 1 + inode * 6);
-                    pos_dt[inode].y -= diff;
+                    this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 1 + inode * 6);
+                    pos_dt[inode].y() -= diff;
 
-                    pos_dt[inode].z += diff;
+                    pos_dt[inode].z() += diff;
                     this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                      F1);
                     Kcolumn = (F0 - F1) * (1.0 / diff) * Rfactor;
-                    this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 2 + inode * 6);
-                    pos_dt[inode].z -= diff;
+                    this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 2 + inode * 6);
+                    pos_dt[inode].z() -= diff;
 
-                    D_dt[inode].x += diff;
+                    D_dt[inode].x() += diff;
                     this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                      F1);
                     Kcolumn = (F0 - F1) * (1.0 / diff) * Rfactor;
-                    this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 3 + inode * 6);
-                    D_dt[inode].x -= diff;
+                    this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 3 + inode * 6);
+                    D_dt[inode].x() -= diff;
 
-                    D_dt[inode].y += diff;
+                    D_dt[inode].y() += diff;
                     this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                      F1);
                     Kcolumn = (F0 - F1) * (1.0 / diff) * Rfactor;
-                    this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 4 + inode * 6);
-                    D_dt[inode].y -= diff;
+                    this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 4 + inode * 6);
+                    D_dt[inode].y() -= diff;
 
-                    D_dt[inode].z += diff;
+                    D_dt[inode].z() += diff;
                     this->ComputeInternalForces_Impl(pos[0], D[0], pos[1], D[1], pos_dt[0], D_dt[0], pos_dt[1], D_dt[1],
                                                      F1);
                     Kcolumn = (F0 - F1) * (1.0 / diff) * Rfactor;
-                    this->m_JacobianMatrix.PasteClippedMatrix(&Kcolumn, 0, 0, 12, 1, 0, 5 + inode * 6);
-                    D_dt[inode].z -= diff;
+                    this->m_JacobianMatrix.PasteClippedMatrix(Kcolumn, 0, 0, 12, 1, 0, 5 + inode * 6);
+                    D_dt[inode].z() -= diff;
                 }
             }
         }
@@ -297,18 +297,18 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
 
             // this matrix will be used in both MyStiffnessAxial and MyStiffnessCurv integrators
             ChMatrixNM<double, 4, 3> d;
-            d(0, 0) = pA.x;
-            d(0, 1) = pA.y;
-            d(0, 2) = pA.z;
-            d(1, 0) = dA.x;
-            d(1, 1) = dA.y;
-            d(1, 2) = dA.z;
-            d(2, 0) = pB.x;
-            d(2, 1) = pB.y;
-            d(2, 2) = pB.z;
-            d(3, 0) = dB.x;
-            d(3, 1) = dB.y;
-            d(3, 2) = dB.z;
+            d(0, 0) = pA.x();
+            d(0, 1) = pA.y();
+            d(0, 2) = pA.z();
+            d(1, 0) = dA.x();
+            d(1, 1) = dA.y();
+            d(1, 2) = dA.z();
+            d(2, 0) = pB.x();
+            d(2, 1) = pB.y();
+            d(2, 2) = pB.z();
+            d(3, 0) = dB.x();
+            d(3, 1) = dB.y();
+            d(3, 2) = dB.z();
 
             /// 1)
             /// Integrate   ((strainD'*strainD)+(strain*Sd'*Sd))
@@ -332,13 +332,13 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
                     // Sd=[Nd1*eye(3) Nd2*eye(3) Nd3*eye(3) Nd4*eye(3)]
                     ChMatrix33<> Sdi;
                     Sdi.FillDiag(Nd(0));
-                    Sd.PasteMatrix(&Sdi, 0, 0);
+                    Sd.PasteMatrix(Sdi, 0, 0);
                     Sdi.FillDiag(Nd(1));
-                    Sd.PasteMatrix(&Sdi, 0, 3);
+                    Sd.PasteMatrix(Sdi, 0, 3);
                     Sdi.FillDiag(Nd(2));
-                    Sd.PasteMatrix(&Sdi, 0, 6);
+                    Sd.PasteMatrix(Sdi, 0, 6);
                     Sdi.FillDiag(Nd(3));
-                    Sd.PasteMatrix(&Sdi, 0, 9);
+                    Sd.PasteMatrix(Sdi, 0, 9);
 
                     Nd_d = Nd * (*d);
 
@@ -404,22 +404,22 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
                     // Sdd=[Ndd1*eye(3) Ndd2*eye(3) Ndd3*eye(3) Ndd4*eye(3)]
                     ChMatrix33<> Sdi;
                     Sdi.FillDiag(Nd(0));
-                    Sd.PasteMatrix(&Sdi, 0, 0);
+                    Sd.PasteMatrix(Sdi, 0, 0);
                     Sdi.FillDiag(Nd(1));
-                    Sd.PasteMatrix(&Sdi, 0, 3);
+                    Sd.PasteMatrix(Sdi, 0, 3);
                     Sdi.FillDiag(Nd(2));
-                    Sd.PasteMatrix(&Sdi, 0, 6);
+                    Sd.PasteMatrix(Sdi, 0, 6);
                     Sdi.FillDiag(Nd(3));
-                    Sd.PasteMatrix(&Sdi, 0, 9);
+                    Sd.PasteMatrix(Sdi, 0, 9);
 
                     Sdi.FillDiag(Ndd(0));
-                    Sdd.PasteMatrix(&Sdi, 0, 0);
+                    Sdd.PasteMatrix(Sdi, 0, 0);
                     Sdi.FillDiag(Ndd(1));
-                    Sdd.PasteMatrix(&Sdi, 0, 3);
+                    Sdd.PasteMatrix(Sdi, 0, 3);
                     Sdi.FillDiag(Ndd(2));
-                    Sdd.PasteMatrix(&Sdi, 0, 6);
+                    Sdd.PasteMatrix(Sdi, 0, 6);
                     Sdi.FillDiag(Ndd(3));
-                    Sdd.PasteMatrix(&Sdi, 0, 9);
+                    Sdd.PasteMatrix(Sdi, 0, 9);
 
                     r_x.MatrMultiply(Nd, *d);    // r_x=d'*Nd';  (transposed)
                     r_xx.MatrMultiply(Ndd, *d);  // r_xx=d'*Ndd';  (transposed)
@@ -511,13 +511,13 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
                 // S=[N1*eye(3) N2*eye(3) N3*eye(3) N4*eye(3)]
                 ChMatrix33<> Si;
                 Si.FillDiag(N(0));
-                S.PasteMatrix(&Si, 0, 0);
+                S.PasteMatrix(Si, 0, 0);
                 Si.FillDiag(N(1));
-                S.PasteMatrix(&Si, 0, 3);
+                S.PasteMatrix(Si, 0, 3);
                 Si.FillDiag(N(2));
-                S.PasteMatrix(&Si, 0, 6);
+                S.PasteMatrix(Si, 0, 6);
                 Si.FillDiag(N(3));
-                S.PasteMatrix(&Si, 0, 9);
+                S.PasteMatrix(Si, 0, 9);
                 // perform  r = S'*S
                 result.MatrTMultiply(S, S);
             }
@@ -564,7 +564,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
 
     /// Sets H as the global stiffness matrix K, scaled  by Kfactor. Optionally, also
     /// superimposes global damping matrix R, scaled by Rfactor, and global mass matrix M multiplied by Mfactor.
-    virtual void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor = 0, double Mfactor = 0) {
+    virtual void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor = 0, double Mfactor = 0) override {
         assert((H.GetRows() == 12) && (H.GetColumns() == 12));
         assert(section);
 
@@ -579,7 +579,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
 
     /// Computes the internal forces and set values in the Fi vector.
     /// (ex. the actual position of nodes is not in relaxed reference position).
-    virtual void ComputeInternalForces(ChMatrixDynamic<>& Fi) {
+    virtual void ComputeInternalForces(ChMatrixDynamic<>& Fi) override {
         ComputeInternalForces_Impl(this->nodes[0]->GetPos(), this->nodes[0]->GetD(), this->nodes[1]->GetPos(),
                                    this->nodes[1]->GetD(), this->nodes[0]->GetPos_dt(), this->nodes[0]->GetD_dt(),
                                    this->nodes[1]->GetPos_dt(), this->nodes[1]->GetD_dt(), Fi);
@@ -608,33 +608,33 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
 
         // this matrix will be used in both MyForcesAxial and MyForcesCurv integrators
         ChMatrixNM<double, 4, 3> d;
-        d(0, 0) = pA.x;
-        d(0, 1) = pA.y;
-        d(0, 2) = pA.z;
-        d(1, 0) = dA.x;
-        d(1, 1) = dA.y;
-        d(1, 2) = dA.z;
-        d(2, 0) = pB.x;
-        d(2, 1) = pB.y;
-        d(2, 2) = pB.z;
-        d(3, 0) = dB.x;
-        d(3, 1) = dB.y;
-        d(3, 2) = dB.z;
+        d(0, 0) = pA.x();
+        d(0, 1) = pA.y();
+        d(0, 2) = pA.z();
+        d(1, 0) = dA.x();
+        d(1, 1) = dA.y();
+        d(1, 2) = dA.z();
+        d(2, 0) = pB.x();
+        d(2, 1) = pB.y();
+        d(2, 2) = pB.z();
+        d(3, 0) = dB.x();
+        d(3, 1) = dB.y();
+        d(3, 2) = dB.z();
 
         // this matrix will be used in both MyForcesAxial and MyForcesCurv integrators
         ChMatrixNM<double, 12, 1> vel_vector;
-        vel_vector(0, 0) = pA_dt.x;
-        vel_vector(1, 0) = pA_dt.y;
-        vel_vector(2, 0) = pA_dt.z;
-        vel_vector(3, 0) = dA_dt.x;
-        vel_vector(4, 0) = dA_dt.y;
-        vel_vector(5, 0) = dA_dt.z;
-        vel_vector(6, 0) = pB_dt.x;
-        vel_vector(7, 0) = pB_dt.y;
-        vel_vector(8, 0) = pB_dt.z;
-        vel_vector(9, 0) = dB_dt.x;
-        vel_vector(10, 0) = dB_dt.y;
-        vel_vector(11, 0) = dB_dt.z;
+        vel_vector(0, 0) = pA_dt.x();
+        vel_vector(1, 0) = pA_dt.y();
+        vel_vector(2, 0) = pA_dt.z();
+        vel_vector(3, 0) = dA_dt.x();
+        vel_vector(4, 0) = dA_dt.y();
+        vel_vector(5, 0) = dA_dt.z();
+        vel_vector(6, 0) = pB_dt.x();
+        vel_vector(7, 0) = pB_dt.y();
+        vel_vector(8, 0) = pB_dt.z();
+        vel_vector(9, 0) = dB_dt.x();
+        vel_vector(10, 0) = dB_dt.y();
+        vel_vector(11, 0) = dB_dt.z();
         /// 1)
         /// Integrate   (strainD'*strain)
 
@@ -658,13 +658,13 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
                 // Sd=[Nd1*eye(3) Nd2*eye(3) Nd3*eye(3) Nd4*eye(3)]
                 ChMatrix33<> Sdi;
                 Sdi.FillDiag(Nd(0));
-                Sd.PasteMatrix(&Sdi, 0, 0);
+                Sd.PasteMatrix(Sdi, 0, 0);
                 Sdi.FillDiag(Nd(1));
-                Sd.PasteMatrix(&Sdi, 0, 3);
+                Sd.PasteMatrix(Sdi, 0, 3);
                 Sdi.FillDiag(Nd(2));
-                Sd.PasteMatrix(&Sdi, 0, 6);
+                Sd.PasteMatrix(Sdi, 0, 6);
                 Sdi.FillDiag(Nd(3));
-                Sd.PasteMatrix(&Sdi, 0, 9);
+                Sd.PasteMatrix(Sdi, 0, 9);
 
                 Nd_d = Nd * (*d);
 
@@ -729,22 +729,22 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
                 // Sdd=[Ndd1*eye(3) Ndd2*eye(3) Ndd3*eye(3) Ndd4*eye(3)]
                 ChMatrix33<> Sdi;
                 Sdi.FillDiag(Nd(0));
-                Sd.PasteMatrix(&Sdi, 0, 0);
+                Sd.PasteMatrix(Sdi, 0, 0);
                 Sdi.FillDiag(Nd(1));
-                Sd.PasteMatrix(&Sdi, 0, 3);
+                Sd.PasteMatrix(Sdi, 0, 3);
                 Sdi.FillDiag(Nd(2));
-                Sd.PasteMatrix(&Sdi, 0, 6);
+                Sd.PasteMatrix(Sdi, 0, 6);
                 Sdi.FillDiag(Nd(3));
-                Sd.PasteMatrix(&Sdi, 0, 9);
+                Sd.PasteMatrix(Sdi, 0, 9);
 
                 Sdi.FillDiag(Ndd(0));
-                Sdd.PasteMatrix(&Sdi, 0, 0);
+                Sdd.PasteMatrix(Sdi, 0, 0);
                 Sdi.FillDiag(Ndd(1));
-                Sdd.PasteMatrix(&Sdi, 0, 3);
+                Sdd.PasteMatrix(Sdi, 0, 3);
                 Sdi.FillDiag(Ndd(2));
-                Sdd.PasteMatrix(&Sdi, 0, 6);
+                Sdd.PasteMatrix(Sdi, 0, 6);
                 Sdi.FillDiag(Ndd(3));
-                Sdd.PasteMatrix(&Sdi, 0, 9);
+                Sdd.PasteMatrix(Sdi, 0, 9);
 
                 r_x.MatrMultiply(Nd, (*d));    // r_x=d'*Nd';  (transposed)
                 r_xx.MatrMultiply(Ndd, (*d));  // r_xx=d'*Ndd';  (transposed)
@@ -816,14 +816,14 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
     //
 
     /// Gets the xyz displacement of a point on the beam line,
-    /// and the rotation RxRyRz of section plane, at abscyssa 'eta'.
+    /// and the rotation RxRyRz of section plane, at abscissa 'eta'.
     /// Note, eta=-1 at node1, eta=+1 at node2.
     /// Note, 'displ' is the displ.state of 2 nodes, ex. get it as GetStateBlock()
     /// Results are not corotated.
     virtual void EvaluateSectionDisplacement(const double eta,
                                              const ChMatrix<>& displ,
                                              ChVector<>& u_displ,
-                                             ChVector<>& u_rotaz) {
+                                             ChVector<>& u_rotaz) override {
         ChMatrixNM<double, 1, 4> N;
 
         double xi = (eta + 1.0) * 0.5;
@@ -835,14 +835,14 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
     }
 
     /// Gets the absolute xyz position of a point on the beam line,
-    /// and the absolute rotation of section plane, at abscyssa 'eta'.
+    /// and the absolute rotation of section plane, at abscissa 'eta'.
     /// Note, eta=-1 at node1, eta=+1 at node2.
     /// Note, 'displ' is the displ.state of 2 nodes, ex. get it as GetStateBlock()
     /// Results are corotated (expressed in world reference)
     virtual void EvaluateSectionFrame(const double eta,
                                       const ChMatrix<>& displ,
                                       ChVector<>& point,
-                                      ChQuaternion<>& rot) {
+                                      ChQuaternion<>& rot) override {
         ChVector<> u_displ;
         ChVector<> u_rotaz;
 
@@ -857,17 +857,17 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
         ChVector<> pB = this->nodes[1]->GetPos();
         ChVector<> dB = this->nodes[1]->GetD();
 
-        point.x = N(0) * pA.x + N(1) * dA.x + N(2) * pB.x + N(3) * dB.x;
-        point.y = N(0) * pA.y + N(1) * dA.y + N(2) * pB.y + N(3) * dB.y;
-        point.z = N(0) * pA.z + N(1) * dA.z + N(2) * pB.z + N(3) * dB.z;
+        point.x() = N(0) * pA.x() + N(1) * dA.x() + N(2) * pB.x() + N(3) * dB.x();
+        point.y() = N(0) * pA.y() + N(1) * dA.y() + N(2) * pB.y() + N(3) * dB.y();
+        point.z() = N(0) * pA.z() + N(1) * dA.z() + N(2) * pB.z() + N(3) * dB.z();
 
         this->ShapeFunctionsDerivatives(N, xi);
 
         ChVector<> Dx;
 
-        Dx.x = N(0) * pA.x + N(1) * dA.x + N(2) * pB.x + N(3) * dB.x;
-        Dx.y = N(0) * pA.y + N(1) * dA.y + N(2) * pB.y + N(3) * dB.y;
-        Dx.z = N(0) * pA.z + N(1) * dA.z + N(2) * pB.z + N(3) * dB.z;
+        Dx.x() = N(0) * pA.x() + N(1) * dA.x() + N(2) * pB.x() + N(3) * dB.x();
+        Dx.y() = N(0) * pA.y() + N(1) * dA.y() + N(2) * pB.y() + N(3) * dB.y();
+        Dx.z() = N(0) * pA.z() + N(1) * dA.z() + N(2) * pB.z() + N(3) * dB.z();
 
         // This element has no torsional dof, so once we have the Dx direction
         // of the line, we must compute the Dy and Dz directions by using a
@@ -882,7 +882,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
 
     /// Gets the force (traction x, shear y, shear z) and the
     /// torque (torsion on x, bending on y, on bending on z) at a section along
-    /// the beam line, at abscyssa 'eta'.
+    /// the beam line, at abscissa 'eta'.
     /// Note, eta=-1 at node1, eta=+1 at node2.
     /// Note, 'displ' is the displ.state of 2 nodes, ex. get it as GetStateBlock().
     /// Results are not corotated, and are expressed in the reference system of beam.
@@ -891,7 +891,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
     virtual void EvaluateSectionForceTorque(const double eta,
                                             const ChMatrix<>& displ,
                                             ChVector<>& Fforce,
-                                            ChVector<>& Mtorque) {
+                                            ChVector<>& Mtorque) override {
         assert(section);
 
         ChMatrixNM<double, 1, 4> N;
@@ -904,7 +904,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
     }
     /// Gets the axial and bending strain of the ANCF element
     /// torque (torsion on x, bending on y, on bending on z) at a section along
-    /// the beam line, at abscyssa 'eta'.
+    /// the beam line, at abscissa 'eta'.
     /// Note, eta=-1 at node1, eta=+1 at node2.
     /// Note, 'displ' is the displ.state of 2 nodes, ex. get it as GetStateBlock().
     /// Results are not corotated, and are expressed in the reference system of beam.
@@ -931,22 +931,22 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
 
         this->GetStateBlock(mD);
         Sdi.FillDiag(Nd(0));
-        Sd.PasteMatrix(&Sdi, 0, 0);
+        Sd.PasteMatrix(Sdi, 0, 0);
         Sdi.FillDiag(Nd(1));
-        Sd.PasteMatrix(&Sdi, 0, 3);
+        Sd.PasteMatrix(Sdi, 0, 3);
         Sdi.FillDiag(Nd(2));
-        Sd.PasteMatrix(&Sdi, 0, 6);
+        Sd.PasteMatrix(Sdi, 0, 6);
         Sdi.FillDiag(Nd(3));
-        Sd.PasteMatrix(&Sdi, 0, 9);
+        Sd.PasteMatrix(Sdi, 0, 9);
         Sdi.Reset();
         Sdi.FillDiag(Ndd(0));
-        Sdd.PasteMatrix(&Sdi, 0, 0);
+        Sdd.PasteMatrix(Sdi, 0, 0);
         Sdi.FillDiag(Ndd(1));
-        Sdd.PasteMatrix(&Sdi, 0, 3);
+        Sdd.PasteMatrix(Sdi, 0, 3);
         Sdi.FillDiag(Ndd(2));
-        Sdd.PasteMatrix(&Sdi, 0, 6);
+        Sdd.PasteMatrix(Sdi, 0, 6);
         Sdi.FillDiag(Ndd(3));
-        Sdd.PasteMatrix(&Sdi, 0, 9);
+        Sdd.PasteMatrix(Sdi, 0, 9);
 
         r_x.MatrMultiply(Sd, mD);  // r_x=d'*Nd';  (transposed)
         r_xx.MatrMultiply(Sdd, mD);
@@ -958,8 +958,8 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
         double g1 = vr_x.Length();
         double g = pow(g1, 3);
 
-        StrainV.x = (pow(r_x(0), 2) + pow(r_x(1), 2) + pow(r_x(2), 2) - 1.0);
-        StrainV.y = f / g;  // Bending strain measure (Gertmayer and Shabana, 2006)
+        StrainV.x() = (pow(r_x(0), 2) + pow(r_x(1), 2) + pow(r_x(2), 2) - 1.0);
+        StrainV.y() = f / g;  // Bending strain measure (Gertmayer and Shabana, 2006)
     }
 
     /// Set structural damping.
@@ -978,13 +978,13 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
     //
 
     /// Gets the number of DOFs affected by this element (position part)
-    virtual int LoadableGet_ndof_x() { return 2 * 6; }
+    virtual int LoadableGet_ndof_x() override { return 2 * 6; }
 
     /// Gets the number of DOFs affected by this element (speed part)
-    virtual int LoadableGet_ndof_w() { return 2 * 6; }
+    virtual int LoadableGet_ndof_w() override { return 2 * 6; }
 
     /// Gets all the DOFs packed in a single vector (position part)
-    virtual void LoadableGetStateBlock_x(int block_offset, ChVectorDynamic<>& mD) {
+    virtual void LoadableGetStateBlock_x(int block_offset, ChState& mD) override {
         mD.PasteVector(this->nodes[0]->GetPos(), block_offset, 0);
         mD.PasteVector(this->nodes[0]->GetD(), block_offset + 3, 0);
         mD.PasteVector(this->nodes[1]->GetPos(), block_offset + 6, 0);
@@ -992,28 +992,34 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
     }
 
     /// Gets all the DOFs packed in a single vector (speed part)
-    virtual void LoadableGetStateBlock_w(int block_offset, ChVectorDynamic<>& mD) {
+    virtual void LoadableGetStateBlock_w(int block_offset, ChStateDelta& mD) override {
         mD.PasteVector(this->nodes[0]->GetPos_dt(), block_offset, 0);
         mD.PasteVector(this->nodes[0]->GetD_dt(), block_offset + 3, 0);
         mD.PasteVector(this->nodes[1]->GetPos_dt(), block_offset + 6, 0);
         mD.PasteVector(this->nodes[1]->GetD_dt(), block_offset + 9, 0);
     }
 
+    /// Increment all DOFs using a delta.
+    virtual void LoadableStateIncrement(const unsigned int off_x, ChState& x_new, const ChState& x, const unsigned int off_v, const ChStateDelta& Dv) override {
+        nodes[0]->NodeIntStateIncrement(off_x   , x_new, x, off_v   , Dv);
+        nodes[1]->NodeIntStateIncrement(off_x+6 , x_new, x, off_v+6 , Dv);
+    }
+
     /// Number of coordinates in the interpolated field, ex=3 for a
     /// tetrahedron finite element or a cable, = 1 for a thermal problem, etc.
-    virtual int Get_field_ncoords() { return 6; }
+    virtual int Get_field_ncoords() override { return 6; }
 
     /// Tell the number of DOFs blocks (ex. =1 for a body, =4 for a tetrahedron, etc.)
-    virtual int GetSubBlocks() { return 2; }
+    virtual int GetSubBlocks() override { return 2; }
 
     /// Get the offset of the i-th sub-block of DOFs in global vector
-    virtual unsigned int GetSubBlockOffset(int nblock) { return nodes[nblock]->NodeGetOffset_w(); }
+    virtual unsigned int GetSubBlockOffset(int nblock) override { return nodes[nblock]->NodeGetOffset_w(); }
 
     /// Get the size of the i-th sub-block of DOFs in global vector
-    virtual unsigned int GetSubBlockSize(int nblock) { return 6; }
+    virtual unsigned int GetSubBlockSize(int nblock) override { return 6; }
 
     /// Get the pointers to the contained ChVariables, appending to the mvars vector.
-    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) {
+    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) override {
         mvars.push_back(&this->nodes[0]->Variables());
         mvars.push_back(&this->nodes[0]->Variables_D());
         mvars.push_back(&this->nodes[1]->Variables());
@@ -1030,7 +1036,7 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
                            const ChVectorDynamic<>& F,  ///< Input F vector, size is =n. field coords.
                            ChVectorDynamic<>* state_x,  ///< if != 0, update state (pos. part) to this, then evaluate Q
                            ChVectorDynamic<>* state_w   ///< if != 0, update state (speed part) to this, then evaluate Q
-                           ) {
+                           ) override {
         ChMatrixNM<double, 1, 4> N;
         this->ShapeFunctions(
             N, (U + 1) * 0.5);  // evaluate shape functions (in compressed vector), btw. not dependant on state
@@ -1061,18 +1067,18 @@ class ChElementCableANCF : public ChElementBeam, public ChLoadableU, public ChLo
                            const ChVectorDynamic<>& F,  ///< Input F vector, size is = n.field coords.
                            ChVectorDynamic<>* state_x,  ///< if != 0, update state (pos. part) to this, then evaluate Q
                            ChVectorDynamic<>* state_w   ///< if != 0, update state (speed part) to this, then evaluate Q
-                           ) {
+                           ) override {
         this->ComputeNF(U, Qi, detJ, F, state_x, state_w);
         detJ /= 4.0;  // because volume
     }
 
     /// This is needed so that it can be accessed by ChLoaderVolumeGravity
-    virtual double GetDensity() { return this->section->Area * this->section->density; }
+    virtual double GetDensity() override { return this->section->Area * this->section->density; }
 };
 
 /// @} fea_elements
 
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace fea
+}  // end namespace chrono
 
 #endif

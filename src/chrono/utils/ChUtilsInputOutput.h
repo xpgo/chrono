@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -39,11 +39,10 @@
 #include <sstream>
 #include <fstream>
 
-#include "core/ChApiCE.h"
-#include "core/ChBezierCurve.h"
-#include "physics/ChSystem.h"
-
-#include "utils/ChUtilsCreators.h"
+#include "chrono/core/ChApiCE.h"
+#include "chrono/core/ChBezierCurve.h"
+#include "chrono/physics/ChSystem.h"
+#include "chrono/utils/ChUtilsCreators.h"
 
 namespace chrono {
 namespace utils {
@@ -101,13 +100,13 @@ class ChApi CSV_writer {
 
 template <typename T>
 inline CSV_writer& operator<<(CSV_writer& out, const ChVector<T>& v) {
-  out << v.x << v.y << v.z;
+  out << v.x() << v.y() << v.z();
   return out;
 }
 
 template <typename T>
 inline CSV_writer& operator<<(CSV_writer& out, const ChQuaternion<T>& q) {
-  out << q.e0 << q.e1 << q.e2 << q.e3;
+  out << q.e0() << q.e1() << q.e2() << q.e3();
   return out;
 }
 

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -59,7 +59,9 @@ CH_FSI_API void AddBoxBce(ChFsiDataManager *fsiData, SimParams *paramsH,
                           std::shared_ptr<chrono::ChBody> body,
                           chrono::ChVector<> relPos,
                           chrono::ChQuaternion<> relRot,
-                          const chrono::ChVector<> &size);
+                          const chrono::ChVector<> &size,
+			  int plane=12);
+
 
 CH_FSI_API void AddBCE_FromFile(ChFsiDataManager *fsiData, SimParams *paramsH,
                                 std::shared_ptr<chrono::ChBody> body,
@@ -69,14 +71,14 @@ CH_FSI_API void
 CreateSphereFSI(ChFsiDataManager *fsiData, chrono::ChSystem &mphysicalSystem,
                 std::vector<std::shared_ptr<chrono::ChBody>> *fsiBodeisPtr,
                 SimParams *paramsH,
-                std::shared_ptr<chrono::ChMaterialSurface> mat_prop,
+                std::shared_ptr<chrono::ChMaterialSurfaceNSC> mat_prop,
                 Real density, chrono::ChVector<> pos, Real radius);
 
 CH_FSI_API void
 CreateCylinderFSI(ChFsiDataManager *fsiData, chrono::ChSystem &mphysicalSystem,
                   std::vector<std::shared_ptr<chrono::ChBody>> *fsiBodeisPtr,
                   SimParams *paramsH,
-                  std::shared_ptr<chrono::ChMaterialSurface> mat_prop,
+                  std::shared_ptr<chrono::ChMaterialSurfaceNSC> mat_prop,
                   Real density, chrono::ChVector<> pos,
                   chrono::ChQuaternion<> rot, Real radius, Real length);
 
@@ -84,7 +86,7 @@ CH_FSI_API void
 CreateBoxFSI(ChFsiDataManager *fsiData, chrono::ChSystem &mphysicalSystem,
              std::vector<std::shared_ptr<chrono::ChBody>> *fsiBodeisPtr,
              SimParams *paramsH,
-             std::shared_ptr<chrono::ChMaterialSurface> mat_prop, Real density,
+             std::shared_ptr<chrono::ChMaterialSurfaceNSC> mat_prop, Real density,
              chrono::ChVector<> pos, chrono::ChQuaternion<> rot,
              const chrono::ChVector<> &hsize);
 

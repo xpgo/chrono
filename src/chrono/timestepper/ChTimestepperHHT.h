@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -26,18 +26,12 @@ namespace chrono {
 /// This timestepper allows use of an adaptive time-step, as well as optional use of a modified
 /// Newton scheme for the solution of the resulting nonlinear problem.
 class ChApi ChTimestepperHHT : public ChTimestepperIIorder, public ChImplicitIterativeTimestepper {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChTimestepperHHT, ChTimestepperIIorder);
 
   public:
     enum HHT_Mode {
         ACCELERATION,
         POSITION,
     };
-    CH_ENUM_MAPPER_BEGIN(HHT_Mode);
-    CH_ENUM_VAL(ACCELERATION);
-    CH_ENUM_VAL(POSITION);
-    CH_ENUM_MAPPER_END(HHT_Mode);
 
   private:
     double alpha;   ///< HHT method parameter:  -1/3 <= alpha <= 0
@@ -76,6 +70,8 @@ class ChApi ChTimestepperHHT : public ChTimestepperIIorder, public ChImplicitIte
 
   public:
     ChTimestepperHHT(ChIntegrableIIorder* mintegrable = nullptr);
+
+    virtual Type GetType() const override { return Type::HHT; }
 
     /// Set the numerical damping parameter.
     /// It must be in the [-1/3, 0] interval. The closer to -1/3, the more damping.

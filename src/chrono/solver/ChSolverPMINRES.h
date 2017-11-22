@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -20,21 +20,11 @@
 namespace chrono {
 
 /// An iterative solver based on modified Krylov iteration of MINRES type with gradient
-/// projections (similar to nonlinear CG with Polyak-Ribiere).
-/// The problem is described by a variational inequality VI(Z*x-d,K):
-///
-///  | M -Cq'|*|q|- | f|= |0| , l \in Y, C \in Ny, normal cone to Y
-///  | Cq -E | |l|  |-b|  |c|
-///
-/// Also Z symmetric by flipping sign of l_i: |M  Cq'|*| q|-| f|=|0|
-///                                           |Cq  E | |-l| |-b| |c|
-/// * case linear problem:  all Y_i = R, Ny=0, ex. all bilaterals
-/// * case LCP: all Y_i = R+:  c>=0, l>=0, l*c=0
-/// * case CCP: Y_i are friction cones
+/// projections (similar to nonlinear CG with Polyak-Ribiere).\n
+/// See ChSystemDescriptor for more information about the problem formulation and the data structures
+/// passed to the solver.
 
 class ChApi ChSolverPMINRES : public ChIterativeSolver {
-    // Chrono RTTI, needed for serialization
-    CH_RTTI(ChSolverPMINRES, ChIterativeSolver);
 
   protected:
     double grad_diffstep;
@@ -53,6 +43,8 @@ class ChApi ChSolverPMINRES : public ChIterativeSolver {
     }
 
     virtual ~ChSolverPMINRES() {}
+
+    virtual Type GetType() const override { return Type::PMINRES; }
 
     /// Performs the solution of the problem.
     /// \return  the maximum constraint violation after termination.
@@ -82,17 +74,17 @@ class ChApi ChSolverPMINRES : public ChIterativeSolver {
     double GetRelTolerance() { return this->rel_tolerance; }
 
     /// Enable diagonal preconditioning. It a simple but fast
-    /// preconditioning technique that is expecially useful to
+    /// preconditioning technique that is especially useful to
     /// fix slow convergence in case variables have very different orders
     /// of magnitude.
     void SetDiagonalPreconditioning(bool mp) { this->diag_preconditioning = mp; }
     bool GetDiagonalPreconditioning() { return this->diag_preconditioning; }
 
     /// Method to allow serialization of transient data to archives.
-    virtual void ArchiveOUT(ChArchiveOut& marchive)
+    virtual void ArchiveOUT(ChArchiveOut& marchive) override
     {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChSolverPMINRES>();
         // serialize parent class
         ChIterativeSolver::ArchiveOUT(marchive);
         // serialize all member data:
@@ -102,10 +94,10 @@ class ChApi ChSolverPMINRES : public ChIterativeSolver {
     }
 
     /// Method to allow de serialization of transient data from archives.
-    virtual void ArchiveIN(ChArchiveIn& marchive) 
+    virtual void ArchiveIN(ChArchiveIn& marchive) override
     {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChSolverPMINRES>();
         // deserialize parent class
         ChIterativeSolver::ArchiveIN(marchive);
         // stream in all member data:

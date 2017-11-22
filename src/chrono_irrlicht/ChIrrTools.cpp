@@ -1,20 +1,21 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010-2011 Alessandro Tasora
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
 
 #include "chrono/solver/ChIterativeSolver.h"
-#include "chrono/physics/ChContactContainerBase.h"
+#include "chrono/physics/ChContactContainer.h"
 #include "chrono/physics/ChLinkMate.h"
 #include "chrono/assets/ChColor.h"
 #include "chrono_irrlicht/ChIrrTools.h"
+#include "chrono/utils/ChProfiler.h"
 
 namespace chrono {
 namespace irrlicht {
@@ -45,9 +46,9 @@ void ChIrrTools::alignIrrlichtNodeToChronoCsys(scene::ISceneNode* mnode, const C
     irrMat[9] = (irr::f32)chMat.GetElementN(5);
     irrMat[10] = (irr::f32)chMat.GetElementN(8);
 
-    irrMat[12] = (irr::f32)mcoords.pos.x;
-    irrMat[13] = (irr::f32)mcoords.pos.y;
-    irrMat[14] = (irr::f32)mcoords.pos.z;
+    irrMat[12] = (irr::f32)mcoords.pos.x();
+    irrMat[13] = (irr::f32)mcoords.pos.y();
+    irrMat[14] = (irr::f32)mcoords.pos.z();
 
     // Clear the last column to 0 and set low-right corner to 1
     // as in Denavitt-Hartemberg matrices, transposed.
@@ -63,16 +64,16 @@ void ChIrrTools::alignIrrlichtNodeToChronoCsys(scene::ISceneNode* mnode, const C
 // Draw contact points.
 // Uses the _draw_reporter_class callback class.
 // -----------------------------------------------------------------------------
-class _draw_reporter_class : public ChReportContactCallback {
+class _draw_reporter_class : public ChContactContainer::ReportContactCallback {
   public:
-    virtual bool ReportContactCallback(const ChVector<>& pA,
-                                       const ChVector<>& pB,
-                                       const ChMatrix33<>& plane_coord,
-                                       const double& distance,
-                                       const ChVector<>& react_forces,
-                                       const ChVector<>& react_torques,
-                                       ChContactable* modA,
-                                       ChContactable* modB) override {
+    virtual bool OnReportContact(const ChVector<>& pA,
+                                 const ChVector<>& pB,
+                                 const ChMatrix33<>& plane_coord,
+                                 const double& distance,
+                                 const ChVector<>& react_forces,
+                                 const ChVector<>& react_torques,
+                                 ChContactable* modA,
+                                 ChContactable* modB) override {
         ChMatrix33<>& mplanecoord = const_cast<ChMatrix33<>&>(plane_coord);
         ChVector<> v1 = pA;
         ChVector<> v2;
@@ -93,14 +94,14 @@ class _draw_reporter_class : public ChReportContactCallback {
                 mcol = irr::video::SColor(200, 0, 100, 255);
                 break;
             case ChIrrTools::CONTACT_FORCES_N:
-                v2 = pA + vn * clen * react_forces.x;
+                v2 = pA + vn * clen * react_forces.x();
                 break;
             case ChIrrTools::CONTACT_FORCES:
                 v2 = pA + (mplanecoord * (react_forces * clen));
                 break;
+            default:
+                break;
         }
-
-        
 
         this->cdriver->draw3DLine(irr::core::vector3dfCH(v1), irr::core::vector3dfCH(v2), mcol);
         return true;  // to continue scanning contacts
@@ -143,31 +144,31 @@ int ChIrrTools::drawAllContactPoints(ChSystem& mphysicalSystem,
 // Draw contact information as labels at the contact point.
 // Uses the _label_reporter_class callback class.
 // -----------------------------------------------------------------------------
-class _label_reporter_class : public ChReportContactCallback {
+class _label_reporter_class : public ChContactContainer::ReportContactCallback {
   public:
-    virtual bool ReportContactCallback(const ChVector<>& pA,
-                                       const ChVector<>& pB,
-                                       const ChMatrix33<>& plane_coord,
-                                       const double& distance,
-                                       const ChVector<>& react_forces,
-                                       const ChVector<>& react_torques,
-                                       ChContactable* modA,
-                                       ChContactable* modB) override {
+    virtual bool OnReportContact(const ChVector<>& pA,
+                                 const ChVector<>& pB,
+                                 const ChMatrix33<>& plane_coord,
+                                 const double& distance,
+                                 const ChVector<>& react_forces,
+                                 const ChVector<>& react_torques,
+                                 ChContactable* modA,
+                                 ChContactable* modB) override {
         char buffer[25];
-        irr::core::vector3df mpos((irr::f32)pA.x, (irr::f32)pA.y, (irr::f32)pA.z);
+        irr::core::vector3df mpos((irr::f32)pA.x(), (irr::f32)pA.y(), (irr::f32)pA.z());
         irr::core::position2d<s32> spos =
             this->cdevice->getSceneManager()->getSceneCollisionManager()->getScreenCoordinatesFrom3DPosition(mpos);
         gui::IGUIFont* font = this->cdevice->getGUIEnvironment()->getBuiltInFont();
-    
+
         switch (labeltype) {
             case ChIrrTools::CONTACT_DISTANCES_VAL:
                 sprintf(buffer, "% 6.3g", distance);
                 break;
             case ChIrrTools::CONTACT_FORCES_N_VAL:
-                sprintf(buffer, "% 6.3g", react_forces.x);
+                sprintf(buffer, "% 6.3g", react_forces.x());
                 break;
             case ChIrrTools::CONTACT_FORCES_T_VAL:
-                sprintf(buffer, "% 6.3g", ChVector<>(0, react_forces.y, react_forces.z).Length());
+                sprintf(buffer, "% 6.3g", ChVector<>(0, react_forces.y(), react_forces.z()).Length());
                 break;
             case ChIrrTools::CONTACT_FORCES_VAL:
                 sprintf(buffer, "% 6.3g", ChVector<>(react_forces).Length());
@@ -176,14 +177,17 @@ class _label_reporter_class : public ChReportContactCallback {
                 sprintf(buffer, "% 6.3g", ChVector<>(react_torques).Length());
                 break;
             case ChIrrTools::CONTACT_TORQUES_S_VAL:
-                sprintf(buffer, "% 6.3g", react_torques.x);
+                sprintf(buffer, "% 6.3g", react_torques.x());
                 break;
             case ChIrrTools::CONTACT_TORQUES_R_VAL:
-                sprintf(buffer, "% 6.3g", ChVector<>(0, react_torques.y, react_torques.z).Length());
+                sprintf(buffer, "% 6.3g", ChVector<>(0, react_torques.y(), react_torques.z()).Length());
+                break;
+            default:
                 break;
         }
 
-        font->draw(irr::core::stringw(buffer).c_str(), irr::core::rect<s32>(spos.X - 15, spos.Y, spos.X + 15, spos.Y + 10), ccol);
+        font->draw(irr::core::stringw(buffer).c_str(),
+                   irr::core::rect<s32>(spos.X - 15, spos.Y, spos.X + 15, spos.Y + 10), ccol);
 
         return true;  // to continue scanning contacts
     }
@@ -245,6 +249,8 @@ int ChIrrTools::drawAllLinks(ChSystem& mphysicalSystem,
                 case ChIrrTools::LINK_REACT_TORQUE:
                     v2 = mylink->Get_react_torque();
                     break;
+                default:
+                    break;
             }
 
             v2 *= mlen;
@@ -275,7 +281,8 @@ int ChIrrTools::drawAllLinkLabels(ChSystem& mphysicalSystem,
             ChCoordsys<> mlinkframe = mylink->GetLinkAbsoluteCoords();  // GetAssetsFrame();
 
             char buffer[25];
-            irr::core::vector3df mpos((irr::f32)mlinkframe.pos.x, (irr::f32)mlinkframe.pos.y, (irr::f32)mlinkframe.pos.z);
+            irr::core::vector3df mpos((irr::f32)mlinkframe.pos.x(), (irr::f32)mlinkframe.pos.y(),
+                                      (irr::f32)mlinkframe.pos.z());
             irr::core::position2d<s32> spos =
                 device->getSceneManager()->getSceneCollisionManager()->getScreenCoordinatesFrom3DPosition(mpos);
             gui::IGUIFont* font = device->getGUIEnvironment()->getBuiltInFont();
@@ -285,30 +292,32 @@ int ChIrrTools::drawAllLinkLabels(ChSystem& mphysicalSystem,
                     sprintf(buffer, "% 6.3g", mylink->Get_react_force().Length());
                     break;
                 case ChIrrTools::LINK_REACT_FORCE_X:
-                    sprintf(buffer, "% 6.3g", mylink->Get_react_force().x);
+                    sprintf(buffer, "% 6.3g", mylink->Get_react_force().x());
                     break;
                 case ChIrrTools::LINK_REACT_FORCE_Y:
-                    sprintf(buffer, "% 6.3g", mylink->Get_react_force().y);
+                    sprintf(buffer, "% 6.3g", mylink->Get_react_force().y());
                     break;
                 case ChIrrTools::LINK_REACT_FORCE_Z:
-                    sprintf(buffer, "% 6.3g", mylink->Get_react_force().z);
+                    sprintf(buffer, "% 6.3g", mylink->Get_react_force().z());
                     break;
                 case ChIrrTools::LINK_REACT_TORQUE_VAL:
                     sprintf(buffer, "% 6.3g", mylink->Get_react_torque().Length());
                     break;
                 case ChIrrTools::LINK_REACT_TORQUE_X:
-                    sprintf(buffer, "% 6.3g", mylink->Get_react_torque().x);
+                    sprintf(buffer, "% 6.3g", mylink->Get_react_torque().x());
                     break;
                 case ChIrrTools::LINK_REACT_TORQUE_Y:
-                    sprintf(buffer, "% 6.3g", mylink->Get_react_torque().y);
+                    sprintf(buffer, "% 6.3g", mylink->Get_react_torque().y());
                     break;
                 case ChIrrTools::LINK_REACT_TORQUE_Z:
-                    sprintf(buffer, "% 6.3g", mylink->Get_react_torque().z);
+                    sprintf(buffer, "% 6.3g", mylink->Get_react_torque().z());
+                    break;
+                default:
                     break;
             }
 
-            font->draw(irr::core::stringw(buffer).c_str(), irr::core::rect<s32>(spos.X - 15, spos.Y, spos.X + 15, spos.Y + 10),
-                       mcol);
+            font->draw(irr::core::stringw(buffer).c_str(),
+                       irr::core::rect<s32>(spos.X - 15, spos.Y, spos.X + 15, spos.Y + 10), mcol);
         }
         ++myiter;
     }
@@ -338,24 +347,24 @@ int ChIrrTools::drawAllBoundingBoxes(ChSystem& mphysicalSystem, irr::video::IVid
             ChVector<> hi = VNULL;
             ChVector<> lo = VNULL;
             abody->GetTotalAABB(lo, hi);
-            ChVector<> p1(hi.x, lo.y, lo.z);
-            ChVector<> p2(lo.x, hi.y, lo.z);
-            ChVector<> p3(lo.x, lo.y, hi.z);
-            ChVector<> p4(hi.x, hi.y, lo.z);
-            ChVector<> p5(lo.x, hi.y, hi.z);
-            ChVector<> p6(hi.x, lo.y, hi.z);
-            ChVector<> p7(lo.x, lo.y, hi.z);
-            ChVector<> p8(lo.x, lo.y, hi.z);
-            ChVector<> p9(lo.x, hi.y, lo.z);
-            ChVector<> p10(lo.x, hi.y, lo.z);
-            ChVector<> p11(hi.x, lo.y, lo.z);
-            ChVector<> p12(hi.x, lo.y, lo.z);
-            ChVector<> p14(hi.x, lo.y, hi.z);
-            ChVector<> p15(lo.x, hi.y, hi.z);
-            ChVector<> p16(lo.x, hi.y, hi.z);
-            ChVector<> p17(hi.x, hi.y, lo.z);
-            ChVector<> p18(hi.x, lo.y, hi.z);
-            ChVector<> p19(hi.x, hi.y, lo.z);
+            ChVector<> p1(hi.x(), lo.y(), lo.z());
+            ChVector<> p2(lo.x(), hi.y(), lo.z());
+            ChVector<> p3(lo.x(), lo.y(), hi.z());
+            ChVector<> p4(hi.x(), hi.y(), lo.z());
+            ChVector<> p5(lo.x(), hi.y(), hi.z());
+            ChVector<> p6(hi.x(), lo.y(), hi.z());
+            ChVector<> p7(lo.x(), lo.y(), hi.z());
+            ChVector<> p8(lo.x(), lo.y(), hi.z());
+            ChVector<> p9(lo.x(), hi.y(), lo.z());
+            ChVector<> p10(lo.x(), hi.y(), lo.z());
+            ChVector<> p11(hi.x(), lo.y(), lo.z());
+            ChVector<> p12(hi.x(), lo.y(), lo.z());
+            ChVector<> p14(hi.x(), lo.y(), hi.z());
+            ChVector<> p15(lo.x(), hi.y(), hi.z());
+            ChVector<> p16(lo.x(), hi.y(), hi.z());
+            ChVector<> p17(hi.x(), hi.y(), lo.z());
+            ChVector<> p18(hi.x(), lo.y(), hi.z());
+            ChVector<> p19(hi.x(), hi.y(), lo.z());
             driver->draw3DLine(irr::core::vector3dfCH(lo), irr::core::vector3dfCH(p1), mcol);
             driver->draw3DLine(irr::core::vector3dfCH(lo), irr::core::vector3dfCH(p2), mcol);
             driver->draw3DLine(irr::core::vector3dfCH(lo), irr::core::vector3dfCH(p3), mcol);
@@ -500,11 +509,11 @@ void ChIrrTools::drawHUDviolation(irr::video::IVideoDriver* driver,
                                   int sy,
                                   double spfact,
                                   double posfact) {
-    if (!dynamic_cast<ChIterativeSolver*>(asystem.GetSolverSpeed()))
+    if (!std::dynamic_pointer_cast<ChIterativeSolver>(asystem.GetSolver()))
         return;
 
-    ChIterativeSolver* msolver_speed = static_cast<ChIterativeSolver*>(asystem.GetSolverSpeed());
-    ChIterativeSolver* msolver_stab = static_cast<ChIterativeSolver*>(asystem.GetSolverStab());
+    auto msolver_speed = std::static_pointer_cast<ChIterativeSolver>(asystem.GetSolver());
+    auto msolver_stab = std::static_pointer_cast<ChIterativeSolver>(asystem.GetStabSolver());
     msolver_speed->SetRecordViolation(true);
     msolver_stab->SetRecordViolation(true);
 
@@ -514,28 +523,29 @@ void ChIrrTools::drawHUDviolation(irr::video::IVideoDriver* driver,
         driver->draw2DRectangle(
             irr::video::SColor(90, 255, 0, 0),
             irr::core::rect<s32>(mx + i * 4, sy + my - (int)(spfact * msolver_speed->GetViolationHistory()[i]),
-                            mx + (i + 1) * 4 - 1, sy + my),
+                                 mx + (i + 1) * 4 - 1, sy + my),
             &mrect);
     }
     for (unsigned int i = 0; i < msolver_speed->GetDeltalambdaHistory().size(); i++) {
         driver->draw2DRectangle(
             irr::video::SColor(100, 255, 255, 0),
             irr::core::rect<s32>(mx + i * 4, sy + my - (int)(spfact * msolver_speed->GetDeltalambdaHistory()[i]),
-                            mx + (i + 1) * 4 - 2, sy + my),
+                                 mx + (i + 1) * 4 - 2, sy + my),
             &mrect);
     }
     for (unsigned int i = 0; i < msolver_stab->GetViolationHistory().size(); i++) {
         driver->draw2DRectangle(
             irr::video::SColor(90, 0, 255, 0),
             irr::core::rect<s32>(mx + sx / 2 + i * 4, sy + my - (int)(posfact * msolver_stab->GetViolationHistory()[i]),
-                            mx + sx / 2 + (i + 1) * 4 - 1, sy + my),
+                                 mx + sx / 2 + (i + 1) * 4 - 1, sy + my),
             &mrect);
     }
     for (unsigned int i = 0; i < msolver_stab->GetDeltalambdaHistory().size(); i++) {
         driver->draw2DRectangle(
             irr::video::SColor(100, 0, 255, 255),
-            irr::core::rect<s32>(mx + sx / 2 + i * 4, sy + my - (int)(posfact * msolver_stab->GetDeltalambdaHistory()[i]),
-                            mx + sx / 2 + (i + 1) * 4 - 2, sy + my),
+            irr::core::rect<s32>(mx + sx / 2 + i * 4,
+                                 sy + my - (int)(posfact * msolver_stab->GetDeltalambdaHistory()[i]),
+                                 mx + sx / 2 + (i + 1) * 4 - 2, sy + my),
             &mrect);
     }
 
@@ -551,7 +561,8 @@ void ChIrrTools::drawHUDviolation(irr::video::IVideoDriver* driver,
             font->draw(L"Solver position violation", irr::core::rect<s32>(mx + sx - 100, my, mx + sx, my + 10),
                        irr::video::SColor(200, 0, 100, 0));
             sprintf(buffer, "%g", sy / posfact);
-            font->draw(irr::core::stringw(buffer).c_str(), irr::core::rect<s32>(mx + sx / 2, my, mx + sx / 2 + 10, my + 10),
+            font->draw(irr::core::stringw(buffer).c_str(),
+                       irr::core::rect<s32>(mx + sx / 2, my, mx + sx / 2 + 10, my + 10),
                        irr::video::SColor(200, 0, 100, 0));
         }
     }
@@ -592,7 +603,8 @@ void ChIrrTools::drawChFunction(IrrlichtDevice* mdevice,
                 int yzero = my + sy - (int)(((-ymin) / (ymax - ymin)) * (double)sy);
                 driver->draw2DLine(irr::core::position2d<s32>(mx, yzero), irr::core::position2d<s32>(mx + sx, yzero),
                                    irr::video::SColor(90, 255, 255, 255));
-                font->draw(irr::core::stringw(buffer).c_str(), irr::core::rect<s32>(mx, my + yzero, mx + sx, my + yzero + 10),
+                font->draw(irr::core::stringw(buffer).c_str(),
+                           irr::core::rect<s32>(mx, my + yzero, mx + sx, my + yzero + 10),
                            irr::video::SColor(200, 100, 0, 0));
             }
         }
@@ -688,8 +700,7 @@ void ChIrrTools::drawSpring(irr::video::IVideoDriver* driver,
     ChVector<> Vx, Vy, Vz;
     double length = dist.Length();
     ChVector<> dir = Vnorm(dist);
-    ChVector<> singul(VECT_Y);
-    XdirToDxDyDz(&dir, &singul, &Vx, &Vy, &Vz);
+    XdirToDxDyDz(dir, VECT_Y, Vx, Vy, Vz);
     rel_matrix.Set_A_axis(Vx, Vy, Vz);
     ChQuaternion<> Q12 = rel_matrix.Get_A_quaternion();
     ChCoordsys<> mpos(start, Q12);
@@ -746,50 +757,48 @@ void ChIrrTools::drawGrid(irr::video::IVideoDriver* driver,
     }
 }
 
-
 /// Easy-to-use function to draw color map 2D legend
-void  ChIrrTools::drawColorbar(double vmin, double vmax,
-                             const std::string& label,
-                             IrrlichtDevice* mdevice,
-                             int mx,
-                             int my,
-                             int sx,
-                             int sy) {
-
+void ChIrrTools::drawColorbar(double vmin,
+                              double vmax,
+                              const std::string& label,
+                              IrrlichtDevice* mdevice,
+                              int mx,
+                              int my,
+                              int sx,
+                              int sy) {
     irr::video::IVideoDriver* driver = mdevice->getVideoDriver();
-    
+
     gui::IGUIFont* font = 0;
-    if (mdevice->getGUIEnvironment()) 
+    if (mdevice->getGUIEnvironment())
         font = mdevice->getGUIEnvironment()->getSkin()->getFont();
 
     int steps = 10;
-    double ystep=((double)sy/(double)steps);
-    for (int i=0; i<steps; ++i) {
-        double mv_up = vmax - (vmax-vmin)*((double)(i)/(double)steps);
-        double mv_dw = vmax - (vmax-vmin)*((double)(i+1)/(double)steps);
-        core::rect<s32> mrect(mx,    my+(s32)(i*ystep),  mx+sx, my+(s32)((i+1)*ystep) );
+    double ystep = ((double)sy / (double)steps);
+    for (int i = 0; i < steps; ++i) {
+        double mv_up = vmax - (vmax - vmin) * ((double)(i) / (double)steps);
+        double mv_dw = vmax - (vmax - vmin) * ((double)(i + 1) / (double)steps);
+        core::rect<s32> mrect(mx, my + (s32)(i * ystep), mx + sx, my + (s32)((i + 1) * ystep));
         ChColor c_up = ChColor::ComputeFalseColor(mv_up, vmin, vmax, false);
         ChColor c_dw = ChColor::ComputeFalseColor(mv_dw, vmin, vmax, false);
-        video::SColor col_up (255, u32(255*c_up.R), u32(255*c_up.G), u32(255*c_up.B));
-        video::SColor col_dw (255, u32(255*c_dw.R), u32(255*c_dw.G), u32(255*c_dw.B));
-        driver->draw2DRectangle(mrect, col_up,col_up, col_dw, col_dw);
+        video::SColor col_up(255, u32(255 * c_up.R), u32(255 * c_up.G), u32(255 * c_up.B));
+        video::SColor col_dw(255, u32(255 * c_dw.R), u32(255 * c_dw.G), u32(255 * c_dw.B));
+        driver->draw2DRectangle(mrect, col_up, col_up, col_dw, col_dw);
 
         if (font) {
             char buffer[100];
             sprintf(buffer, "%g", mv_up);
-            font->draw(irr::core::stringw(buffer).c_str(), 
-                       core::rect<s32>(mrect.UpperLeftCorner.X+sx+6, mrect.UpperLeftCorner.Y-5, mrect.LowerRightCorner.X+sx+6,  mrect.LowerRightCorner.Y-5),
+            font->draw(irr::core::stringw(buffer).c_str(),
+                       core::rect<s32>(mrect.UpperLeftCorner.X + sx + 6, mrect.UpperLeftCorner.Y - 5,
+                                       mrect.LowerRightCorner.X + sx + 6, mrect.LowerRightCorner.Y - 5),
                        irr::video::SColor(255, 0, 0, 0));
-            driver->draw2DLine(irr::core::position2d<s32>(mrect.UpperLeftCorner.X+sx-4,   mrect.UpperLeftCorner.Y), 
-                               irr::core::position2d<s32>(mrect.UpperLeftCorner.X+sx,     mrect.UpperLeftCorner.Y),
-                                   irr::video::SColor(255, 100, 100, 100));
+            driver->draw2DLine(irr::core::position2d<s32>(mrect.UpperLeftCorner.X + sx - 4, mrect.UpperLeftCorner.Y),
+                               irr::core::position2d<s32>(mrect.UpperLeftCorner.X + sx, mrect.UpperLeftCorner.Y),
+                               irr::video::SColor(255, 100, 100, 100));
         }
     }
-    font->draw(irr::core::stringw(label.c_str()).c_str(), 
-               core::rect<s32>(mx,my+sy+5, mx+100,my+sy+20),
-                       irr::video::SColor(255, 0, 0, 0));
+    font->draw(irr::core::stringw(label.c_str()).c_str(), core::rect<s32>(mx, my + sy + 5, mx + 100, my + sy + 20),
+               irr::video::SColor(255, 0, 0, 0));
 }
-
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
@@ -830,6 +839,77 @@ void ChIrrTools::drawPlot3D(irr::video::IVideoDriver* driver,
         }
     }
 }
+
+
+void drawProfilerRecursive(utils::ChProfileIterator* profileIterator, irr::IrrlichtDevice* device, int mx, int my, int sx, int sy, int xspacing, int& ypos) {
+    profileIterator->First();
+	if (profileIterator->Is_Done())
+		return;
+
+    irr::gui::IGUIFont* font = device->getGUIEnvironment()->getSkin()->getFont();//getBuiltInFont();
+
+	float accumulated_time=0,parent_time = profileIterator->Is_Root() ? utils::ChProfileManager::Get_Time_Since_Reset() : profileIterator->Get_Current_Parent_Total_Time();
+	int i;
+	int frames_since_reset = utils::ChProfileManager::Get_Frame_Count_Since_Reset();
+
+    float tot_frametime = utils::ChProfileManager::Get_Time_Since_Reset();
+
+    char buffer[300];
+    irr::video::SColor mcol(255,255,255,90);
+
+	int numChildren = 0;
+
+	for (i = 0; !profileIterator->Is_Done(); i++,profileIterator->Next())
+	{
+		numChildren++;
+		float current_total_time = profileIterator->Get_Current_Total_Time();
+		accumulated_time += current_total_time;
+		float fraction = parent_time > FLT_EPSILON ? (current_total_time / parent_time) * 100 : 0.f;
+        float fraction_tot = tot_frametime > FLT_EPSILON ? (current_total_time/tot_frametime) *100 : 0.f;
+
+        irr::core::rect<s32> mrect(mx, my+ypos, mx+(int)(sx * (current_total_time/tot_frametime)), my+ypos+18);
+        device->getVideoDriver()->draw2DRectangle(irr::video::SColor(100, ((xspacing*200)%255), ((-xspacing*151+200)%255), 230), mrect);
+
+		sprintf(buffer, "%d -- %s (%.2f %% parent, %.2f %% tot.) :: %.3f ms / frame (%d calls)\n",i, profileIterator->Get_Current_Name(), fraction, fraction_tot, (current_total_time / (double)frames_since_reset),profileIterator->Get_Current_Total_Calls());
+		irr::core::stringw mstring(buffer);
+        font->draw(mstring, irr::core::rect<irr::s32>(mx+xspacing, my+ypos, mx+sx, my+ypos+20), mcol);
+        ypos += 20;
+
+        profileIterator->Enter_Child(i);
+		drawProfilerRecursive(profileIterator, device, mx, my, sx, sy, xspacing+30, ypos);
+		profileIterator->Enter_Parent();
+        for (int j= 0; j < i; ++j)
+            profileIterator->Next();
+	}
+
+    float fraction = parent_time > FLT_EPSILON ? ((parent_time - accumulated_time) / parent_time) * 100 : 0.f;
+    float fraction_tot = tot_frametime > FLT_EPSILON ? ((parent_time - accumulated_time)/tot_frametime) *100 : 0.f;
+
+    irr::core::rect<s32> mrect(mx, my+ypos, mx+ (int)(sx *((parent_time - accumulated_time)/tot_frametime)), my+ypos+18);
+    device->getVideoDriver()->draw2DRectangle(irr::video::SColor(100, ((xspacing*200)%255), ((-xspacing*151+200)%255), 230), mrect);
+
+	sprintf(buffer, "n -- %s (%.2f %% parent, %.2f %% tot.) :: %.3f ms\n", "Unaccounted:", fraction, fraction_tot, parent_time - accumulated_time);
+    irr::core::stringw mstringu(buffer);
+    font->draw(mstringu, irr::core::rect<irr::s32>(mx+xspacing, my+ypos, mx+sx, my+ypos+20), mcol);
+    ypos += 20;
+}
+
+/// Draw run-time profiler infos
+void ChIrrTools::drawProfiler(irr::IrrlichtDevice* device) {
+    int mx = 230;
+    int my = 30;
+    int sx = 500;
+    int sy = 400;
+
+    int ypos = 0;
+    utils::ChProfileIterator* profileIterator = 0;
+	profileIterator = utils::ChProfileManager::Get_Iterator();
+
+	drawProfilerRecursive(profileIterator, device, mx, my, sx, sy, 0, ypos);
+
+	utils::ChProfileManager::Release_Iterator(profileIterator);
+}
+
 
 }  // end namespace irrlicht
 }  // end namespace chrono

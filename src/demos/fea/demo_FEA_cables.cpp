@@ -1,19 +1,22 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
+// Authors: Alessandro Tasora, Radu Serban
+// =============================================================================
+//
+// FEA for 3D beams of 'cable' type (ANCF gradient-deficient beams)
+//
+// =============================================================================
 
-//
-//   Demo code about
-//
-//     - FEA for 3D beams of 'cable' type (ANCF gradient-deficient beams)
-
+#include "chrono/physics/ChSystemNSC.h"
 #include "chrono/solver/ChSolverMINRES.h"
 #include "chrono/solver/ChSolverPMINRES.h"
 #include "chrono/timestepper/ChTimestepper.h"
@@ -28,8 +31,10 @@ using namespace chrono::irrlicht;
 using namespace irr;
 
 int main(int argc, char* argv[]) {
+    GetLog() << "Copyright (c) 2017 projectchrono.org\nChrono version: " << CHRONO_VERSION << "\n\n";
+
     // Create a Chrono::Engine physical system
-    ChSystem my_system;
+    ChSystemNSC my_system;
 
     // Create the Irrlicht visualization (open the Irrlicht device,
     // bind a simple user interface, etc. etc.)
@@ -56,9 +61,9 @@ int main(int argc, char* argv[]) {
     // ==Asset== attach a visualization of the FEM mesh.
     // This will automatically update a triangle mesh (a ChTriangleMeshShape
     // asset that is internally managed) by setting  proper
-    // coordinates and vertex colours as in the FEM elements.
+    // coordinates and vertex colors as in the FEM elements.
     // Such triangle mesh can be rendered by Irrlicht or POVray or whatever
-    // postprocessor that can handle a coloured ChTriangleMeshShape).
+    // postprocessor that can handle a colored ChTriangleMeshShape).
     // Do not forget AddAsset() at the end!
 
     auto mvisualizebeamA = std::make_shared<ChVisualizationFEAmesh>(*(my_mesh.get()));
@@ -69,7 +74,7 @@ int main(int argc, char* argv[]) {
     my_mesh->AddAsset(mvisualizebeamA);
 
     auto mvisualizebeamC = std::make_shared<ChVisualizationFEAmesh>(*(my_mesh.get()));
-    mvisualizebeamC->SetFEMglyphType(ChVisualizationFEAmesh::E_GLYPH_NODE_CSYS);
+    mvisualizebeamC->SetFEMglyphType(ChVisualizationFEAmesh::E_GLYPH_NODE_DOT_POS); // E_GLYPH_NODE_CSYS
     mvisualizebeamC->SetFEMdataType(ChVisualizationFEAmesh::E_PLOT_NONE);
     mvisualizebeamC->SetSymbolsThickness(0.006);
     mvisualizebeamC->SetSymbolsScale(0.01);
@@ -90,18 +95,18 @@ int main(int argc, char* argv[]) {
     my_system.SetupInitial();
 
     // Change solver settings
-    my_system.SetSolverType(ChSystem::SOLVER_MINRES);
+    my_system.SetSolverType(ChSolver::Type::MINRES);
     my_system.SetSolverWarmStarting(true);  // this helps a lot to speedup convergence in this class of problems
     my_system.SetMaxItersSolverSpeed(200);
     my_system.SetMaxItersSolverStab(200);
     my_system.SetTolForce(1e-13);
-    chrono::ChSolverMINRES* msolver = (chrono::ChSolverMINRES*)my_system.GetSolverSpeed();
+    auto msolver = std::static_pointer_cast<ChSolverMINRES>(my_system.GetSolver());
     msolver->SetVerbose(false);
     msolver->SetDiagonalPreconditioning(true);
 
     // Change type of integrator:
-    my_system.SetIntegrationType(chrono::ChSystem::INT_EULER_IMPLICIT_LINEARIZED);  // fast, less precise
-    // my_system.SetIntegrationType(chrono::ChSystem::INT_HHT);  // precise,slower, might iterate each step
+    my_system.SetTimestepperType(ChTimestepper::Type::EULER_IMPLICIT_LINEARIZED);  // fast, less precise
+    // my_system.SetTimestepperType(chrono::ChTimestepper::Type::HHT);  // precise,slower, might iterate each step
 
     // if later you want to change integrator settings:
     if (auto mystepper = std::dynamic_pointer_cast<ChTimestepperHHT>(my_system.GetTimestepper())) {

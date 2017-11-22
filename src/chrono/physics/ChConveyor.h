@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -27,7 +27,6 @@ namespace chrono {
 /// has continuous motion in X direction. No cylindrical rounding is used at the ends.
 
 class ChApi ChConveyor : public ChPhysicsItem {
-    CH_RTTI(ChConveyor, ChPhysicsItem);
 
   private:
     double conveyor_speed;          ///< speed of conveyor, along the X direction of the box.
@@ -46,7 +45,7 @@ class ChApi ChConveyor : public ChPhysicsItem {
 
     /// Set the pointer to the parent ChSystem() and
     /// also add to new collision system / remove from old coll.system
-    virtual void SetSystem(ChSystem* m_system);
+    virtual void SetSystem(ChSystem* m_system) override;
 
     /// Set the speed of the conveyor belt (upper part, X direction)
     void SetConveyorSpeed(double mspeed) { conveyor_speed = mspeed; }
@@ -73,13 +72,13 @@ class ChApi ChConveyor : public ChPhysicsItem {
     void SetPos(const ChVector<>& mpos) { GetTruss()->SetPos(mpos); }
 
     /// Access the material surface properties of the conveyor belt (shortcut)
-    std::shared_ptr<ChMaterialSurfaceBase>& GetMaterialSurfaceBase() { return GetPlate()->GetMaterialSurfaceBase(); }
+    std::shared_ptr<ChMaterialSurface>& GetMaterialSurfaceBase() { return GetPlate()->GetMaterialSurfaceBase(); }
 
-    /// Access the DVI material surface properties of the conveyor belt (shortcut)
-    std::shared_ptr<ChMaterialSurface> GetMaterialSurface() { return GetPlate()->GetMaterialSurface(); }
+    /// Access the NSC material surface properties of the conveyor belt (shortcut)
+    std::shared_ptr<ChMaterialSurfaceNSC> GetMaterialSurfaceNSC() { return GetPlate()->GetMaterialSurfaceNSC(); }
 
-    /// Set the material surface properties by passing a ChMaterialSurface or ChMaterialSurfaceDEM object.
-    void SetMaterialSurface(const std::shared_ptr<ChMaterialSurfaceBase>& mnewsurf) {
+    /// Set the material surface properties by passing a ChMaterialSurfaceNSC or ChMaterialSurfaceSMC object.
+    void SetMaterialSurface(const std::shared_ptr<ChMaterialSurface>& mnewsurf) {
         GetPlate()->SetMaterialSurface(mnewsurf);
     }
 
@@ -162,7 +161,7 @@ class ChApi ChConveyor : public ChPhysicsItem {
 
     // Other functions
 
-    virtual bool GetCollide() override { return true; }
+    virtual bool GetCollide() const override { return true; }
     virtual void SyncCollisionModels() override;
     virtual void AddCollisionModelsToSystem() override;
     virtual void RemoveCollisionModelsFromSystem() override;
@@ -184,6 +183,8 @@ class ChApi ChConveyor : public ChPhysicsItem {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChConveyor,0)
 
 }  // end namespace chrono
 

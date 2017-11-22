@@ -1,12 +1,26 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar
+// =============================================================================
+
 #include "chrono_parallel/solver/ChSolverParallel.h"
 
 using namespace chrono;
 
 real ChSolverParallelAPGDREF::Res4(ChShurProduct& ShurProduct,
-                           ChProjectConstraints& Project,
-                           DynamicVector<real>& gamma,
-                           const DynamicVector<real>& r,
-                           DynamicVector<real>& tmp) {
+                                   ChProjectConstraints& Project,
+                                   DynamicVector<real>& gamma,
+                                   const DynamicVector<real>& r,
+                                   DynamicVector<real>& tmp) {
     real gdiff = 1.0 / pow(data_manager->num_constraints, 2.0);
     ShurProduct(gamma, tmp);
     tmp = tmp - r;
@@ -18,11 +32,11 @@ real ChSolverParallelAPGDREF::Res4(ChShurProduct& ShurProduct,
 }
 
 uint ChSolverParallelAPGDREF::Solve(ChShurProduct& ShurProduct,
-                            ChProjectConstraints& Project,
-                            const uint max_iter,
-                            const uint size,
-                            const DynamicVector<real>& r,
-                            DynamicVector<real>& gamma) {
+                                    ChProjectConstraints& Project,
+                                    const uint max_iter,
+                                    const uint size,
+                                    const DynamicVector<real>& r,
+                                    DynamicVector<real>& gamma) {
     if (size == 0) {
         return 0;
     }
@@ -86,7 +100,7 @@ uint ChSolverParallelAPGDREF::Solve(ChShurProduct& ShurProduct,
     }
 
     // (7) for k := 0 to N_max
-    for (current_iteration = 0; current_iteration < max_iter; current_iteration++) {
+    for (current_iteration = 0; current_iteration < (signed)max_iter; current_iteration++) {
         // (8) g = N * y_k - r
         ShurProduct(y, g);
         g = g - r;

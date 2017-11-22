@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2016 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -16,7 +16,7 @@
 // =============================================================================
 
 #pragma once
-#include <string.h>
+#include <cstring>
 #include "chrono_parallel/math/real2.h"
 #include "chrono_parallel/math/real3.h"
 
@@ -26,33 +26,37 @@
 
 namespace chrono {
 
-	class CH_PARALLEL_API real4 {
+/// @addtogroup parallel_math
+/// @{
+
+/// Chrono::Parallel qudruple (4-dimensional array).
+class CH_PARALLEL_API real4 {
   public:
     CUDA_HOST_DEVICE inline real4() {}
     CUDA_HOST_DEVICE inline real4(real a) {
-		array[0] = a;
-		array[1] = a;
-		array[2] = a;
-		array[3] = a;
-	}
+        array[0] = a;
+        array[1] = a;
+        array[2] = a;
+        array[3] = a;
+    }
     CUDA_HOST_DEVICE inline real4(real a, real b, real c, real d) {
-		array[0] = a;
-		array[1] = b;
-		array[2] = c;
-		array[3] = d;
-	}
+        array[0] = a;
+        array[1] = b;
+        array[2] = c;
+        array[3] = d;
+    }
     CUDA_HOST_DEVICE inline real4(const real3& v, real w) {
-		array[0] = v.x;
-		array[1] = v.y;
-		array[2] = v.z;
-		array[3] = w;
-	}
+        array[0] = v.x;
+        array[1] = v.y;
+        array[2] = v.z;
+        array[3] = w;
+    }
     CUDA_HOST_DEVICE inline real4(const real4& v) {
-		array[0] = v.x;
-		array[1] = v.y;
-		array[2] = v.z;
-		array[3] = v.w;
-	}
+        array[0] = v.x;
+        array[1] = v.y;
+        array[2] = v.z;
+        array[3] = v.w;
+    }
 
     CUDA_HOST_DEVICE inline real operator[](unsigned int i) const { return array[i]; }
     CUDA_HOST_DEVICE inline real& operator[](unsigned int i) { return array[i]; }
@@ -98,54 +102,55 @@ namespace chrono {
     };
 };
 
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 Set4(real x);
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 Set4(real x, real y, real z, real w);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 Set4(real x);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 Set4(real x, real y, real z, real w);
 
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator+(const real4& a, const real4& b);
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator-(const real4& a, const real4& b);
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator*(const real4& a, const real4& b);
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator/(const real4& a, const real4& b);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator+(const real4& a, const real4& b);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator-(const real4& a, const real4& b);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator*(const real4& a, const real4& b);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator/(const real4& a, const real4& b);
 
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator+(const real4& a, real b);
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator-(const real4& a, real b);
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator*(const real4& a, real b);
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator/(const real4& a, real b);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator+(const real4& a, real b);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator-(const real4& a, real b);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator*(const real4& a, real b);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator/(const real4& a, real b);
 
-	CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(*, real, real4);
-	CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(/ , real, real4);
-	CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(+, real, real4);
-	CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(-, real, real4);
+CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(*, real, real4);
+CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(/, real, real4);
+CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(+, real, real4);
+CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(-, real, real4);
 
-	CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(*, real4, real4);
-	CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(/ , real4, real4);
-	CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(+, real4, real4);
-	CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(-, real4, real4);
+CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(*, real4, real4);
+CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(/, real4, real4);
+CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(+, real4, real4);
+CUDA_HOST_DEVICE CH_PARALLEL_API OPERATOR_EQUALS_PROTO(-, real4, real4);
 
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator-(const real4& a);
-	CUDA_HOST_DEVICE CH_PARALLEL_API real4 Dot4(const real3& v, const real3& v1, const real3& v2, const real3& v3, const real3& v4);
-// Quaternion Class
-// ========================================================================================
+CUDA_HOST_DEVICE CH_PARALLEL_API real4 operator-(const real4& a);
+CUDA_HOST_DEVICE CH_PARALLEL_API real4
+Dot4(const real3& v, const real3& v1, const real3& v2, const real3& v3, const real3& v4);
+
+/// Chrono::parallel quaternion class.
 class CH_PARALLEL_API quaternion {
   public:
     CUDA_HOST_DEVICE quaternion() {}
-    CUDA_HOST_DEVICE quaternion(real a){
-		array[0] = a;
-		array[1] = a;
-		array[2] = a;
-		array[3] = a;
-	}
+    CUDA_HOST_DEVICE quaternion(real a) {
+        array[0] = a;
+        array[1] = a;
+        array[2] = a;
+        array[3] = a;
+    }
     CUDA_HOST_DEVICE quaternion(real _w, real _x, real _y, real _z) {
-		array[0] = _w;
-		array[1] = _x;
-		array[2] = _y;
-		array[3] = _z;
-	}
+        array[0] = _w;
+        array[1] = _x;
+        array[2] = _y;
+        array[3] = _z;
+    }
     CUDA_HOST_DEVICE quaternion(const real3& v, real w) {
-		array[0] = w;
-		array[1] = v.x;
-		array[2] = v.y;
-		array[3] = v.z;
-	}
+        array[0] = w;
+        array[1] = v.x;
+        array[2] = v.y;
+        array[3] = v.z;
+    }
     CUDA_HOST_DEVICE real operator[](unsigned int i) const { return array[i]; }
     CUDA_HOST_DEVICE real& operator[](unsigned int i) { return array[i]; }
     CUDA_HOST_DEVICE operator real*() { return &array[0]; }
@@ -207,4 +212,7 @@ CUDA_HOST_DEVICE CH_PARALLEL_API real3 AbsRotate(const quaternion& q, const real
 CUDA_HOST_DEVICE CH_PARALLEL_API quaternion Q_from_AngAxis(const real& angle, const real3& axis);
 CUDA_HOST_DEVICE CH_PARALLEL_API real3 AMatV(const quaternion& q);
 CUDA_HOST_DEVICE CH_PARALLEL_API void Print(quaternion v, const char* name);
-}
+
+/// @} parallel_math
+
+} // end namespace chrono

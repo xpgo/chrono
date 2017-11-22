@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -25,7 +25,6 @@ namespace chrono {
 /// given the teeth pressure angle.
 
 class ChApi ChLinkGear : public ChLinkLock {
-    CH_RTTI(ChLinkGear, ChLinkLock);
 
   protected:
     double tau;       ///< transmission coeff.
@@ -53,8 +52,6 @@ class ChApi ChLinkGear : public ChLinkLock {
     /// "Virtual" copy constructor (covariant return type).
     virtual ChLinkGear* Clone() const override { return new ChLinkGear(*this); }
 
-    virtual int GetType() const override { return LNK_GEAR; }
-
     // Updates motion laws, marker positions, etc.
     virtual void UpdateTime(double mytime) override;
 
@@ -64,8 +61,8 @@ class ChApi ChLinkGear : public ChLinkLock {
     /// Set the transmission ratio. Its value is assumed always positive,
     /// both for inner and outer gears (so use Set_epicyclic() to distinguish)
     void Set_tau(double mset) { tau = fabs(mset); }
-    /// Set the transmission ratio given the number of teeths (or radius) of 1st gear
-    /// and the number of teeths (or radius) of 2nd gear
+    /// Set the transmission ratio given the number of teeth (or radius) of 1st gear
+    /// and the number of teeth (or radius) of 2nd gear
     void Set_tau(double mz1, double mz2) { tau = fabs(mz1 / mz2); }
 
     /// Get the pressure angle (usually 20° for typical gears)
@@ -145,6 +142,8 @@ class ChApi ChLinkGear : public ChLinkLock {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLinkGear,0)
 
 }  // end namespace chrono
 

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -30,7 +30,7 @@ namespace hmmwv {
 // Static variables
 // -----------------------------------------------------------------------------
 
-const double HMMWV_Wheel::m_mass = 45.4;
+const double HMMWV_Wheel::m_mass = 18.8;
 const ChVector<> HMMWV_Wheel::m_inertia(0.113, 0.113, 0.113);
 
 const double HMMWV_Wheel::m_radius = 0.268;

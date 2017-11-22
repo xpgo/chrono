@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChKblockGeneric> a_registration_ChKblockGeneric;
+CH_FACTORY_REGISTER(ChKblockGeneric)
 
 ChKblockGeneric::ChKblockGeneric(std::vector<ChVariables*> mvariables) : K(NULL) {
     SetVariables(mvariables);
@@ -144,9 +144,9 @@ void ChKblockGeneric::Build_K(ChSparseMatrix& storage, bool add) {
 
                 if (this->GetVariableN(jv)->IsActive()) {
                     if (add)
-                        storage.PasteSumClippedMatrix(this->K, kio, kjo, in, jn, io, jo);
+                        storage.PasteSumClippedMatrix(*K, kio, kjo, in, jn, io, jo);
                     else
-                        storage.PasteClippedMatrix(this->K, kio, kjo, in, jn, io, jo);
+                        storage.PasteClippedMatrix(*K, kio, kjo, in, jn, io, jo);
                 }
 
                 kjo += jn;
@@ -157,38 +157,5 @@ void ChKblockGeneric::Build_K(ChSparseMatrix& storage, bool add) {
     }
 }
 
-/*
-void ChKblockGeneric::StreamOUT(ChStreamOutBinary& mstream)
-{
-        // class version number
-    mstream.VersionWrite(1);
-
-        // serialize parent class too
-    ChKblock::StreamOUT(mstream);
-
-        // stream out all member data
-    // NOTHING INTERESTING TO SERIALIZE (the Cq jacobians are not so
-    // important to waste disk space.. they may be recomputed run-time,
-    // and pointers to variables must be rebound in run-time.)
-    // mstream << Cq_a;
-    // mstream << Cq_b;
-}
-
-void ChKblockGeneric::StreamIN(ChStreamInBinary& mstream)
-{
-        // class version number
-    int version = mstream.VersionRead();
-
-        // deserialize parent class too
-    ChKblock::StreamIN(mstream);
-
-        // stream in all member data
-    // NOTHING INTERESTING TO DESERIALIZE (the Cq jacobians are not so
-    // important to waste disk space.. they may be recomputed run-time,
-    // and pointers to variables must be rebound in run-time.)
-    // mstream >> Cq_a;
-    // mstream >> Cq_b;
-}
-*/
 
 }  // end namespace chrono

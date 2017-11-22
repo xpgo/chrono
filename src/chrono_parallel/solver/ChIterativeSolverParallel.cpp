@@ -1,5 +1,25 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar
+// =============================================================================
+//
+// Description: This class calls the parallel solver, used as an intermediate
+// between chrono's solver interface and the parallel solver interface.
+//
+// =============================================================================
+
 #include "chrono_parallel/solver/ChIterativeSolverParallel.h"
-#include "physics/ChBody.h"
+
+#include "chrono/physics/ChBody.h"
 
 using namespace chrono;
 
@@ -19,26 +39,28 @@ ChIterativeSolverParallel::~ChIterativeSolverParallel() {
 }
 
 void ChIterativeSolverParallel::ComputeInvMassMatrix() {
-	LOG(INFO) << "ChIterativeSolverParallel::ComputeInvMassMatrix()";
-	uint num_bodies = data_manager->num_rigid_bodies;
-	uint num_shafts = data_manager->num_shafts;
-	uint num_fluid_bodies = data_manager->num_fluid_bodies;
-	uint num_fea_nodes = data_manager->num_fea_nodes;
-	uint num_dof = data_manager->num_dof;
-	bool use_full_inertia_tensor = data_manager->settings.solver.use_full_inertia_tensor;
-	const custom_vector<real>& shaft_inr = data_manager->host_data.shaft_inr;
+    LOG(INFO) << "ChIterativeSolverParallel::ComputeInvMassMatrix()";
+    uint num_bodies = data_manager->num_rigid_bodies;
+    uint num_shafts = data_manager->num_shafts;
+    uint num_fluid_bodies = data_manager->num_fluid_bodies;
+    uint num_fea_nodes = data_manager->num_fea_nodes;
+    uint num_dof = data_manager->num_dof;
+    bool use_full_inertia_tensor = data_manager->settings.solver.use_full_inertia_tensor;
+    const custom_vector<real>& shaft_inr = data_manager->host_data.shaft_inr;
 
-	std::vector<std::shared_ptr<ChBody> >* body_list = data_manager->body_list;
-	std::vector<std::shared_ptr<ChLink> >* link_list = data_manager->link_list;
-	std::vector<std::shared_ptr<ChPhysicsItem> >* other_physics_list = data_manager->other_physics_list;
+    std::vector<std::shared_ptr<ChBody> >* body_list = data_manager->body_list;
+    std::vector<std::shared_ptr<ChLink> >* link_list = data_manager->link_list;
+    std::vector<std::shared_ptr<ChPhysicsItem> >* other_physics_list = data_manager->other_physics_list;
 
-	const DynamicVector<real>& hf = data_manager->host_data.hf;
-	const DynamicVector<real>& v = data_manager->host_data.v;
+    const DynamicVector<real>& hf = data_manager->host_data.hf;
+    const DynamicVector<real>& v = data_manager->host_data.v;
 
-	DynamicVector<real>& M_invk = data_manager->host_data.M_invk;
-	CompressedMatrix<real>& M_inv = data_manager->host_data.M_inv;
+    DynamicVector<real>& M_invk = data_manager->host_data.M_invk;
+    CompressedMatrix<real>& M_inv = data_manager->host_data.M_inv;
 
-	if (M_inv.capacity() > 0) { clear(M_inv); }
+    if (M_inv.capacity() > 0) {
+        clear(M_inv);
+    }
 
     // Each rigid object has 3 mass entries and 9 inertia entries
     // Each shaft has one inertia entry
@@ -47,7 +69,7 @@ void ChIterativeSolverParallel::ComputeInvMassMatrix() {
     // Shafts have one DOF
     M_inv.resize(num_dof, num_dof);
 
-    for (int i = 0; i < num_bodies; i++) {
+    for (int i = 0; i < (signed)num_bodies; i++) {
         if (data_manager->host_data.active_rigid[i]) {
             real inv_mass = 1.0 / body_list->at(i)->GetMass();
             ChMatrix33<>& body_inv_inr = body_list->at(i)->VariablesBody().GetBodyInvInertia();
@@ -89,7 +111,7 @@ void ChIterativeSolverParallel::ComputeInvMassMatrix() {
         }
     }
 
-    for (int i = 0; i < num_shafts; i++) {
+    for (int i = 0; i < (signed)num_shafts; i++) {
         M_inv.append(num_bodies * 6 + i, num_bodies * 6 + i, shaft_inr[i]);
         M_inv.finalize(num_bodies * 6 + i);
     }
@@ -117,7 +139,9 @@ void ChIterativeSolverParallel::ComputeMassMatrix() {
 
     CompressedMatrix<real>& M = data_manager->host_data.M;
 
-	if (M.capacity() > 0) { clear(M); }
+    if (M.capacity() > 0) {
+        clear(M);
+    }
 
     // Each rigid object has 3 mass entries and 9 inertia entries
     // Each shaft has one inertia entry
@@ -126,7 +150,7 @@ void ChIterativeSolverParallel::ComputeMassMatrix() {
     // Shafts have one DOF
     M.resize(num_dof, num_dof);
 
-    for (int i = 0; i < num_bodies; i++) {
+    for (int i = 0; i < (signed)num_bodies; i++) {
         if (data_manager->host_data.active_rigid[i]) {
             real mass = body_list->at(i)->GetMass();
             ChMatrix33<>& body_inr = body_list->at(i)->VariablesBody().GetBodyInertia();
@@ -168,7 +192,7 @@ void ChIterativeSolverParallel::ComputeMassMatrix() {
         }
     }
 
-    for (int i = 0; i < num_shafts; i++) {
+    for (int i = 0; i < (signed)num_shafts; i++) {
         M.append(num_bodies * 6 + i, num_bodies * 6 + i, 1.0 / shaft_inr[i]);
         M.finalize(num_bodies * 6 + i);
     }
@@ -222,6 +246,6 @@ void ChIterativeSolverParallel::PerformStabilization() {
     data_manager->system_timer.stop("ChIterativeSolverParallel_Stab");
 }
 
-real  ChIterativeSolverParallel::GetResidual() {
-	return data_manager->measures.solver.maxd_hist.size() > 0 ? data_manager->measures.solver.maxd_hist.back() : 0.0;
+real ChIterativeSolverParallel::GetResidual() {
+    return data_manager->measures.solver.maxd_hist.size() > 0 ? data_manager->measures.solver.maxd_hist.back() : 0.0;
 }

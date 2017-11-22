@@ -1,14 +1,16 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-// File authors: Alessandro Tasora
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHCONTACTSURFACENODECLOUD_H
 #define CHCONTACTSURFACENODECLOUD_H
@@ -25,8 +27,6 @@ namespace fea {
 /// Proxy to FEA nodes, to grant them the features
 /// needed for collision detection.
 class ChApiFea ChContactNodeXYZ : public ChContactable_1vars<3> {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI_ROOT(ChContactNodeXYZ);
 
   public:
     ChContactNodeXYZ(ChNodeFEAxyz* anode = 0, ChContactSurface* acontainer = 0) {
@@ -91,7 +91,7 @@ class ChApiFea ChContactNodeXYZ : public ChContactable_1vars<3> {
     }
 
     /// Get the absolute speed of point abs_point if attached to the
-    /// surface. Easy in this case because there are no roations..
+    /// surface. Easy in this case because there are no rotations..
     virtual ChVector<> GetContactPointSpeed(const ChVector<>& abs_point) override { return this->mnode->pos_dt; }
 
     /// Return the coordinate system for the associated collision model.
@@ -106,7 +106,7 @@ class ChApiFea ChContactNodeXYZ : public ChContactable_1vars<3> {
                                             ChVectorDynamic<>& R) override;
 
     /// Apply the given force at the given point and load the generalized force array.
-    /// The force and its application point are specified in the gloabl frame.
+    /// The force and its application point are specified in the global frame.
     /// Each object must set the entries in Q corresponding to its variables, starting at the specified offset.
     /// If needed, the object states must be extracted from the provided state position.
     virtual void ContactForceLoadQ(const ChVector<>& F,
@@ -133,7 +133,7 @@ class ChApiFea ChContactNodeXYZ : public ChContactable_1vars<3> {
     }
 
     /// Return the pointer to the surface material.
-    virtual std::shared_ptr<ChMaterialSurfaceBase>& GetMaterialSurfaceBase() override;
+    virtual std::shared_ptr<ChMaterialSurface>& GetMaterialSurfaceBase() override;
 
     /// This is only for backward compatibility
     virtual ChPhysicsItem* GetPhysicsItem() override;
@@ -144,25 +144,20 @@ class ChApiFea ChContactNodeXYZ : public ChContactable_1vars<3> {
     ChContactSurface* container;
 };
 
-/// Proxy to FEA nodes for collisions, with spheres associated to nodes, for point-cloud 
+/// Proxy to FEA nodes for collisions, with spheres associated to nodes, for point-cloud
 /// type of collisions.
 class ChApiFea ChContactNodeXYZsphere : public ChContactNodeXYZ {
 
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChContactNodeXYZsphere, ChContactNodeXYZ);
-
-public:
+  public:
     ChContactNodeXYZsphere(ChNodeFEAxyz* anode = 0, ChContactSurface* acontainer = 0);
 
-    virtual ~ChContactNodeXYZsphere(){ delete collision_model;}
+    virtual ~ChContactNodeXYZsphere() { delete collision_model; }
 
-    collision::ChCollisionModel* GetCollisionModel() {return  collision_model;}
+    collision::ChCollisionModel* GetCollisionModel() { return collision_model; }
 
-private:
+  private:
     collision::ChCollisionModel* collision_model;
 };
-
-
 
 /// Proxy to FEA nodes with 3 xyz + 3 rot coords, to grant them the features
 /// needed for collision detection.
@@ -170,8 +165,6 @@ private:
 /// from ChNodeFEAxyzrot, but this does not happen -hopefully it will be, in future API-, so we need
 /// to implement also this ChContactNodeXYZROT as a proxy to ChNodeFEAxyzrot, sorry for code redundancy.
 class ChApiFea ChContactNodeXYZROT : public ChContactable_1vars<6> {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI_ROOT(ChContactNodeXYZROT);
 
   public:
     ChContactNodeXYZROT(ChNodeFEAxyzrot* anode = 0, ChContactSurface* acontainer = 0) {
@@ -218,7 +211,7 @@ class ChApiFea ChContactNodeXYZROT : public ChContactable_1vars<6> {
     /// Increment the provided state of this object by the given state-delta increment.
     /// Compute: x_new = x + dw.
     virtual void ContactableIncrementState(const ChState& x, const ChStateDelta& dw, ChState& x_new) override {
-        this->mnode->NodeIntStateIncrement(0, x_new, x, 0, dw); // no need for angular, assuming contact is centered
+        this->mnode->NodeIntStateIncrement(0, x_new, x, 0, dw);  // no need for angular, assuming contact is centered
     }
 
     /// Express the local point in absolute frame, for the given state position.
@@ -236,7 +229,7 @@ class ChApiFea ChContactNodeXYZROT : public ChContactable_1vars<6> {
     }
 
     /// Get the absolute speed of point abs_point if attached to the
-    /// surface. Easy in this case because there are no roations..
+    /// surface. Easy in this case because there are no rotations..
     virtual ChVector<> GetContactPointSpeed(const ChVector<>& abs_point) override { return this->mnode->GetPos_dt(); }
 
     /// Return the coordinate system for the associated collision model.
@@ -251,7 +244,7 @@ class ChApiFea ChContactNodeXYZROT : public ChContactable_1vars<6> {
                                             ChVectorDynamic<>& R) override;
 
     /// Apply the given force at the given point and load the generalized force array.
-    /// The force and its application point are specified in the gloabl frame.
+    /// The force and its application point are specified in the global frame.
     /// Each object must set the entries in Q corresponding to its variables, starting at the specified offset.
     /// If needed, the object states must be extracted from the provided state position.
     virtual void ContactForceLoadQ(const ChVector<>& F,
@@ -278,7 +271,7 @@ class ChApiFea ChContactNodeXYZROT : public ChContactable_1vars<6> {
     }
 
     /// Return the pointer to the surface material.
-    virtual std::shared_ptr<ChMaterialSurfaceBase>& GetMaterialSurfaceBase() override;
+    virtual std::shared_ptr<ChMaterialSurface>& GetMaterialSurfaceBase() override;
 
     /// This is only for backward compatibility
     virtual ChPhysicsItem* GetPhysicsItem() override;
@@ -289,38 +282,29 @@ class ChApiFea ChContactNodeXYZROT : public ChContactable_1vars<6> {
     ChContactSurface* container;
 };
 
-/// Proxy to FEA nodes for collisions, with spheres associated to nodes, for point-cloud 
+/// Proxy to FEA nodes for collisions, with spheres associated to nodes, for point-cloud
 /// type of collisions.
 class ChApiFea ChContactNodeXYZROTsphere : public ChContactNodeXYZROT {
 
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChContactNodeXYZROTsphere, ChContactNodeXYZROT);
-
-public:
+  public:
     ChContactNodeXYZROTsphere(ChNodeFEAxyzrot* anode = 0, ChContactSurface* acontainer = 0);
 
-    virtual ~ChContactNodeXYZROTsphere(){ delete collision_model;}
+    virtual ~ChContactNodeXYZROTsphere() { delete collision_model; }
 
-    collision::ChCollisionModel* GetCollisionModel() {return  collision_model;}
+    collision::ChCollisionModel* GetCollisionModel() { return collision_model; }
 
-private:
+  private:
     collision::ChCollisionModel* collision_model;
 };
 
-
 /// Class which defines a contact surface for FEA elements, where only xyz nodes
 /// in the FEA model are used as contact items for the collision detection.
-/// Might be an efficient option in case of dense tesselations (but misses the FEAnodes-vs-FEAfaces
+/// Might be an efficient option in case of dense tessellations (but misses the FEAnodes-vs-FEAfaces
 /// cases, and misses FEAedge-vs-edges)
 class ChApiFea ChContactSurfaceNodeCloud : public ChContactSurface {
 
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChContactSurfaceNodeCloud, ChContactSurface);
-
-
   public:
-    ChContactSurfaceNodeCloud(ChMesh* parentmesh = 0) : 
-        ChContactSurface(parentmesh) {};
+    ChContactSurfaceNodeCloud(ChMesh* parentmesh = 0) : ChContactSurface(parentmesh){};
 
     virtual ~ChContactSurfaceNodeCloud(){};
 
@@ -355,11 +339,11 @@ class ChApiFea ChContactSurfaceNodeCloud : public ChContactSurface {
     virtual void SurfaceRemoveCollisionModelsFromSystem(ChSystem* msys);
 
   private:
-    std::vector<std::shared_ptr<ChContactNodeXYZsphere> > vnodes;  //  nodes
-    std::vector<std::shared_ptr<ChContactNodeXYZROTsphere> > vnodes_rot;  //  nodes with rotations 
+    std::vector<std::shared_ptr<ChContactNodeXYZsphere> > vnodes;         //  nodes
+    std::vector<std::shared_ptr<ChContactNodeXYZROTsphere> > vnodes_rot;  //  nodes with rotations
 };
 
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace fea
+}  // end namespace chrono
 
 #endif

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -40,7 +40,7 @@ class CH_VEHICLE_API ChDoubleIdler : public ChIdler {
     virtual ~ChDoubleIdler() {}
 
     /// Return the type of track shoe consistent with this idler.
-    virtual GuidePinType GetType() const override { return GuidePinType::CENTRAL_PIN; }
+    virtual GuidePinType GetType() const final override { return GuidePinType::CENTRAL_PIN; }
 
     /// Initialize this idler subsystem.
     virtual void Initialize(std::shared_ptr<ChBodyAuxRef> chassis,  ///< [in] handle to the chassis body

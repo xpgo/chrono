@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -27,7 +27,6 @@ namespace chrono {
 ///   aw  = fraction of 2nd acceleration start (0..1) , with aw>av;
 
 class ChApi ChFunction_ConstAcc : public ChFunction {
-    CH_RTTI(ChFunction_ConstAcc, ChFunction);
 
   private:
     double h;
@@ -91,7 +90,7 @@ class ChApi ChFunction_ConstAcc : public ChFunction {
     virtual double Get_Ca_neg() const override;
     virtual double Get_Cv() const override;
 
-    virtual void Estimate_x_range(double& xmin, double& xmax) const {
+    virtual void Estimate_x_range(double& xmin, double& xmax) const override {
         xmin = 0.0;
         xmax = end;
     }
@@ -99,7 +98,7 @@ class ChApi ChFunction_ConstAcc : public ChFunction {
     /// Method to allow serialization of transient data to archives.
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChFunction_ConstAcc>();
         // serialize parent class
         ChFunction::ArchiveOUT(marchive);
         // serialize all member data:
@@ -112,7 +111,7 @@ class ChApi ChFunction_ConstAcc : public ChFunction {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChFunction_ConstAcc>();
         // deserialize parent class
         ChFunction::ArchiveIN(marchive);
         // stream in all member data:
@@ -122,6 +121,8 @@ class ChApi ChFunction_ConstAcc : public ChFunction {
         marchive >> CHNVP(av);
     }
 };
+
+CH_CLASS_VERSION(ChFunction_ConstAcc,0)
 
 }  // end namespace chrono
 

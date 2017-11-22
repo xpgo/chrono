@@ -1,34 +1,22 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010-2011 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
 
 #ifndef CHITERATIVE_H
 #define CHITERATIVE_H
 
-//////////////////////////////////////////////////
-//
-//   ChIterative.h
-//
-//   Iterative methods for linear algebra.
-//
-//   HEADER file for CHRONO,
-//	 Multibody dynamics engine
-//
-// ------------------------------------------------
-//             http://www.projectchrono.org
-// ------------------------------------------------
-///////////////////////////////////////////////////
+#include <cmath>
 
-#include <math.h>
-#include "core/ChApiCE.h"
-#include "core/ChMath.h"
+#include "chrono/core/ChApiCE.h"
+#include "chrono/core/ChMath.h"
 
 namespace chrono {
 
@@ -42,7 +30,7 @@ namespace chrono {
 /// TRANSPOSE-FREE QUASI-MINIMAL-RESIDUAL solver for linear systems.
 ///
 /// Iterative method to solve linear systems Ax=b, applies to
-/// both symmetric and non simmetric matrices, does not
+/// both symmetric and non symmetric matrices, does not
 /// breakdown for singular matrices, accepts preconditioning.
 ///
 ///  x         = initial guess for X0 and also matrix to store final value;
@@ -80,6 +68,6 @@ ChApi int ch_iterative_TFQMR(ChMatrix<>& x,
 
 ChApi int ch_iterative_TFQMR_easy(ChMatrix<>& A, ChMatrix<>& x, ChMatrix<>& b, double mkappa, int iterations);
 
-}  // END_OF_NAMESPACE____
+}  // end namespace chrono
 
 #endif

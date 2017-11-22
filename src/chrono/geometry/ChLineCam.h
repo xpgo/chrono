@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,7 +15,7 @@
 #ifndef CHC_LINECAM_H
 #define CHC_LINECAM_H
 
-#include <math.h>
+#include <cmath>
 
 #include "chrono/geometry/ChLine.h"
 #include "chrono/motion_functions/ChFunction.h"
@@ -44,8 +44,6 @@ CH_ENUM_MAPPER_END(eChCamType);
 /// The shape of a cam is specified through a ChFunction which defines the motion law of the follower.
 
 class ChApi ChLineCam : public ChLine {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChLineCam, ChLine);
 
   private:
     eChCamType type;                  ///< type of cam
@@ -62,8 +60,8 @@ class ChApi ChLineCam : public ChLine {
     double e;  ///< eccentricity of sliding follower
     double s;  ///< distance of sliding follower
 
-    int negative;  ///< negative cam: for desmodromic stuff, (cam is also Y or X mirrored, depend.on type )
-    int internal;  ///< follower roller is inside the cam
+    bool negative;  ///< negative cam: for desmodromic stuff, (cam is also Y or X mirrored, depend.on type )
+    bool internal;  ///< follower roller is inside the cam
 
     ChVector<> center;  ///< center of cam in space (def.alignment on xy plane)
 
@@ -107,12 +105,12 @@ class ChApi ChLineCam : public ChLine {
     ChVector<> Get_center() const { return center; }
 
     /// If true, creates a negative cam.
-    void Set_Negative(int mne) { negative = mne; }
-    int Get_Negative() const { return negative; }
+    void Set_Negative(bool val) { negative = val; }
+    bool Get_Negative() const { return negative; }
 
     /// If true, creates an internal cam.
-    void Set_Internal(int min) { internal = min; }
-    int Get_Internal() const { return internal; }
+    void Set_Internal(bool val) { internal = val; }
+    bool Get_Internal() const { return internal; }
 
     /// Sets the data for the rotating follower (length, distance from cam center, initial phase mb0)
     void Set_rotating_follower(double mp, double md, double mb0);
@@ -120,7 +118,7 @@ class ChApi ChLineCam : public ChLine {
     double Get_d() const { return d; }
     double Get_b0() const { return b0; }
 
-    /// Sets the data for the sliding follower (if eccentrical, with me eccentricity)
+    /// Sets the data for the sliding follower (if eccentric, with me eccentricity)
     void Set_sliding_eccentrical(double me) { e = me; };
     double Get_e() const { return e; }
     double Get_s() const { return sqrt(Rb * Rb - e * e); }
@@ -138,9 +136,7 @@ class ChApi ChLineCam : public ChLine {
     /// Given a parameter "u", finds position on line of the
     /// kind p=p(u); note that u is in the range 0...1, to make a complete cycle along the cam
     virtual void Evaluate(ChVector<>& pos,
-                          const double parU,
-                          const double parV = 0.,
-                          const double parW = 0.) const override;
+                          const double parU) const override;
 
     /// Weight evaluation.
     /// Given that the shape is defined by a Ch_function, the
@@ -150,7 +146,7 @@ class ChApi ChLineCam : public ChLine {
 
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChLineCam>();
         // serialize parent class
         ChLine::ArchiveOUT(marchive);
         // serialize all member data:
@@ -174,7 +170,7 @@ class ChApi ChLineCam : public ChLine {
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChLineCam>();
         // deserialize parent class
         ChLine::ArchiveIN(marchive);
         // stream in all member data:
@@ -196,6 +192,9 @@ class ChApi ChLineCam : public ChLine {
 };
 
 }  // end namespace geometry
+
+CH_CLASS_VERSION(geometry::ChLineCam,0)
+
 }  // end namespace chrono
 
 #endif

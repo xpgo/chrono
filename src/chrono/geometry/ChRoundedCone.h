@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -23,8 +23,6 @@ namespace geometry {
 /// A rounded cone (sphere-swept cone) geometric object for collisions and visualization.
 
 class ChApi ChRoundedCone : public ChGeometry {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChRoundedCone, ChGeometry);
 
   public:
     ChRoundedCone() : center(VNULL), rad(0) {}
@@ -62,7 +60,7 @@ class ChApi ChRoundedCone : public ChGeometry {
 
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChRoundedCone>();
         // serialize parent class
         ChGeometry::ArchiveOUT(marchive);
         // serialize all member data:
@@ -74,7 +72,7 @@ class ChApi ChRoundedCone : public ChGeometry {
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChRoundedCone>();
         // deserialize parent class
         ChGeometry::ArchiveIN(marchive);
         // stream in all member data:
@@ -85,6 +83,9 @@ class ChApi ChRoundedCone : public ChGeometry {
 };
 
 }  // end namespace geometry
+
+CH_CLASS_VERSION(geometry::ChRoundedCone,0)
+
 }  // end namespace chrono
 
 #endif

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -141,7 +141,8 @@ double ChLinkForce::Get_Force(double x, double x_dt, double t) const {
 
 void ChLinkForce::ArchiveOUT(ChArchiveOut& marchive) {
     // class version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChLinkForce>();
+
     // serialize parent class too
 
     // stream out all member data
@@ -156,7 +157,8 @@ void ChLinkForce::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChLinkForce::ArchiveIN(ChArchiveIn& marchive) {
     // class version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChLinkForce>();
+
     // deserialize parent class too
 
     // stream in all member data

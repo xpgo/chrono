@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -41,22 +41,6 @@ namespace chrono {
 namespace vehicle {
 
 // -----------------------------------------------------------------------------
-// These utility functions return a ChVector and a ChQuaternion, respectively,
-// from the specified JSON array.
-// -----------------------------------------------------------------------------
-static ChVector<> loadVector(const Value& a) {
-    assert(a.IsArray());
-    assert(a.Size() == 3);
-    return ChVector<>(a[0u].GetDouble(), a[1u].GetDouble(), a[2u].GetDouble());
-}
-
-static ChQuaternion<> loadQuaternion(const Value& a) {
-    assert(a.IsArray());
-    assert(a.Size() == 4);
-    return ChQuaternion<>(a[0u].GetDouble(), a[1u].GetDouble(), a[2u].GetDouble(), a[3u].GetDouble());
-}
-
-// -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 void TrackedVehicle::LoadChassis(const std::string& filename) {
     FILE* fp = fopen(filename.c_str(), "r");
@@ -67,7 +51,7 @@ void TrackedVehicle::LoadChassis(const std::string& filename) {
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Check that the given file is a chassis specification file.
     assert(d.HasMember("Type"));
@@ -97,7 +81,7 @@ void TrackedVehicle::LoadTrackAssembly(const std::string& filename, VehicleSide 
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Check that the given file is a steering specification file.
     assert(d.HasMember("Type"));
@@ -129,7 +113,7 @@ void TrackedVehicle::LoadDriveline(const std::string& filename) {
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Check that the given file is a driveline specification file.
     assert(d.HasMember("Type"));
@@ -150,7 +134,7 @@ void TrackedVehicle::LoadDriveline(const std::string& filename) {
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-TrackedVehicle::TrackedVehicle(const std::string& filename, ChMaterialSurfaceBase::ContactMethod contact_method)
+TrackedVehicle::TrackedVehicle(const std::string& filename, ChMaterialSurface::ContactMethod contact_method)
     : ChTrackedVehicle("", contact_method) {
     Create(filename);
 }
@@ -173,7 +157,7 @@ void TrackedVehicle::Create(const std::string& filename) {
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Read top-level data
     assert(d.HasMember("Type"));
@@ -233,7 +217,8 @@ void TrackedVehicle::Create(const std::string& filename) {
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 void TrackedVehicle::Initialize(const ChCoordsys<>& chassisPos, double chassisFwdVel) {
-    m_chassis->Initialize(m_system, chassisPos, chassisFwdVel);
+    // Invoke base class method to initialize the chassis.
+    ChTrackedVehicle::Initialize(chassisPos, chassisFwdVel);
 
     // Initialize the left and right track assemblies.
     m_tracks[0]->Initialize(m_chassis->GetBody(), ChVector<>(0, m_track_offset[0], 0));

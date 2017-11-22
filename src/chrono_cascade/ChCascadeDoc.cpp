@@ -1,26 +1,20 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2011-2012 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-
-///////////////////////////////////////////////////
-//
-//   ChCascadeDoc.cpp
-//
-// ------------------------------------------------
-//             http://www.projectchrono.org
-// ------------------------------------------------
-///////////////////////////////////////////////////
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #include "chrono_cascade/ChCascadeDoc.h"
 
-#include "core/ChMatrixDynamic.h"
+#include "chrono/core/ChMatrixDynamic.h"
 
 //#include "chrono_cascade/ChIrrCascadeMeshTools.h"
 
@@ -396,16 +390,16 @@ bool ChCascadeDoc::GetVolumeProperties(const TopoDS_Shape& mshape,   ///< pass t
     gp_Pnt G = mprops.CentreOfMass();
     gp_Mat I = mprops.MatrixOfInertia();
 
-    center_position.x = G.X();
-    center_position.y = G.Y();
-    center_position.z = G.Z();
+    center_position.x() = G.X();
+    center_position.y() = G.Y();
+    center_position.z() = G.Z();
 
-    inertiaXX.x = I(1, 1);
-    inertiaXX.y = I(2, 2);
-    inertiaXX.z = I(3, 3);
-    inertiaXY.x = I(1, 2);
-    inertiaXY.y = I(1, 3);
-    inertiaXY.z = I(2, 3);
+    inertiaXX.x() = I(1, 1);
+    inertiaXX.y() = I(2, 2);
+    inertiaXX.z() = I(3, 3);
+    inertiaXY.x() = I(1, 2);
+    inertiaXY.y() = I(1, 3);
+    inertiaXY.z() = I(2, 3);
 
     return true;
 }
@@ -434,13 +428,13 @@ void ChCascadeDoc::FromCascadeToChrono(const TopLoc_Location& from_coord, ChFram
 
 void ChCascadeDoc::FromChronoToCascade(const ChFrame<>& from_coord, TopLoc_Location& to_coord) {
     const ChVector<>& mpos = from_coord.GetPos();
-    gp_Vec mtr(mpos.x, mpos.y, mpos.z);
+    gp_Vec mtr(mpos.x(), mpos.y(), mpos.z());
 
     const ChMatrix33<>& from_mat = from_coord.GetA();
 
     ((gp_Trsf)(to_coord.Transformation()))
-        .SetValues(from_mat(0, 0), from_mat(0, 1), from_mat(0, 2), mpos.x, from_mat(1, 0), from_mat(1, 1),
-                   from_mat(1, 2), mpos.y, from_mat(2, 0), from_mat(2, 1), from_mat(2, 2), mpos.z); //0, 0);
+        .SetValues(from_mat(0, 0), from_mat(0, 1), from_mat(0, 2), mpos.x(), from_mat(1, 0), from_mat(1, 1),
+                   from_mat(1, 2), mpos.y(), from_mat(2, 0), from_mat(2, 1), from_mat(2, 2), mpos.z()); //0, 0);
 }
 
 

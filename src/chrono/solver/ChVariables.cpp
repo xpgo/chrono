@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,6 +15,10 @@
 #include "chrono/solver/ChVariables.h"
 
 namespace chrono {
+
+// Register into the object factory, to enable run-time
+// dynamic creation and persistence
+//CH_FACTORY_REGISTER(ChVariables)
 
 ChVariables::ChVariables(int m_ndof) : disabled(false), ndof(m_ndof), offset(0) {
     if (Get_ndof() > 0) {
@@ -60,8 +64,6 @@ ChVariables& ChVariables::operator=(const ChVariables& other) {
     return *this;
 }
 
-// Register into the object factory, to enable run-time
-// dynamic creation and persistence
-// ChClassRegister<ChVariables> a_registration_ChVariables;
+
 
 }  // end namespace chrono

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -18,7 +18,7 @@
 // The global reference frame has Z up.
 // =============================================================================
 
-#include "chrono/physics/ChSystem.h"
+#include "chrono/physics/ChSystemNSC.h"
 #include "chrono/utils/ChUtilsCreators.h"
 #include "chrono/utils/ChUtilsGenerators.h"
 
@@ -45,7 +45,9 @@ void AddMixture(ChSystem* sys) {
 // Create the system
 // -----------------------------------------------------------------------------
 int main(int argc, char* argv[]) {
-    ChSystem msystem;
+    GetLog() << "Copyright (c) 2017 projectchrono.org\nChrono version: " << CHRONO_VERSION << "\n\n";
+
+    ChSystemNSC msystem;
 
     AddMixture(&msystem);
 

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -35,8 +35,6 @@ class ChBodyFrame;
 /// the carrier shaft to a fixed body via a ChShaftsBody constraint.
 
 class ChApi ChShaftsGearbox : public ChPhysicsItem {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChShaftsGearbox, ChPhysicsItem);
 
   private:
     double r1;  ///< transmission ratios  as in   r1*w1 + r2*w2 + r3*w3 = 0
@@ -64,7 +62,7 @@ class ChApi ChShaftsGearbox : public ChPhysicsItem {
     /// Get the number of scalar variables affected by constraints in this link
     virtual int GetNumCoords() const { return 6 + 1 + 1; }
 
-    /// Number of scalar costraints
+    /// Number of scalar constraints
     virtual int GetDOC_c() override { return 1; }
 
     //
@@ -125,8 +123,8 @@ class ChApi ChShaftsGearbox : public ChPhysicsItem {
 
     /// Set the transmission ratio t, as in w2=t*w1, or t=w2/w1 , or  t*w1 - w2 = 0.
     /// For example, t=1 for a rigid joint; t=-0.5 for representing
-    /// a couple of spur gears with teeths z1=20 & z2=40; t=0.1 for
-    /// a gear with inner teeths (or epicycloidal reducer), etc.
+    /// a couple of spur gears with teeth z1=20 & z2=40; t=0.1 for
+    /// a gear with inner teeth (or epicycloidal reducer), etc.
     /// Also the t0 ordinary equivalent ratio of the inverted planetary,
     /// if the 3D body is rotating as in planetary gears.
     void SetTransmissionRatio(double t0) {
@@ -172,6 +170,8 @@ class ChApi ChShaftsGearbox : public ChPhysicsItem {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChShaftsGearbox,0)
 
 }  // end namespace chrono
 

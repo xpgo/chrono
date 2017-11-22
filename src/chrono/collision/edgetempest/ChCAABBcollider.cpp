@@ -1,31 +1,22 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
 
-//////////////////////////////////////////////////
-//
-//   ChCAABBcollider.cpp
-//
-// ------------------------------------------------
-//             http://www.projectchrono.org
-// ------------------------------------------------
-///////////////////////////////////////////////////
+#include <cstdio>
+#include <cstring>
 
-#include <stdio.h>
-#include <string.h>
-
-#include "ChCMatVec.h"
-#include "ChCGetTime.h"
-#include "ChCAABBcollider.h"
-
-#include "ChCGeometryCollider.h"
+#include "chrono/collision/edgetempest/ChCMatVec.h"
+#include "chrono/collision/edgetempest/ChCGetTime.h"
+#include "chrono/collision/edgetempest/ChCAABBcollider.h"
+#include "chrono/collision/edgetempest/ChCGeometryCollider.h"
 
 namespace chrono {
 namespace collision {
@@ -166,5 +157,5 @@ ChNarrowPhaseCollider::eCollSuccess CHAABBcollider::ComputeCollisions(ChMatrix33
     return ChC_RESULT_OK;
 }
 
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace collision
+}  // end namespace chrono

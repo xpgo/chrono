@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -23,7 +23,6 @@ namespace chrono {
 /// link type is able to couple translation and rotation.
 
 class ChApi ChLinkScrew : public ChLinkLock {
-    CH_RTTI(ChLinkScrew, ChLinkLock);
 
   protected:
     double tau;  ///< transmission coeff.
@@ -52,6 +51,8 @@ class ChApi ChLinkScrew : public ChLinkLock {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLinkScrew,0)
 
 }  // end namespace chrono
 

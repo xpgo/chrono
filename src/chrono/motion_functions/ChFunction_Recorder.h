@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -50,7 +50,6 @@ class ChApi ChRecPoint {
 ///     where (x,y) points can be inserted randomly.
 
 class ChApi ChFunction_Recorder : public ChFunction {
-    CH_RTTI(ChFunction_Recorder, ChFunction);
 
   private:
     std::list<ChRecPoint> m_points;  ///< the list of points
@@ -84,7 +83,7 @@ class ChApi ChFunction_Recorder : public ChFunction {
     /// Method to allow serialization of transient data to archives.
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChFunction_Recorder>();
         // serialize parent class
         ChFunction::ArchiveOUT(marchive);
         // serialize all member data: copy to vector and store
@@ -95,7 +94,7 @@ class ChApi ChFunction_Recorder : public ChFunction {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChFunction_Recorder>();
         // deserialize parent class
         ChFunction::ArchiveIN(marchive);
         // stream in all member data: load vector of points and copy to list
@@ -105,6 +104,8 @@ class ChApi ChFunction_Recorder : public ChFunction {
         std::copy(tmpvect.begin(), tmpvect.end(), std::back_inserter(m_points));
     }
 };
+
+CH_CLASS_VERSION(ChFunction_Recorder,0)
 
 }  // end namespace chrono
 

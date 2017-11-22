@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,7 +19,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChShaftsGearboxAngled> a_registration_ChShaftsGearboxAngled;
+CH_FACTORY_REGISTER(ChShaftsGearboxAngled)
 
 ChShaftsGearboxAngled::ChShaftsGearboxAngled()
     : t0(1), torque_react(0), shaft1(NULL), shaft2(NULL), body(NULL), shaft_dir1(VECT_X), shaft_dir2(VECT_X) {
@@ -165,9 +165,9 @@ void ChShaftsGearboxAngled::ConstraintsLoadJacobians() {
     constraint.Get_Cq_c()->ElementN(0) = 0;
     constraint.Get_Cq_c()->ElementN(1) = 0;
     constraint.Get_Cq_c()->ElementN(2) = 0;
-    constraint.Get_Cq_c()->ElementN(3) = jacw.x;
-    constraint.Get_Cq_c()->ElementN(4) = jacw.y;
-    constraint.Get_Cq_c()->ElementN(5) = jacw.z;
+    constraint.Get_Cq_c()->ElementN(3) = jacw.x();
+    constraint.Get_Cq_c()->ElementN(4) = jacw.y();
+    constraint.Get_Cq_c()->ElementN(5) = jacw.z();
 }
 
 void ChShaftsGearboxAngled::ConstraintsFetch_react(double factor) {
@@ -179,7 +179,7 @@ void ChShaftsGearboxAngled::ConstraintsFetch_react(double factor) {
 
 void ChShaftsGearboxAngled::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChShaftsGearboxAngled>();
 
     // serialize parent class
     ChPhysicsItem::ArchiveOUT(marchive);
@@ -196,7 +196,7 @@ void ChShaftsGearboxAngled::ArchiveOUT(ChArchiveOut& marchive) {
 /// Method to allow de serialization of transient data from archives.
 void ChShaftsGearboxAngled::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChShaftsGearboxAngled>();
 
     // deserialize parent class:
     ChPhysicsItem::ArchiveIN(marchive);

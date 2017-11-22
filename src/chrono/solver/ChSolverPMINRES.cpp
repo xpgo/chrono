@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChSolverPMINRES> a_registration_ChSolverPMINRES;
+CH_FACTORY_REGISTER(ChSolverPMINRES)
 
 double ChSolverPMINRES::Solve(ChSystemDescriptor& sysd  ///< system description with constraints and variables
                               ) {
@@ -168,12 +168,12 @@ double ChSolverPMINRES::Solve(ChSystemDescriptor& sysd  ///< system description 
             mMNp.MatrScale(mDi);
 
         // alpha = (z'*(NMr))/((MNp)'*(Np));
-        double zNMr = mz.MatrDot(&mz, &mNMr);      // 1)  zMNr = z'* NMr
-        double MNpNp = mMNp.MatrDot(&mMNp, &mNp);  // 2)  MNpNp = ((MNp)'*(Np))
+        double zNMr = mz.MatrDot(mz, mNMr);      // 1)  zMNr = z'* NMr
+        double MNpNp = mMNp.MatrDot(mMNp, mNp);  // 2)  MNpNp = ((MNp)'*(Np))
 
         if (fabs(MNpNp) < 10e-30) {
             if (verbose)
-                GetLog() << "Iter=" << iter << " Rayleygh quotient alpha breakdown: " << zNMr << " / " << MNpNp << "\n";
+                GetLog() << "Iter=" << iter << " Rayleigh quotient alpha breakdown: " << zNMr << " / " << MNpNp << "\n";
             MNpNp = 10e-12;
         }
 
@@ -227,8 +227,8 @@ double ChSolverPMINRES::Solve(ChSystemDescriptor& sysd  ///< system description 
 
         // beta = z'*(NMr-NMr_old)/(z_old'*(NMr_old));
         mtmp.MatrSub(mNMr, mNMr_old);
-        double numerator = mz.MatrDot(&mz, &mtmp);
-        double denominator = mz_old.MatrDot(&mz_old, &mNMr_old);
+        double numerator = mz.MatrDot(mz, mtmp);
+        double denominator = mz_old.MatrDot(mz_old, mNMr_old);
 
         double beta = numerator / denominator;
 
@@ -403,20 +403,20 @@ double ChSolverPMINRES::Solve_SupportingStiffness(
             mMZp.MatrScale(mDi);
 
         // alpha = (z'*(ZMr))/((MZp)'*(Zp));
-        double zZMr = mz.MatrDot(&mz, &mZMr);      // 1)  zZMr = z'* ZMr
-        double MZpZp = mMZp.MatrDot(&mMZp, &mZp);  // 2)  MZpZp = ((MZp)'*(Zp))
+        double zZMr = mz.MatrDot(mz, mZMr);      // 1)  zZMr = z'* ZMr
+        double MZpZp = mMZp.MatrDot(mMZp, mZp);  // 2)  MZpZp = ((MZp)'*(Zp))
 
         // Robustness improver: case of division by zero
         if (fabs(MZpZp) < 10e-30) {
             if (verbose)
-                GetLog() << "Rayleygh alpha denominator breakdown: " << zZMr << " / " << MZpZp << "=" << (zZMr / MZpZp)
+                GetLog() << "Rayleigh alpha denominator breakdown: " << zZMr << " / " << MZpZp << "=" << (zZMr / MZpZp)
                          << "  iter=" << iter << "\n";
             MZpZp = 10e-30;
         }
         // Robustness improver: case when r is orthogonal to Z*r (ex at first iteration, if f=0, x=0, with constraints)
         if (fabs(zZMr) < 10e-30) {
             if (verbose)
-                GetLog() << "Rayleygh alpha numerator breakdown: " << zZMr << " / " << MZpZp << "=" << (zZMr / MZpZp)
+                GetLog() << "Rayleigh alpha numerator breakdown: " << zZMr << " / " << MZpZp << "=" << (zZMr / MZpZp)
                          << "  iter=" << iter << "\n";
             zZMr = 1;
             MZpZp = 1;
@@ -426,7 +426,7 @@ double ChSolverPMINRES::Solve_SupportingStiffness(
 
         if (alpha < 0)
             if (verbose)
-                GetLog() << "Rayleygh alpha < 0: " << alpha << "    iter=" << iter << "\n";
+                GetLog() << "Rayleigh alpha < 0: " << alpha << "    iter=" << iter << "\n";
 
         // x = x + alpha * p;
         mtmp = mp;
@@ -477,11 +477,11 @@ double ChSolverPMINRES::Solve_SupportingStiffness(
         // Ribiere quotient (for flexible preconditioning)
         // beta = z'*(ZMr-ZMr_old)/(z_old'*(ZMr_old));
         mtmp.MatrSub(mZMr, mZMr_old);
-        double numerator = mz.MatrDot(&mz, &mtmp);
-        double denominator = mz_old.MatrDot(&mz_old, &mZMr_old);
-        // Raleygh quotient (original Minres)
-        // double numerator   = mr.MatrDot(&mz,&mZMr);			// 1)  r'* Z *r
-        // double denominator = mr.MatrDot(&mz_old,&mZMr_old);	// 2)  r_old'* Z *r_old
+        double numerator = mz.MatrDot(mz, mtmp);
+        double denominator = mz_old.MatrDot(mz_old, mZMr_old);
+        // Rayleigh quotient (original Minres)
+        // double numerator   = mr.MatrDot(mz,mZMr);			// 1)  r'* Z *r
+        // double denominator = mr.MatrDot(mz_old,mZMr_old);	// 2)  r_old'* Z *r_old
         double beta = numerator / denominator;
 
         // Robustness improver: restart if beta=0 or too large

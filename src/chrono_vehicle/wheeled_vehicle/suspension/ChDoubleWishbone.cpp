@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -20,7 +20,7 @@
 // the vehicle.  When attached to a chassis, only an offset is provided.
 //
 // All point locations are assumed to be given for the left half of the
-// supspension and will be mirrored (reflecting the y coordinates) to construct
+// suspension and will be mirrored (reflecting the y coordinates) to construct
 // the right side.
 //
 // =============================================================================
@@ -28,6 +28,7 @@
 #include <algorithm>
 
 #include "chrono/assets/ChCylinderShape.h"
+#include "chrono/assets/ChPointPointDrawing.h"
 #include "chrono/assets/ChColorAsset.h"
 
 #include "chrono_vehicle/wheeled_vehicle/suspension/ChDoubleWishbone.h"
@@ -57,16 +58,20 @@ const std::string ChDoubleWishbone::m_pointNames[] = {"SPINDLE ",
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-ChDoubleWishbone::ChDoubleWishbone(const std::string& name) : ChSuspension(name) {
-}
+ChDoubleWishbone::ChDoubleWishbone(const std::string& name, bool vehicle_frame_inertia)
+    : ChSuspension(name), m_vehicle_frame_inertia(vehicle_frame_inertia) {}
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 void ChDoubleWishbone::Initialize(std::shared_ptr<ChBodyAuxRef> chassis,
                                   const ChVector<>& location,
                                   std::shared_ptr<ChBody> tierod_body,
+                                  int steering_index,
                                   double left_ang_vel,
                                   double right_ang_vel) {
+    m_location = location;
+    m_steering_index = steering_index;
+
     // Express the suspension reference frame in the absolute coordinate system.
     ChFrame<> suspension_to_abs(location);
     suspension_to_abs.ConcatenatePreTransformation(chassis->GetFrame_REF_to_abs());
@@ -77,7 +82,7 @@ void ChDoubleWishbone::Initialize(std::shared_ptr<ChBodyAuxRef> chassis,
     for (int i = 0; i < NUM_POINTS; i++) {
         ChVector<> rel_pos = getLocation(static_cast<PointId>(i));
         m_pointsL[i] = suspension_to_abs.TransformLocalToParent(rel_pos);
-        rel_pos.y = -rel_pos.y;
+        rel_pos.y() = -rel_pos.y();
         m_pointsR[i] = suspension_to_abs.TransformLocalToParent(rel_pos);
     }
 
@@ -113,7 +118,14 @@ void ChDoubleWishbone::InitializeSide(VehicleSide side,
     m_upright[side]->SetPos(points[UPRIGHT]);
     m_upright[side]->SetRot(chassisRot);
     m_upright[side]->SetMass(getUprightMass());
-    m_upright[side]->SetInertiaXX(getUprightInertia());
+    if (m_vehicle_frame_inertia) {
+        ChMatrix33<> inertia =
+            TransformInertiaMatrix(getUprightInertiaMoments(), getUprightInertiaProducts(), chassisRot, chassisRot);
+        m_upright[side]->SetInertia(inertia);
+    } else {
+        m_upright[side]->SetInertiaXX(getUprightInertiaMoments());
+        m_upright[side]->SetInertiaXY(getUprightInertiaProducts());
+    }
     chassis->GetSystem()->AddBody(m_upright[side]);
 
     // Unit vectors for orientation matrices.
@@ -137,7 +149,13 @@ void ChDoubleWishbone::InitializeSide(VehicleSide side,
     m_UCA[side]->SetPos(points[UCA_CM]);
     m_UCA[side]->SetRot(rot);
     m_UCA[side]->SetMass(getUCAMass());
-    m_UCA[side]->SetInertiaXX(getUCAInertia());
+    if (m_vehicle_frame_inertia) {
+        ChMatrix33<> inertia = TransformInertiaMatrix(getUCAInertiaMoments(), getUCAInertiaProducts(), chassisRot, rot);
+        m_UCA[side]->SetInertia(inertia);
+    } else {
+        m_UCA[side]->SetInertiaXX(getUCAInertiaMoments());
+        m_UCA[side]->SetInertiaXY(getUCAInertiaProducts());
+    }
     chassis->GetSystem()->AddBody(m_UCA[side]);
 
     // Create and initialize Lower Control Arm body.
@@ -155,7 +173,13 @@ void ChDoubleWishbone::InitializeSide(VehicleSide side,
     m_LCA[side]->SetPos(points[LCA_CM]);
     m_LCA[side]->SetRot(rot);
     m_LCA[side]->SetMass(getLCAMass());
-    m_LCA[side]->SetInertiaXX(getLCAInertia());
+    if (m_vehicle_frame_inertia) {
+        ChMatrix33<> inertia = TransformInertiaMatrix(getLCAInertiaMoments(), getLCAInertiaProducts(), chassisRot, rot);
+        m_LCA[side]->SetInertia(inertia);
+    } else {
+        m_LCA[side]->SetInertiaXX(getLCAInertiaMoments());
+        m_LCA[side]->SetInertiaXY(getLCAInertiaProducts());
+    }
     chassis->GetSystem()->AddBody(m_LCA[side]);
 
     // Create and initialize the revolute joint between upright and spindle.
@@ -221,14 +245,14 @@ void ChDoubleWishbone::InitializeSide(VehicleSide side,
     m_shock[side] = std::make_shared<ChLinkSpringCB>();
     m_shock[side]->SetNameString(m_name + "_shock" + suffix);
     m_shock[side]->Initialize(chassis, m_LCA[side], false, points[SHOCK_C], points[SHOCK_A]);
-    m_shock[side]->Set_SpringCallback(getShockForceCallback());
+    m_shock[side]->RegisterForceFunctor(getShockForceFunctor());
     chassis->GetSystem()->AddLink(m_shock[side]);
 
     m_spring[side] = std::make_shared<ChLinkSpringCB>();
     m_spring[side]->SetNameString(m_name + "_spring" + suffix);
     m_spring[side]->Initialize(chassis, m_LCA[side], false, points[SPRING_C], points[SPRING_A], false,
                                getSpringRestLength());
-    m_spring[side]->Set_SpringCallback(getSpringForceCallback());
+    m_spring[side]->RegisterForceFunctor(getSpringForceFunctor());
     chassis->GetSystem()->AddLink(m_spring[side]);
 
     // Create and initialize the axle shaft and its connection to the spindle. Note that the
@@ -253,6 +277,27 @@ double ChDoubleWishbone::GetMass() const {
 }
 
 // -----------------------------------------------------------------------------
+// Get the current COM location of the suspension subsystem.
+// -----------------------------------------------------------------------------
+ChVector<> ChDoubleWishbone::GetCOMPos() const {
+    ChVector<> com(0, 0, 0);
+
+    com += getSpindleMass() * m_spindle[LEFT]->GetPos();
+    com += getSpindleMass() * m_spindle[RIGHT]->GetPos();
+
+    com += getUCAMass() * m_UCA[LEFT]->GetPos();
+    com += getUCAMass() * m_UCA[RIGHT]->GetPos();
+
+    com += getLCAMass() * m_LCA[LEFT]->GetPos();
+    com += getLCAMass() * m_LCA[RIGHT]->GetPos();
+
+    com += getUprightMass() * m_upright[LEFT]->GetPos();
+    com += getUprightMass() * m_upright[RIGHT]->GetPos();
+
+    return com / GetMass();
+}
+
+// -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 void ChDoubleWishbone::LogHardpointLocations(const ChVector<>& ref, bool inches) {
     double unit = inches ? 1 / 0.0254 : 1.0;
@@ -260,7 +305,7 @@ void ChDoubleWishbone::LogHardpointLocations(const ChVector<>& ref, bool inches)
     for (int i = 0; i < NUM_POINTS; i++) {
         ChVector<> pos = ref + unit * getLocation(static_cast<PointId>(i));
 
-        GetLog() << "   " << m_pointNames[i].c_str() << "  " << pos.x << "  " << pos.y << "  " << pos.z << "\n";
+        GetLog() << "   " << m_pointNames[i].c_str() << "  " << pos.x() << "  " << pos.y() << "  " << pos.z() << "\n";
     }
 }
 
@@ -338,6 +383,19 @@ void ChDoubleWishbone::AddVisualizationAssets(VisualizationType vis) {
     // Add visualization for lower control arms
     AddVisualizationControlArm(m_LCA[LEFT], m_pointsL[LCA_F], m_pointsL[LCA_B], m_pointsL[LCA_U], getLCARadius());
     AddVisualizationControlArm(m_LCA[RIGHT], m_pointsR[LCA_F], m_pointsR[LCA_B], m_pointsR[LCA_U], getLCARadius());
+
+    // Add visualization for the springs and shocks
+    m_spring[LEFT]->AddAsset(std::make_shared<ChPointPointSpring>(0.06, 150, 15));
+    m_spring[RIGHT]->AddAsset(std::make_shared<ChPointPointSpring>(0.06, 150, 15));
+
+    m_shock[LEFT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_shock[RIGHT]->AddAsset(std::make_shared<ChPointPointSegment>());
+
+    // Add visualization for the tie-rods
+    m_distTierod[LEFT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distTierod[RIGHT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distTierod[LEFT]->AddAsset(std::make_shared<ChColorAsset>(0.8f, 0.3f, 0.3f));
+    m_distTierod[RIGHT]->AddAsset(std::make_shared<ChColorAsset>(0.8f, 0.3f, 0.3f));
 }
 
 void ChDoubleWishbone::RemoveVisualizationAssets() {
@@ -351,6 +409,15 @@ void ChDoubleWishbone::RemoveVisualizationAssets() {
 
     m_LCA[LEFT]->GetAssets().clear();
     m_LCA[RIGHT]->GetAssets().clear();
+
+    m_spring[LEFT]->GetAssets().clear();
+    m_spring[RIGHT]->GetAssets().clear();
+
+    m_shock[LEFT]->GetAssets().clear();
+    m_shock[RIGHT]->GetAssets().clear();
+
+    m_distTierod[LEFT]->GetAssets().clear();
+    m_distTierod[RIGHT]->GetAssets().clear();
 }
 
 // -----------------------------------------------------------------------------

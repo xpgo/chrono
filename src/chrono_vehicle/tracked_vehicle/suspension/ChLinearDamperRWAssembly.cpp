@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -18,6 +18,7 @@
 // =============================================================================
 
 #include "chrono/assets/ChCylinderShape.h"
+#include "chrono/assets/ChPointPointDrawing.h"
 #include "chrono/assets/ChColorAsset.h"
 
 #include "chrono_vehicle/tracked_vehicle/suspension/ChLinearDamperRWAssembly.h"
@@ -49,9 +50,10 @@ void ChLinearDamperRWAssembly::Initialize(std::shared_ptr<ChBodyAuxRef> chassis,
     // Create the trailing arm body. The reference frame of the arm body has its
     // x-axis aligned with the line between the arm-chassis connection point and
     // the arm-wheel connection point.
+    ChVector<> y_dir = susp_to_abs.GetA().Get_A_Yaxis();
     ChVector<> u = susp_to_abs.GetPos() - points[ARM_CHASSIS];
     u.Normalize();
-    ChVector<> w = Vcross(u, susp_to_abs.GetA().Get_A_Yaxis());
+    ChVector<> w = Vcross(u, y_dir);
     w.Normalize();
     ChVector<> v = Vcross(w, u);
     ChMatrix33<> rot;
@@ -65,12 +67,13 @@ void ChLinearDamperRWAssembly::Initialize(std::shared_ptr<ChBodyAuxRef> chassis,
     m_arm->SetInertiaXX(GetArmInertia());
     chassis->GetSystem()->AddBody(m_arm);
 
-    // Cache points for arm visualization (expressed in the arm frame)
+    // Cache points and directions for arm visualization (expressed in the arm frame)
     m_pO = m_arm->TransformPointParentToLocal(susp_to_abs.GetPos());
     m_pA = m_arm->TransformPointParentToLocal(points[ARM]);
     m_pAW = m_arm->TransformPointParentToLocal(points[ARM_WHEEL]);
     m_pAC = m_arm->TransformPointParentToLocal(points[ARM_CHASSIS]);
     m_pAS = m_arm->TransformPointParentToLocal(points[SHOCK_A]);
+    m_dY = m_arm->TransformDirectionParentToLocal(y_dir);
 
     // Create and initialize the revolute joint between arm and chassis.
     // The axis of rotation is the y axis of the suspension reference frame.
@@ -78,16 +81,21 @@ void ChLinearDamperRWAssembly::Initialize(std::shared_ptr<ChBodyAuxRef> chassis,
     m_revolute->SetNameString(m_name + "_revolute");
     m_revolute->Initialize(chassis, m_arm,
                            ChCoordsys<>(points[ARM_CHASSIS], susp_to_abs.GetRot() * Q_from_AngX(CH_C_PI_2)));
-    // Add torsional spring associated with m_revolute
-    m_revolute->SetForce_Rz(GetTorsionForceFunction());
     chassis->GetSystem()->AddLink(m_revolute);
 
-    // Create and initialize the shock force element.
+    // Create and initialize the rotational spring torque element.
+    m_spring = std::make_shared<ChLinkRotSpringCB>();
+    m_spring->SetNameString(m_name + "_spring");
+    m_spring->Initialize(chassis, m_arm, ChCoordsys<>(points[ARM_CHASSIS], susp_to_abs.GetRot() * Q_from_AngX(CH_C_PI_2)));
+    m_spring->RegisterTorqueFunctor(GetSpringTorqueFunctor());
+    chassis->GetSystem()->AddLink(m_spring);
+
+    // Create and initialize the translational shock force element.
     if (m_has_shock) {
         m_shock = std::make_shared<ChLinkSpringCB>();
         m_shock->SetNameString(m_name + "_shock");
         m_shock->Initialize(chassis, m_arm, false, points[SHOCK_C], points[SHOCK_A]);
-        m_shock->Set_SpringCallback(GetShockForceCallback());
+        m_shock->RegisterForceFunctor(GetShockForceFunctor());
         chassis->GetSystem()->AddLink(m_shock);
     }
 
@@ -104,9 +112,13 @@ double ChLinearDamperRWAssembly::GetMass() const {
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void ChLinearDamperRWAssembly::AddVisualizationAssets(VisualizationType vis) {
-    m_road_wheel->AddVisualizationAssets(vis);
+double ChLinearDamperRWAssembly::GetCarrierAngle() const {
+    return m_spring->GetRelAngle();
+}
 
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+void ChLinearDamperRWAssembly::AddVisualizationAssets(VisualizationType vis) {
     if (vis == VisualizationType::NONE)
         return;
 
@@ -137,6 +149,16 @@ void ChLinearDamperRWAssembly::AddVisualizationAssets(VisualizationType vis) {
         m_arm->AddAsset(cyl);
     }
 
+    // Revolute joint (arm-chassis)
+    {
+        auto cyl = std::make_shared<ChCylinderShape>();
+        cyl->GetCylinderGeometry().p1 = m_pAC - radius * m_dY;
+        cyl->GetCylinderGeometry().p2 = m_pAC + radius * m_dY;
+        cyl->GetCylinderGeometry().rad = 1.5 * radius;
+        m_arm->AddAsset(cyl);
+    }
+
+    // Revolute joint (arm-wheel)
     if ((m_pO - m_pAW).Length2() > threshold2) {
         auto cyl = std::make_shared<ChCylinderShape>();
         double len = (m_pO - m_pAW).Length();
@@ -149,12 +171,17 @@ void ChLinearDamperRWAssembly::AddVisualizationAssets(VisualizationType vis) {
     auto col = std::make_shared<ChColorAsset>();
     col->SetColor(ChColor(0.2f, 0.6f, 0.3f));
     m_arm->AddAsset(col);
+
+    // Visualization of the shock (with default color)
+    if (m_has_shock) {
+        m_shock->AddAsset(std::make_shared<ChPointPointSegment>());
+    }
 }
 
 void ChLinearDamperRWAssembly::RemoveVisualizationAssets() {
-    m_road_wheel->RemoveVisualizationAssets();
-
     m_arm->GetAssets().clear();
+    if (m_has_shock)
+      m_shock->GetAssets().clear();
 }
 
 // -----------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -20,8 +20,55 @@ namespace chrono {
 
 // -----------------------------------------------------------------------------
 
+// Trick to avoid putting the following mapper macro inside the class definition in .h file:
+// enclose macros in local 'my_enum_mappers', just to avoid avoiding cluttering of the parent class.
+class my_enum_mappers : public ChTimestepper {
+  public:
+    CH_ENUM_MAPPER_BEGIN(Type);
+    CH_ENUM_VAL(Type::EULER_IMPLICIT);
+    CH_ENUM_VAL(Type::EULER_IMPLICIT_LINEARIZED);
+    CH_ENUM_VAL(Type::EULER_IMPLICIT_PROJECTED);
+    CH_ENUM_VAL(Type::TRAPEZOIDAL);
+    CH_ENUM_VAL(Type::TRAPEZOIDAL_LINEARIZED);
+    CH_ENUM_VAL(Type::HHT);
+    CH_ENUM_VAL(Type::HEUN);
+    CH_ENUM_VAL(Type::RUNGEKUTTA45);
+    CH_ENUM_VAL(Type::EULER_EXPLICIT);
+    CH_ENUM_VAL(Type::LEAPFROG);
+    CH_ENUM_VAL(Type::NEWMARK);
+    CH_ENUM_VAL(Type::CUSTOM);
+    CH_ENUM_MAPPER_END(Type);
+};
+
+void ChTimestepper::ArchiveOUT(ChArchiveOut& marchive) {
+        // version number
+        marchive.VersionWrite<ChTimestepper>();
+        // method type:
+        my_enum_mappers::Type_mapper typemapper;
+        Type type = GetType();
+        marchive << CHNVP(typemapper(type), "timestepper_type");
+        // serialize all member data:
+        marchive << CHNVP(verbose);
+        marchive << CHNVP(Qc_do_clamp);
+        marchive << CHNVP(Qc_clamping);
+    }
+
+void ChTimestepper::ArchiveIN(ChArchiveIn& marchive) {
+    // version number
+    int version = marchive.VersionRead<ChTimestepper>();
+    // method type:
+    my_enum_mappers::Type_mapper typemapper;
+    Type type = GetType();
+    marchive >> CHNVP(typemapper(type), "timestepper_type");
+    // stream in all member data:
+    marchive >> CHNVP(verbose);
+    marchive >> CHNVP(Qc_do_clamp);
+    marchive >> CHNVP(Qc_clamping);
+}
+// -----------------------------------------------------------------------------
+
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperEulerExpl> a_registration_ChTimestepperEulerExpl;
+CH_FACTORY_REGISTER(ChTimestepperEulerExpl)
 
 // Euler explicit timestepper.
 // This performs the typical  y_new = y+ dy/dt * dt integration with Euler formula.
@@ -51,11 +98,11 @@ void ChTimestepperEulerExpl::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperEulerExplIIorder> a_registration_ChTimestepperEulerExplIIorder;
+CH_FACTORY_REGISTER(ChTimestepperEulerExplIIorder)
 
 // Euler explicit timestepper customized for II order.
 // (It gives the same results of ChTimestepperEulerExpl,
-// but this performes a bit faster because it can exploit
+// but this performs a bit faster because it can exploit
 // the special structure of ChIntegrableIIorder)
 // This performs the typical
 //    x_new = x + v * dt
@@ -92,7 +139,7 @@ void ChTimestepperEulerExplIIorder::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperEulerSemiImplicit> a_registration_ChTimestepperEulerSemiImplicit;
+CH_FACTORY_REGISTER(ChTimestepperEulerSemiImplicit)
 
 // Euler semi-implicit timestepper
 // This performs the typical
@@ -129,7 +176,7 @@ void ChTimestepperEulerSemiImplicit::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperRungeKuttaExpl> a_registration_ChTimestepperRungeKuttaExpl;
+CH_FACTORY_REGISTER(ChTimestepperRungeKuttaExpl)
 
 // Performs a step of a 4th order explicit Runge-Kutta integration scheme.
 void ChTimestepperRungeKuttaExpl::Advance(const double dt) {
@@ -173,7 +220,7 @@ void ChTimestepperRungeKuttaExpl::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperHeun> a_registration_ChTimestepperHeun;
+CH_FACTORY_REGISTER(ChTimestepperHeun)
 
 // Performs a step of a Heun explicit integrator. It is like a 2nd Runge Kutta.
 void ChTimestepperHeun::Advance(const double dt) {
@@ -209,7 +256,7 @@ void ChTimestepperHeun::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperLeapfrog> a_registration_ChTimestepperLeapfrog;
+CH_FACTORY_REGISTER(ChTimestepperLeapfrog)
 
 // Performs a step of a Leapfrog explicit integrator.
 // It is a symplectic method, with 2nd order accuracy,
@@ -252,7 +299,7 @@ void ChTimestepperLeapfrog::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperEulerImplicit> a_registration_ChTimestepperEulerImplicit;
+CH_FACTORY_REGISTER(ChTimestepperEulerImplicit)
 
 // Performs a step of Euler implicit for II order systems
 void ChTimestepperEulerImplicit::Advance(const double dt) {
@@ -281,7 +328,7 @@ void ChTimestepperEulerImplicit::Advance(const double dt) {
     // use Newton Raphson iteration to solve implicit Euler for v_new
     //
     // [ M - dt*dF/dv - dt^2*dF/dx    Cq' ] [ Dv     ] = [ M*(v_old - v_new) + dt*f + dt*Cq'*l ]
-    // [ Cq                           0   ] [ -dt*Dl ] = [ C/dt  ]
+    // [ Cq                           0   ] [ -dt*Dl ] = [ -C/dt  ]
 
     numiters = 0;
     numsetups = 0;
@@ -338,7 +385,7 @@ void ChTimestepperEulerImplicit::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperEulerImplicitLinearized> a_registration_ChTimestepperEulerImplicitLinearized;
+CH_FACTORY_REGISTER(ChTimestepperEulerImplicitLinearized)
 
 // Performs a step of Euler implicit for II order systems
 // using the Anitescu/Stewart/Trinkle single-iteration method,
@@ -366,12 +413,12 @@ void ChTimestepperEulerImplicitLinearized::Advance(const double dt) {
     // solve only 1st NR step, using v_new = 0, so  Dv = v_new , therefore
     //
     // [ M - dt*dF/dv - dt^2*dF/dx    Cq' ] [ Dv     ] = [ M*(v_old - v_new) + dt*f]
-    // [ Cq                           0   ] [ -dt*Dl ] = [ C/dt + Ct ]
+    // [ Cq                           0   ] [ -dt*Dl ] = [ -C/dt - Ct ]
     //
     // becomes the Anitescu/Trinkle timestepper:
     //
     // [ M - dt*dF/dv - dt^2*dF/dx    Cq' ] [ v_new  ] = [ M*(v_old) + dt*f]
-    // [ Cq                           0   ] [ -dt*l  ] = [ C/dt + Ct ]
+    // [ Cq                           0   ] [ -dt*l  ] = [ -C/dt - Ct ]
 
     mintegrable->LoadResidual_F(R, dt);
     mintegrable->LoadResidual_Mv(R, V, 1.0);
@@ -404,7 +451,7 @@ void ChTimestepperEulerImplicitLinearized::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperEulerImplicitProjected> a_registration_ChTimestepperEulerImplicitProjected;
+CH_FACTORY_REGISTER(ChTimestepperEulerImplicitProjected)
 
 // Performs a step of Euler implicit for II order systems
 // using a semi implicit Euler without constr.stabilization, followed by a projection,
@@ -430,14 +477,14 @@ void ChTimestepperEulerImplicitProjected::Advance(const double dt) {
     Vold = V;
 
     // 1
-    // Do a  Anitescu/Trinkle timestepper but without the C/dt correction:
+    // Do a  Anitescu/Trinkle timestepper (it could be without the C/dt correction):
     //
     // [ M - dt*dF/dv - dt^2*dF/dx    Cq' ] [ v_new  ] = [ M*(v_old) + dt*f]
-    // [ Cq                           0   ] [ -dt*l  ] = [ Ct ]
+    // [ Cq                           0   ] [ -dt*l  ] = [ -Ct ]
 
     mintegrable->LoadResidual_F(R, dt);
     mintegrable->LoadResidual_Mv(R, V, 1.0);
-    mintegrable->LoadConstraint_C(Qc, 1.0 / dt, Qc_do_clamp, 0);
+    mintegrable->LoadConstraint_C(Qc, 1.0 / dt, Qc_do_clamp, 0); // may be avoided
     mintegrable->LoadConstraint_Ct(Qc, 1.0);
 
     mintegrable->StateSolveCorrection(
@@ -472,8 +519,8 @@ void ChTimestepperEulerImplicitProjected::Advance(const double dt) {
     Vold.Reset(mintegrable->GetNcoords_v(), V.GetIntegrable());
 
     //
-    // [ M       Cq' ] [ dpos ] = [ 0 ]
-    // [ Cq       0  ] [ l    ] = [ C ]
+    // [ M       Cq' ] [ dpos ] = [  0 ]
+    // [ Cq       0  ] [ l    ] = [ -C ]
 
     mintegrable->LoadConstraint_C(Qc, 1.0, false, 0);
 
@@ -495,7 +542,7 @@ void ChTimestepperEulerImplicitProjected::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperTrapezoidal> a_registration_ChTimestepperTrapezoidal;
+CH_FACTORY_REGISTER(ChTimestepperTrapezoidal)
 
 // Performs a step of trapezoidal implicit for II order systems
 // NOTE this is a modified version of the trapezoidal for DAE: the
@@ -530,9 +577,8 @@ void ChTimestepperTrapezoidal::Advance(const double dt) {
 
     // use Newton Raphson iteration to solve implicit trapezoidal for v_new
     //
-    // [ M - dt/2*dF/dv - dt^2/4*dF/dx    Cq' ] [ Dv       ] = [ M*(v_old - v_new) + dt/2(f_old + f_new  + Cq*l_old +
-    // Cq*l_new)]
-    // [ Cq                               0   ] [ -dt/2*Dl ] = [ C/dt ]
+    // [ M - dt/2*dF/dv - dt^2/4*dF/dx    Cq' ] [ Dv       ] = [ M*(v_old - v_new) + dt/2(f_old + f_new  + Cq*l_old + Cq*l_new)]
+    // [ Cq                               0   ] [ -dt/2*Dl ] = [ -C/dt ]
 
     mintegrable->LoadResidual_F(Rold, dt * 0.5);  // dt/2*f_old
     mintegrable->LoadResidual_Mv(Rold, V, 1.0);   // M*v_old
@@ -549,7 +595,7 @@ void ChTimestepperTrapezoidal::Advance(const double dt) {
         mintegrable->LoadResidual_F(R, dt * 0.5);                               // + dt/2*f_new
         mintegrable->LoadResidual_Mv(R, Vnew, -1.0);                            // - M*v_new
         mintegrable->LoadResidual_CqL(R, L, dt * 0.5);                          // + dt/2*Cq*l_new
-        mintegrable->LoadConstraint_C(Qc, 1.0 / dt, Qc_do_clamp, Qc_clamping);  // C/dt
+        mintegrable->LoadConstraint_C(Qc, 1.0 / dt, Qc_do_clamp, Qc_clamping);  // -C/dt
 
         if (verbose)
             GetLog() << " Trapezoidal iteration=" << i << "  |R|=" << R.NormTwo() << "  |Qc|=" << Qc.NormTwo() << "\n";
@@ -594,7 +640,7 @@ void ChTimestepperTrapezoidal::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperTrapezoidalLinearized> a_registration_ChTimestepperTrapezoidalLinearized;
+CH_FACTORY_REGISTER(ChTimestepperTrapezoidalLinearized)
 
 // Performs a step of trapezoidal implicit linearized for II order systems
 void ChTimestepperTrapezoidalLinearized::Advance(const double dt) {
@@ -624,9 +670,8 @@ void ChTimestepperTrapezoidalLinearized::Advance(const double dt) {
 
     // solve implicit trapezoidal for v_new
     //
-    // [ M - dt/2*dF/dv - dt^2/4*dF/dx    Cq' ] [ Dv       ] = [ M*(v_old - v_new) + dt/2(f_old + f_new  + Cq*l_old +
-    // Cq*l_new)]
-    // [ Cq                               0   ] [ -dt/2*Dl ] = [ C/dt ]
+    // [ M - dt/2*dF/dv - dt^2/4*dF/dx    Cq' ] [ Dv       ] = [ M*(v_old - v_new) + dt/2(f_old + f_new  + Cq*l_old + Cq*l_new)]
+    // [ Cq                               0   ] [ -dt/2*Dl ] = [ -C/dt ]
 
     mintegrable->LoadResidual_F(Rold, dt * 0.5);  // dt/2*f_old
     mintegrable->LoadResidual_Mv(Rold, V, 1.0);   // M*v_old
@@ -638,7 +683,7 @@ void ChTimestepperTrapezoidalLinearized::Advance(const double dt) {
     mintegrable->LoadResidual_F(R, dt * 0.5);     // + dt/2*f_new
     mintegrable->LoadResidual_Mv(R, Vnew, -1.0);  // - M*v_new
     // mintegrable->LoadResidual_CqL(R, L, dt*0.5); // + dt/2*Cq*l_new  assume l_old = 0;
-    mintegrable->LoadConstraint_C(Qc, 1.0 / dt, Qc_do_clamp, Qc_clamping);  // C/dt
+    mintegrable->LoadConstraint_C(Qc, 1.0 / dt, Qc_do_clamp, Qc_clamping);  // -C/dt
 
     mintegrable->StateSolveCorrection(
         Dv, Dl, R, Qc,
@@ -674,7 +719,7 @@ void ChTimestepperTrapezoidalLinearized::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperTrapezoidalLinearized2> a_registration_ChTimestepperTrapezoidalLinearized2;
+CH_FACTORY_REGISTER(ChTimestepperTrapezoidalLinearized2)
 
 // Performs a step of trapezoidal implicit linearized for II order systems
 //*** SIMPLIFIED VERSION -DOES NOT WORK - PREFER ChTimestepperTrapezoidalLinearized
@@ -703,7 +748,7 @@ void ChTimestepperTrapezoidalLinearized2::Advance(const double dt) {
     // use Newton Raphson iteration to solve implicit trapezoidal for v_new
     //
     // [ M - dt/2*dF/dv - dt^2/4*dF/dx    Cq' ] [ v_new    ] = [ M*(v_old) + dt/2(f_old + f_new)]
-    // [ Cq                               0   ] [ -dt/2*L ] m= [ C/dt                           ]
+    // [ Cq                               0   ] [ -dt/2*L ] m= [ -C/dt                          ]
 
     mintegrable->LoadResidual_F(R, dt * 0.5);  // dt/2*f_old
     mintegrable->LoadResidual_Mv(R, V, 1.0);   // M*v_old
@@ -711,7 +756,7 @@ void ChTimestepperTrapezoidalLinearized2::Advance(const double dt) {
     mintegrable->StateScatter(Xnew, Vnew, T + dt);  // state -> system
     Qc.Reset();
     mintegrable->LoadResidual_F(R, dt * 0.5);                               // + dt/2*f_new
-    mintegrable->LoadConstraint_C(Qc, 1.0 / dt, Qc_do_clamp, Qc_clamping);  // C/dt
+    mintegrable->LoadConstraint_C(Qc, 1.0 / dt, Qc_do_clamp, Qc_clamping);  // -C/dt
 
     mintegrable->StateSolveCorrection(
         Vnew, L, R, Qc,
@@ -745,7 +790,21 @@ void ChTimestepperTrapezoidalLinearized2::Advance(const double dt) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChTimestepperNewmark> a_registration_ChTimestepperNewmark;
+CH_FACTORY_REGISTER(ChTimestepperNewmark)
+
+// Set the numerical damping parameter gamma and the beta parameter.
+void ChTimestepperNewmark::SetGammaBeta(double mgamma, double mbeta) {
+    gamma = mgamma;
+    if (gamma < 0.5)
+        gamma = 0.5;
+    if (gamma > 1)
+        gamma = 1;
+    beta = mbeta;
+    if (beta < 0)
+        beta = 0;
+    if (beta > 1)
+        beta = 1;
+}
 
 // Performs a step of Newmark constrained implicit for II order DAE systems
 void ChTimestepperNewmark::Advance(const double dt) {
@@ -778,7 +837,7 @@ void ChTimestepperNewmark::Advance(const double dt) {
 
     //
     // [ M - dt*gamma*dF/dv - dt^2*beta*dF/dx    Cq' ] [ Da   ] = [ -M*(a_new) + f_new + Cq*l_new ]
-    // [ Cq                                      0   ] [ Dl   ] = [ 1/(beta*dt^2)*C               ] ]
+    // [ Cq                                      0   ] [ Dl   ] = [ -1/(beta*dt^2)*C              ]
 
     numiters = 0;
     numsetups = 0;
@@ -792,7 +851,7 @@ void ChTimestepperNewmark::Advance(const double dt) {
         mintegrable->LoadResidual_F(R, 1.0);                                                    //  f_new
         mintegrable->LoadResidual_CqL(R, L, 1.0);                                               //   Cq'*l_new
         mintegrable->LoadResidual_Mv(R, Anew, -1.0);                                            //  - M*a_new
-        mintegrable->LoadConstraint_C(Qc, (1.0 / (beta * dt * dt)), Qc_do_clamp, Qc_clamping);  //  1/(beta*dt^2)*C
+        mintegrable->LoadConstraint_C(Qc, (1.0 / (beta * dt * dt)), Qc_do_clamp, Qc_clamping);  //  - 1/(beta*dt^2)*C
 
         if (verbose)
             GetLog() << " Newmark iteration=" << i << "  |R|=" << R.NormTwo() << "  |Qc|=" << Qc.NormTwo() << "\n";
@@ -830,6 +889,28 @@ void ChTimestepperNewmark::Advance(const double dt) {
     mintegrable->StateScatter(X, V, T);        // state -> system
     mintegrable->StateScatterAcceleration(A);  // -> system auxiliary data
     mintegrable->StateScatterReactions(L);     // -> system auxiliary data
+}
+
+void ChTimestepperNewmark::ArchiveOUT(ChArchiveOut& marchive) {
+    // version number
+    marchive.VersionWrite<ChTimestepperNewmark>();
+    // serialize parent class:
+    ChTimestepperIIorder::ArchiveOUT(marchive);
+    ChImplicitIterativeTimestepper::ArchiveOUT(marchive);
+    // serialize all member data:
+    marchive << CHNVP(beta);
+    marchive << CHNVP(gamma);
+}
+
+void ChTimestepperNewmark::ArchiveIN(ChArchiveIn& marchive) {
+    // version number
+    int version = marchive.VersionRead<ChTimestepperNewmark>();
+    // deserialize parent class:
+    ChTimestepperIIorder::ArchiveIN(marchive);
+    ChImplicitIterativeTimestepper::ArchiveIN(marchive);
+    // stream in all member data:
+    marchive >> CHNVP(beta);
+    marchive >> CHNVP(gamma);
 }
 
 }  // end namespace chrono

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -36,8 +36,6 @@ class ChShaft;
 /// just use the shaft n.1 as truss and fix it.
 
 class ChApi ChShaftsPlanetary : public ChPhysicsItem {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChShaftsPlanetary, ChPhysicsItem);
 
   private:
     double r1;  ///< transmission ratios  as in   r1*w1 + r2*w2 + r3*w3 = 0
@@ -45,6 +43,11 @@ class ChApi ChShaftsPlanetary : public ChPhysicsItem {
     double r3;
 
     double torque_react;  ///< shaft reaction torque
+    
+    bool avoid_phase_drift; 
+    double phase1;
+    double phase2;
+    double phase3;
 
     ChConstraintThreeGeneric constraint;  ///< used as an interface to the solver
 
@@ -63,7 +66,7 @@ class ChApi ChShaftsPlanetary : public ChPhysicsItem {
     /// Get the number of scalar variables affected by constraints in this link
     virtual int GetNumCoords() const { return 3; }
 
-    /// Number of scalar costraints
+    /// Number of scalar constraints
     virtual int GetDOC_c() override { return 1; }
 
     //
@@ -108,7 +111,7 @@ class ChApi ChShaftsPlanetary : public ChPhysicsItem {
     /// Use this function after planetary gear creation, to initialize it, given
     /// three shafts to join.
     /// Although there's no special requirement, you may think of the three
-    /// typical moving parts of an apycycloidal reducer: the carrier, the
+    /// typical moving parts of an epicycloidal reducer: the carrier, the
     /// input gear, and the gear with inner teeth that usually is kept fixed (but the
     /// ChShaftsPlanetary does not require that one shaft is fixed - it's up to you)
     /// Each shaft must belong to the same ChSystem.
@@ -176,6 +179,16 @@ class ChApi ChShaftsPlanetary : public ChPhysicsItem {
     /// Get the transmission ratio r1, as in  r1*w1+r2*w2+r3*w3 = 0
     double GetTransmissionR3() const { return r3; }
 
+    /// Set if the constraint must avoid phase drift. If true, phasing is always 
+    /// tracked and the constraint is satisfied also at the position level.
+    /// If false, microslipping can accumulate (as in friction wheels).
+    /// Default is enabled.
+    void SetAvoidPhaseDrift(bool mb) {this->avoid_phase_drift = mb;}
+
+    /// Set if the constraint is in "avoid phase drift" mode.
+    bool GetAvoidPhaseDrift() { return this->avoid_phase_drift;}
+
+
     /// Get the reaction torque considered as applied to the 1st axis.
     double GetTorqueReactionOn1() const { return (r1 * torque_react); }
 
@@ -198,6 +211,8 @@ class ChApi ChShaftsPlanetary : public ChPhysicsItem {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChShaftsPlanetary,0)
 
 }  // end namespace chrono
 

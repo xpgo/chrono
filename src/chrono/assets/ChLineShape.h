@@ -1,14 +1,16 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-// Author: A.Tasora
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHLINESHAPE_H
 #define CHLINESHAPE_H
@@ -23,8 +25,6 @@ namespace chrono {
 /// visualized in some way.
 
 class ChApi ChLineShape : public ChVisualization {
-    // Chrono RTTI, needed for serialization
-    CH_RTTI(ChLineShape, ChVisualization);
 
   protected:
     //
@@ -67,7 +67,7 @@ class ChApi ChLineShape : public ChVisualization {
     virtual void ArchiveOUT(ChArchiveOut& marchive)
     {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChLineShape>();
         // serialize parent class
         ChVisualization::ArchiveOUT(marchive);
         // serialize all member data:
@@ -78,7 +78,7 @@ class ChApi ChLineShape : public ChVisualization {
     virtual void ArchiveIN(ChArchiveIn& marchive) 
     {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChLineShape>();
         // deserialize parent class
         ChVisualization::ArchiveIN(marchive);
         // stream in all member data:
@@ -86,9 +86,8 @@ class ChApi ChLineShape : public ChVisualization {
     }
 };
 
-//////////////////////////////////////////////////////
-//////////////////////////////////////////////////////
+CH_CLASS_VERSION(ChLineShape,0)
 
-}  // END_OF_NAMESPACE____
+}  // end namespace chrono
 
 #endif

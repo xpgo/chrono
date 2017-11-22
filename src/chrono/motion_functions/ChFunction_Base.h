@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,16 +15,16 @@
 #ifndef CHFUNCT_BASE_H
 #define CHFUNCT_BASE_H
 
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <float.h>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
+#include <cfloat>
 #include <memory.h>
 #include <list>
 
 #include "chrono/core/ChApiCE.h"
 #include "chrono/core/ChMath.h"
-#include "chrono/physics/ChFilePS.h"
+#include "chrono/core/ChFilePS.h"
 
 namespace chrono {
 
@@ -44,8 +44,6 @@ namespace chrono {
 /// Get_y() method, in order to represent more complex functions.
 
 class ChApi ChFunction {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI_ROOT(ChFunction_base);
 
   public:
     /// Enumeration of function types.
@@ -69,7 +67,8 @@ class ChApi ChFunction {
         FUNCT_REPEAT,
         FUNCT_SEQUENCE,
         FUNCT_SIGMA,
-        FUNCT_SINE
+        FUNCT_SINE,
+        FUNCT_LAMBDA
     };
 
   public:
@@ -122,6 +121,9 @@ class ChApi ChFunction {
     /// Note that only order = 0, 1, or 2 is supported.
     virtual double Get_y_dN(double x, int derivate) const;
 
+    /// Update could be implemented by children classes, ex. to launch callbacks
+    virtual void Update(const double x) {};
+
     //
     // Some analysis functions. If derivate=0, they are applied on y(x), if derivate =1, on dy/dx, etc.
     //
@@ -150,7 +152,7 @@ class ChApi ChFunction {
 
     /// Get the x and y position of handle, given identifier.
     /// If set mode, x and y values are stored. Return false if handle not found.
-    virtual int HandleAccess(int handle_id, double mx, double my, bool set_mode) { return TRUE; }
+    virtual bool HandleAccess(int handle_id, double mx, double my, bool set_mode) { return true; }
 
     /// Method to allow serialization of transient data to archives
     virtual void ArchiveOUT(ChArchiveOut& marchive);
@@ -159,7 +161,7 @@ class ChApi ChFunction {
     virtual void ArchiveIN(ChArchiveIn& marchive);
 
     /// Plot function in graph space of the ChFile_ps postscript file
-    /// where zoom factor, centering, colour, thickness etc. are already defined.
+    /// where zoom factor, centering, color, thickness etc. are already defined.
     /// If plotDY=true, plots also the derivative, etc.
     virtual int FilePostscriptPlot(ChFile_ps* m_file, int plotY, int plotDY, int plotDDY);
 
@@ -170,6 +172,8 @@ class ChApi ChFunction {
 };
 
 /// @} chrono_functions
+
+CH_CLASS_VERSION(ChFunction,0)
 
 }  // end namespace chrono
 

@@ -1,26 +1,25 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-// File authors: Andrea Favali
+// =============================================================================
+// Authors: Andrea Favali
+// =============================================================================
 
-#include "ChGaussIntegrationRule.h"
+#include "chrono_fea/ChGaussIntegrationRule.h"
 
 namespace chrono {
 namespace fea {
-// Constructor.
-ChGaussIntegrationRule::ChGaussIntegrationRule() {
-}
 
-// Destructor
-ChGaussIntegrationRule::~ChGaussIntegrationRule() {
-}
+ChGaussIntegrationRule::ChGaussIntegrationRule() {}
+
+ChGaussIntegrationRule::~ChGaussIntegrationRule() {}
 
 // Create and assign at the 'GpVector' pointer the vector of the Gauss Integration Points.
 // The vector is resized according to the number of points required.
@@ -36,9 +35,9 @@ void ChGaussIntegrationRule::SetIntOnTriangle(int nPoints, std::vector<ChGaussPo
     switch (nPoints) {
         case 1:
 
-            coord.x = 0.0;
-            coord.y = 0.0;
-            coord.z = 0.0;
+            coord.x() = 0.0;
+            coord.y() = 0.0;
+            coord.z() = 0.0;
             weight = 4.0;
             (*GpVector)[0] = new ChGaussPoint(1, &coord, weight);
             break;
@@ -55,8 +54,8 @@ void ChGaussIntegrationRule::SetIntOnTriangle(int nPoints, std::vector<ChGaussPo
 
         //      for ( i = 0; i < 2; i++ ) {
         //          for ( j = 0; j < 2; j++ ) {
-        //                  coord.x = c[ i ];
-        //			coord.y = c[ j ];
+        //                  coord.x() = c[ i ];
+        //			coord.y() = c[ j ];
         //                  weight = w[ i ] * w[ j ];
         //			//ChGaussPoint* my_gp = new ChGaussPoint( 4 *i + 2 *j + k , &coord, weight);
         //                  ( * GpVector ) [ 2 * i + j ] = new ChGaussPoint( 2 * i + j + 1 , &coord, weight);
@@ -79,8 +78,8 @@ void ChGaussIntegrationRule::SetIntOnTriangle(int nPoints, std::vector<ChGaussPo
 
         //      for ( i = 0; i < 3; i++ ) {
         //          for ( j = 0; j < 3; j++ ) {
-        //                  coord.x = c[ i ];
-        //			coord.y = c[ j ];
+        //                  coord.x() = c[ i ];
+        //			coord.y() = c[ j ];
         //                  weight = w[ i ] * w[ j ];
         //                  ( * GpVector ) [ 3 * i + j ] = new ChGaussPoint( 3 * i + j + 1, &coord, weight);
         //          }
@@ -109,8 +108,8 @@ void ChGaussIntegrationRule::SetIntOnSquare(int nPoints, std::vector<ChGaussPoin
     switch (nPoints) {
         case 1:
 
-            coord.x = 0.0;
-            coord.y = 0.0;
+            coord.x() = 0.0;
+            coord.y() = 0.0;
             weight = 4.0;
             (*GpVector)[0] = new ChGaussPoint(1, &coord, weight);
             break;
@@ -127,8 +126,8 @@ void ChGaussIntegrationRule::SetIntOnSquare(int nPoints, std::vector<ChGaussPoin
 
             for (i = 0; i < 2; i++) {
                 for (j = 0; j < 2; j++) {
-                    coord.x = c[i];
-                    coord.y = c[j];
+                    coord.x() = c[i];
+                    coord.y() = c[j];
                     weight = w[i] * w[j];
                     // ChGaussPoint* my_gp = new ChGaussPoint( 4 *i + 2 *j + k , &coord, weight);
                     (*GpVector)[2 * i + j] = new ChGaussPoint(2 * i + j + 1, &coord, weight);
@@ -151,8 +150,8 @@ void ChGaussIntegrationRule::SetIntOnSquare(int nPoints, std::vector<ChGaussPoin
 
             for (i = 0; i < 3; i++) {
                 for (j = 0; j < 3; j++) {
-                    coord.x = c[i];
-                    coord.y = c[j];
+                    coord.x() = c[i];
+                    coord.y() = c[j];
                     weight = w[i] * w[j];
                     (*GpVector)[3 * i + j] = new ChGaussPoint(3 * i + j + 1, &coord, weight);
                 }
@@ -176,8 +175,8 @@ void ChGaussIntegrationRule::SetIntOnSquare(int nPoints, std::vector<ChGaussPoin
 
             for (i = 0; i < 4; i++) {
                 for (j = 0; j < 4; j++) {
-                    coord.x = c[i];
-                    coord.y = c[j];
+                    coord.x() = c[i];
+                    coord.y() = c[j];
                     weight = w[i] * w[j];
                     (*GpVector)[4 * i + j] = new ChGaussPoint(4 * i + j + 1, &coord, weight);
                 }
@@ -206,9 +205,9 @@ void ChGaussIntegrationRule::SetIntOnCube(int nPoints, std::vector<ChGaussPoint*
     switch (nPoints) {
         case 1:
 
-            coord.x = 0.0;
-            coord.y = 0.0;
-            coord.z = 0.0;
+            coord.x() = 0.0;
+            coord.y() = 0.0;
+            coord.z() = 0.0;
             weight = 8.0;
             (*GpVector)[0] = new ChGaussPoint(1, &coord, weight);
             break;
@@ -226,9 +225,9 @@ void ChGaussIntegrationRule::SetIntOnCube(int nPoints, std::vector<ChGaussPoint*
             for (i = 0; i < 2; i++) {
                 for (j = 0; j < 2; j++) {
                     for (k = 0; k < 2; k++) {
-                        coord.x = c[i];
-                        coord.y = c[j];
-                        coord.z = c[k];
+                        coord.x() = c[i];
+                        coord.y() = c[j];
+                        coord.z() = c[k];
                         weight = w[i] * w[j] * w[k];
                         // ChGaussPoint* my_gp = new ChGaussPoint( 4 *i + 2 *j + k , &coord, weight);
                         (*GpVector)[4 * i + 2 * j + k] = new ChGaussPoint(4 * i + 2 * j + k + 1, &coord, weight);
@@ -253,9 +252,9 @@ void ChGaussIntegrationRule::SetIntOnCube(int nPoints, std::vector<ChGaussPoint*
             for (i = 0; i < 3; i++) {
                 for (j = 0; j < 3; j++) {
                     for (k = 0; k < 3; k++) {
-                        coord.x = c[i];
-                        coord.y = c[j];
-                        coord.z = c[k];
+                        coord.x() = c[i];
+                        coord.y() = c[j];
+                        coord.z() = c[k];
                         weight = w[i] * w[j] * w[k];
                         (*GpVector)[9 * i + 3 * j + k] = new ChGaussPoint(9 * i + 3 * j + k + 1, &coord, weight);
                     }
@@ -281,9 +280,9 @@ void ChGaussIntegrationRule::SetIntOnCube(int nPoints, std::vector<ChGaussPoint*
             for (i = 0; i < 4; i++) {
                 for (j = 0; j < 4; j++) {
                     for (k = 0; k < 4; k++) {
-                        coord.x = c[i];
-                        coord.y = c[j];
-                        coord.z = c[k];
+                        coord.x() = c[i];
+                        coord.y() = c[j];
+                        coord.z() = c[k];
                         weight = w[i] * w[j] * w[k];
                         (*GpVector)[16 * i + 4 * j + k] = new ChGaussPoint(16 * i + 4 * j + k + 1, &coord, weight);
                     }
@@ -298,5 +297,5 @@ void ChGaussIntegrationRule::SetIntOnCube(int nPoints, std::vector<ChGaussPoint*
     }  //__end of Switch
 }  //__end of Set On Cube
 
-}  //__end namespace fea
-}  //__end namespace chrono
+}  // end namespace fea
+}  // end namespace chrono

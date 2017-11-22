@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -29,7 +29,6 @@ namespace chrono {
 /// to be set between the two connected markers.
 
 class ChApi ChLinkMarkers : public ChLink {
-    CH_RTTI(ChLinkMarkers, ChLink);
 
   protected:
     ChMarker* marker1;  ///< slave coordsys
@@ -64,9 +63,6 @@ class ChApi ChLinkMarkers : public ChLink {
     virtual ChLinkMarkers* Clone() const override { return new ChLinkMarkers(*this); }
 
   public:
-    /// Get the type identifier of this link. Use if you don't want to use RTTI for performance.
-    virtual int GetType() const override { return LNK_BASE; }
-
     /// Return the 1st referenced marker (the 'slave' marker, owned by 1st body)
     ChMarker* GetMarker1() { return marker1; }
     /// Return the 2nd referenced marker (the 'master' marker, owned by 2nd body)
@@ -130,7 +126,7 @@ class ChApi ChLinkMarkers : public ChLink {
     //
 
     /// Updates auxiliary vars relM, relM_dt, relM_dtdt,
-    /// dist, dist_dt et similia.
+    /// dist, dist_dt et simila.
     virtual void UpdateRelMarkerCoords();
 
     ///  Updates auxiliary forces caused by springs/dampers/etc. which may
@@ -154,7 +150,7 @@ class ChApi ChLinkMarkers : public ChLink {
     //
 
     /// Adds force to residual R, as R*= F*c
-    /// NOTE: here the off ofset in R is NOT used because add F at the TWO offsets of the two connected bodies,
+    /// NOTE: here the off offset in R is NOT used because add F at the TWO offsets of the two connected bodies,
     /// so it is assumed that offsets for Body1 and Body2 variables have been already set properly!
     virtual void IntLoadResidual_F(const unsigned int off, ChVectorDynamic<>& R, const double c) override;
 
@@ -199,10 +195,10 @@ class ChApi ChLinkMarkers : public ChLink {
     /// To get & set the 'script' force buffers(only accessed by
     /// external scripts, so it's up to the script to remember
     /// to set& reset them -link class just add them to C_force etc.
-    ChVector<>* Get_Scr_force() { return &Scr_force; };
-    ChVector<>* Get_Scr_torque() { return &Scr_torque; };
-    void Set_Scr_force(ChVector<> mf) { Scr_force = mf; };
-    void Set_Scr_torque(ChVector<> mf) { Scr_torque = mf; };
+    const ChVector<>& Get_Scr_force() const { return Scr_force; }
+    const ChVector<>& Get_Scr_torque() const { return Scr_torque; }
+    void Set_Scr_force(const ChVector<>& mf) { Scr_force = mf; }
+    void Set_Scr_torque(const ChVector<>& mf) { Scr_torque = mf; }
 
     /// Get the total applied force accumulators (force, momentum) in link coords.
     /// These forces might be affected by additional springs, dampers, etc. but they do not
@@ -220,6 +216,9 @@ class ChApi ChLinkMarkers : public ChLink {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLinkMarkers,0)
+
 
 }  // end namespace chrono
 

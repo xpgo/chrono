@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -12,7 +12,7 @@
 // Authors: Justin Madsen
 // =============================================================================
 //
-// Base class for a Pacjeka type Magic formula 2002 tire model
+// Base class for a Pacejka type Magic formula 2002 tire model
 //
 // =============================================================================
 
@@ -52,7 +52,6 @@ struct relaxationL;
 struct bessel;
 
 /// Concrete tire class that implements the Pacejka tire model.
-/// Detailed description goes here...
 class CH_VEHICLE_API ChPacejkaTire : public ChTire {
   public:
     /// Default constructor for a Pacejka tire.
@@ -93,14 +92,21 @@ class CH_VEHICLE_API ChPacejkaTire : public ChTire {
     /// Get visualization tire width.
     virtual double GetVisualizationWidth() const { return 0.25; }
 
-    /// return the reactions for the combined slip EQs, in global coords
-    virtual TireForce GetTireForce(bool cosim = false) const override;
+    /// Get the tire force and moment.
+    /// This represents the output from this tire system that is passed to the
+    /// vehicle system.  Typically, the vehicle subsystem will pass the tire force
+    /// to the appropriate suspension subsystem which applies it as an external
+    /// force one the wheel body.
+    virtual TerrainForce GetTireForce() const override;
+
+    /// Report the tire force and moment.
+    virtual TerrainForce ReportTireForce(ChTerrain* terrain) const override;
 
     ///  Return the reactions for the pure slip EQs, in local or global coords
-    TireForce GetTireForce_pureSlip(const bool local = true) const;
+    TerrainForce GetTireForce_pureSlip(const bool local = true) const;
 
     /// Return the reactions for the combined slip EQs, in local or global coords
-    TireForce GetTireForce_combinedSlip(const bool local = true) const;
+    TerrainForce GetTireForce_combinedSlip(const bool local = true) const;
 
     /// Update the state of this tire system at the current time.
     /// Set the PacTire spindle state data from the global wheel body state.
@@ -113,10 +119,10 @@ class CH_VEHICLE_API ChPacejkaTire : public ChTire {
     virtual double GetSlipAngle() const override { return m_slip->alpha; }
 
     /// Get the tire longitudinal slip.
-    virtual double GetLongitudinalSlip() const { return m_slip->kappa; }
+    virtual double GetLongitudinalSlip() const override { return m_slip->kappa; }
 
     /// Get the tire camber angle.
-    virtual double GetCamberAngle() const { return m_slip->gamma; }
+    virtual double GetCamberAngle() const override { return m_slip->gamma; }
 
     /// Advance the state of this tire by the specified time step.
     /// Use the new body state, calculate all the relevant quantities over the
@@ -193,11 +199,11 @@ class CH_VEHICLE_API ChPacejkaTire : public ChTire {
     // look for this data file
     void loadPacTireParamFile();
 
-    // once Pac tire input text file has been succesfully opened, read the input
+    // once Pac tire input text file has been successfully opened, read the input
     // data, and populate the data struct
     void readPacTireInput(std::ifstream& inFile);
 
-    // functions for reading each section in the paramter file
+    // functions for reading each section in the parameter file
     void readSection_UNITS(std::ifstream& inFile);
     void readSection_MODEL(std::ifstream& inFile);
     void readSection_DIMENSION(std::ifstream& inFile);
@@ -284,7 +290,7 @@ class CH_VEHICLE_API ChPacejkaTire : public ChTire {
                       double step_size);
 
     // calculate and set the transient slip values (kappaP, alphaP, gammaP) from
-    // u, v deflections. optionally turn on/off besselink low velocity damping
+    // u, v deflections. optionally turn on/off Besselink low velocity damping
     void slip_from_uv(bool use_besselink = true,
                       double bessel_Cx = 350.0,
                       double bessel_Cy = 200.0,
@@ -301,17 +307,17 @@ class CH_VEHICLE_API ChPacejkaTire : public ChTire {
 
     /// longitudinal force, alpha ~= 0
     /// assign to m_FM.force.x
-    /// assign m_pureLong, trionometric function calculated constants
+    /// assign m_pureLong, trigonometric function calculated constants
     double Fx_pureLong(double gamma, double kappa);
 
     /// lateral force,  kappa ~= 0
     /// assign to m_FM.force.y
-    /// assign m_pureLong, trionometric function calculated constants
+    /// assign m_pureLong, trigonometric function calculated constants
     double Fy_pureLat(double alpha, double gamma);
 
     /// aligning moment,  kappa ~= 0
     /// assign to m_FM.moment.z
-    /// assign m_pureLong, trionometric function calculated constants
+    /// assign m_pureLong, trigonometric function calculated constants
     double Mz_pureLat(double alpha, double gamma, double Fy_pureSlip);
 
     /// longitudinal force, combined slip (general case)
@@ -324,7 +330,7 @@ class CH_VEHICLE_API ChPacejkaTire : public ChTire {
     /// assign m_combinedLat
     double Fy_combined(double alpha, double gamma, double kappa, double Fy_pureSlip);
 
-    // calculate aligning torque, combined slip (gernal case)
+    // calculate aligning torque, combined slip (general case)
     /// assign m_FM_combined.moment.z
     /// assign m_combinedTorque
     double Mz_combined(double alpha_r,
@@ -371,11 +377,11 @@ class CH_VEHICLE_API ChPacejkaTire : public ChTire {
     int m_num_Advance_calls;
     double m_sum_Advance_time;
 
-    TireForce m_FM_pure;      // output tire forces, based on pure slip
-    TireForce m_FM_combined;  // output tire forces, based on combined slip
+    TerrainForce m_FM_pure;      // output tire forces, based on pure slip
+    TerrainForce m_FM_combined;  // output tire forces, based on combined slip
     // previous steps calculated reaction
-    TireForce m_FM_pure_last;
-    TireForce m_FM_combined_last;
+    TerrainForce m_FM_pure_last;
+    TerrainForce m_FM_combined_last;
 
     // TODO: could calculate these using sigma_kappa_adams and sigma_alpha_adams, in getRelaxationLengths()
     // HARDCODED IN Initialize() for now

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -23,7 +23,6 @@ namespace chrono {
 /// y = (linear interpolated array of samples)
 
 class ChApi ChFunction_Mocap : public ChFunction {
-    CH_RTTI(ChFunction_Mocap, ChFunction);
 
   private:
     ChMatrix<>* array_y;
@@ -64,8 +63,8 @@ class ChApi ChFunction_Mocap : public ChFunction {
     void Set_array_y_dt(ChMatrix<>* m_array_y_dt);      // *** TO DO
     void Set_array_y_dtdt(ChMatrix<>* m_array_y_dtdt);  // *** TO DO
 
-    int Parse_array_AOA();    // *** TO DO
-    int Parse_array_Elite();  // *** TO DO
+    bool Parse_array_AOA();    // *** TO DO
+    bool Parse_array_Elite();  // *** TO DO
 
     void Compute_array_dt(ChMatrix<>* array_A, ChMatrix<>* array_A_dt);
     double LinInterp(ChMatrix<>* m_array, double x, double x_max) const;
@@ -75,7 +74,7 @@ class ChApi ChFunction_Mocap : public ChFunction {
     /// Method to allow serialization of transient data to archives.
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChFunction_Mocap>();
         // serialize parent class
         ChFunction::ArchiveOUT(marchive);
         // serialize all member data:
@@ -90,7 +89,7 @@ class ChApi ChFunction_Mocap : public ChFunction {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChFunction_Mocap>();
         // deserialize parent class
         ChFunction::ArchiveIN(marchive);
         // stream in all member data:
@@ -102,6 +101,8 @@ class ChApi ChFunction_Mocap : public ChFunction {
         marchive >> CHNVP(timetot);
     }
 };
+
+CH_CLASS_VERSION(ChFunction_Mocap,0)
 
 }  // end namespace chrono
 

@@ -16,14 +16,17 @@
 
 #ifndef CHOPENGLCONTACTS_H
 #define CHOPENGLCONTACTS_H
+
 #include "chrono_opengl/core/ChOpenGLBase.h"
 #include "chrono_opengl/shapes/ChOpenGLCloud.h"
-#include "physics/ChSystem.h"
+
+#include "chrono/physics/ChSystem.h"
+
 namespace chrono {
 class ChSystemParallel;
 namespace opengl {
 
-/// @addtogroup opengl
+/// @addtogroup opengl_module
 /// @{
 
 /// Renders contact points as a point cloud
@@ -44,7 +47,9 @@ class CH_OPENGL_API ChOpenGLContacts : public ChOpenGLBase {
     std::vector<glm::vec3> contact_data;
 };
 
-/// @} opengl
+/// @} opengl_module
+
 }
 }
-#endif  // END of CHOPENGLCONTACTS_H
+
+#endif

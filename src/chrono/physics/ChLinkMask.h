@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -26,7 +26,6 @@ namespace chrono {
 /// Mask structure for N scalar constraint equations between two bodies.
 
 class ChApi ChLinkMask {
-    CH_RTTI_ROOT(ChLinkMask);
 
   protected:
     std::vector<ChConstraintTwoBodies*> constraints;  ///< array of pointers to 'n' scalar constraint states
@@ -70,13 +69,13 @@ class ChApi ChLinkMask {
     /// be automatically deleted when the mask will be deleted)
     void AddConstraint(ChConstraintTwoBodies* aconstr);
 
-    /// To compare two masks, return TRUE if equal
-    int IsEqual(ChLinkMask& mask2);
+    /// To compare two masks, return true if equal
+    bool IsEqual(ChLinkMask& mask2);
 
     /// Tells if i-th equation is a unilateral constraint
     bool IsUnilateral(int i);
 
-    // Get the number of removed degrees of freedom (n.of costraints)
+    // Get the number of removed degrees of freedom (n.of constraints)
 
     /// Count both bilaterals and unilaterals
     int GetMaskDoc();
@@ -85,13 +84,13 @@ class ChApi ChLinkMask {
     /// Count only unilaterals
     int GetMaskDoc_d();
 
-    /// Get the i-th active scalar costraint (not active constr. won't be considered)
+    /// Get the i-th active scalar constraint (not active constr. won't be considered)
     ChConstraintTwoBodies* GetActiveConstrByNum(int mnum);
 
     /// Sets some active constraints as redundant.
     int SetActiveRedundantByArray(int* mvector, int mcount);
 
-    /// Set lock =ON for costraints which were disabled because redundant
+    /// Set lock =ON for constraints which were disabled because redundant
     int RestoreRedundant();
 
     /// If SetAllDisabled(true), all the constraints are temporarily turned
@@ -113,13 +112,15 @@ class ChApi ChLinkMask {
     virtual void ArchiveIN(ChArchiveIn& marchive);
 };
 
+CH_CLASS_VERSION(ChLinkMask,0)
+
+
 // -----------------------------------------------------------------------------
 
 /// Specialized ChLinkMask class, for constraint equations of
 /// the ChLinkLock link.
 
 class ChApi ChLinkMaskLF : public ChLinkMask {
-    CH_RTTI(ChLinkMaskLF, ChLinkMask);
 
   public:
     /// Create a ChLinkMaskLF which has 7 scalar constraints of
@@ -150,6 +151,9 @@ class ChApi ChLinkMaskLF : public ChLinkMask {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLinkMaskLF,0)
+
 
 }  // end namespace chrono
 

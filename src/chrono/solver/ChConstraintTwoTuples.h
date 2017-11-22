@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -28,7 +28,6 @@ namespace chrono {
 
 template <class Ta, class Tb>
 class ChConstraintTwoTuples : public ChConstraint {
-    // CH_RTTI(ChConstraintTwoTuples, ChConstraint)
 
     typedef typename Ta::type_constraint_tuple type_constraint_tuple_a;
     typedef typename Tb::type_constraint_tuple type_constraint_tuple_b;

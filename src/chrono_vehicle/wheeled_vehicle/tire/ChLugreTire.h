@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -62,7 +62,10 @@ class CH_VEHICLE_API ChLugreTire : public ChTire {
     /// vehicle system.  Typically, the vehicle subsystem will pass the tire force
     /// to the appropriate suspension subsystem which applies it as an external
     /// force one the wheel body.
-    virtual TireForce GetTireForce(bool cosim = false) const override { return m_tireForce; }
+    virtual TerrainForce GetTireForce() const override { return m_tireForce; }
+
+    /// Report the tire force and moment.
+    virtual TerrainForce ReportTireForce(ChTerrain* terrain) const override { return m_tireForce; }
 
     /// Update the state of this tire system at the current time.
     /// The tire system is provided the current state of its associated wheel.
@@ -84,7 +87,7 @@ class CH_VEHICLE_API ChLugreTire : public ChTire {
     /// Return the number of discs used to model this tire.
     virtual int GetNumDiscs() const = 0;
 
-    /// Return the laterla disc locations.
+    /// Return the lateral disc locations.
     /// These locations are relative to the tire center.
     virtual const double* GetDiscLocations() const = 0;
 
@@ -121,7 +124,7 @@ class CH_VEHICLE_API ChLugreTire : public ChTire {
 
     double m_stepsize;
 
-    TireForce m_tireForce;
+    TerrainForce m_tireForce;
     std::vector<DiscContactData> m_data;
     std::vector<DiscState> m_state;
 

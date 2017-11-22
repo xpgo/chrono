@@ -26,7 +26,7 @@ Reference Manual {#manual_root}
 * @subpage rigid_bodies
 	* [ChBody](@ref manual_ChBody)
 	* [ChBodyAuxRef](@ref manual_ChBodyAuxRef)
-	* [Other_bodies](@ref manual_otherbodies)
+	* [Other bodies](@ref manual_otherbodies)
 	
 * @subpage markers
 	
@@ -41,6 +41,12 @@ Reference Manual {#manual_root}
 	
 * @subpage links
 
+* @subpage motors
+	* [3D rotational motors](@ref rotational_motors)
+	* [3D linear motors](@ref linear_motors)
+	* [1D motors](@ref shaft_motors)
+	* [How to control motors](@ref how_to_control_motors)
+	
 * @subpage simulation_system
 	* [ChSystem](@ref manual_ChSystem)
 	* [Time steppers](@ref time_steppers)

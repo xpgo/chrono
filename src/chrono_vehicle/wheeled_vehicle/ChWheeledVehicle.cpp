@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -22,6 +22,23 @@ namespace chrono {
 namespace vehicle {
 
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+ChWheeledVehicle::ChWheeledVehicle(const std::string& name, ChMaterialSurface::ContactMethod contact_method)
+    : ChVehicle(name, contact_method) {}
+
+ChWheeledVehicle::ChWheeledVehicle(const std::string& name, ChSystem* system) : ChVehicle(name, system) {}
+
+// -----------------------------------------------------------------------------
+// Initialize this vehicle at the specified global location and orientation.
+// This base class implementation only initializes the chassis subsystem.
+// Derived classes must extend this function to initialize all other wheeled
+// vehicle subsystems (steering, suspensions, wheels, brakes, and driveline).
+// -----------------------------------------------------------------------------
+void ChWheeledVehicle::Initialize(const ChCoordsys<>& chassisPos, double chassisFwdVel) {
+    m_chassis->Initialize(m_system, chassisPos, chassisFwdVel, WheeledCollisionFamily::CHASSIS);
+}
+
+// -----------------------------------------------------------------------------
 // Update the state of this vehicle at the current time.
 // The vehicle system is provided the current driver inputs (throttle between
 // 0 and 1, steering between -1 and +1, braking between 0 and 1), the torque
@@ -34,7 +51,7 @@ void ChWheeledVehicle::Synchronize(double time,
                                    double steering,
                                    double braking,
                                    double powertrain_torque,
-                                   const TireForces& tire_forces) {
+                                   const TerrainForces& tire_forces) {
     // Apply powertrain torque to the driveline's input shaft.
     m_driveline->Synchronize(powertrain_torque);
 
@@ -51,6 +68,8 @@ void ChWheeledVehicle::Synchronize(double time,
         m_brakes[2 * i]->Synchronize(braking);
         m_brakes[2 * i + 1]->Synchronize(braking);
     }
+
+    m_chassis->Synchronize(time);
 }
 
 // -----------------------------------------------------------------------------
@@ -75,20 +94,62 @@ void ChWheeledVehicle::SetWheelVisualizationType(VisualizationType vis) {
 }
 
 // -----------------------------------------------------------------------------
+// Enable/disable collision between the chassis and all other vehicle subsystems
+// This only controls collisions between the chassis and the tire systems.
+// -----------------------------------------------------------------------------
+void ChWheeledVehicle::SetChassisVehicleCollide(bool state) {
+    if (state) {
+        // Chassis collides with tires
+        m_chassis->GetBody()->GetCollisionModel()->SetFamilyMaskDoCollisionWithFamily(WheeledCollisionFamily::TIRES);
+    } else {
+        // Chassis does not collide with tires
+        m_chassis->GetBody()->GetCollisionModel()->SetFamilyMaskNoCollisionWithFamily(WheeledCollisionFamily::TIRES);
+    }
+}
+
+// -----------------------------------------------------------------------------
 // Calculate and return the total vehicle mass
 // -----------------------------------------------------------------------------
 double ChWheeledVehicle::GetVehicleMass() const {
     double mass = m_chassis->GetMass();
-    for (size_t i = 0; i < m_suspensions.size(); i++)
-        mass += m_suspensions[i]->GetMass();
-    for (size_t i = 0; i < m_antirollbars.size(); i++)
-        mass += m_antirollbars[i]->GetMass();
-    for (size_t i = 0; i < m_steerings.size(); i++)
-        mass += m_steerings[i]->GetMass();
-    for (size_t i = 0; i < m_wheels.size(); i++)
-        mass += m_wheels[i]->GetMass();
+
+    for (auto susp : m_suspensions) {
+        mass += susp->GetMass();
+    }
+    for (auto antiroll : m_antirollbars) {
+        mass += antiroll->GetMass();
+    }
+    for (auto steering : m_steerings) {
+        mass += steering->GetMass();
+    }
+    for (auto wheel : m_wheels) {
+        mass += wheel->GetMass();
+    }
 
     return mass;
+}
+
+// -----------------------------------------------------------------------------
+// Calculate and return the current vehicle COM location
+// -----------------------------------------------------------------------------
+ChVector<> ChWheeledVehicle::GetVehicleCOMPos() const {
+    ChVector<> com(0, 0, 0);
+
+    com += m_chassis->GetMass() * m_chassis->GetCOMPos();
+    for (auto susp : m_suspensions) {
+        com += susp->GetMass() * susp->GetCOMPos();
+    }
+    for (auto antiroll : m_antirollbars) {
+        com += antiroll->GetMass() * antiroll->GetCOMPos();
+    }
+    for (auto steering : m_steerings) {
+        com += steering->GetMass() * steering->GetCOMPos();
+    }
+    for (auto wheel : m_wheels) {
+        com += wheel->GetMass() * wheel->GetCOMPos();
+    }
+
+    return com / GetVehicleMass();
 }
 
 // -----------------------------------------------------------------------------
@@ -130,7 +191,7 @@ WheelState ChWheeledVehicle::GetWheelState(const WheelID& wheel_id) const {
     state.ang_vel = GetWheelAngVel(wheel_id);
 
     ChVector<> ang_vel_loc = state.rot.RotateBack(state.ang_vel);
-    state.omega = ang_vel_loc.y;
+    state.omega = ang_vel_loc.y();
 
     return state;
 }

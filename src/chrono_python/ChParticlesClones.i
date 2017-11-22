@@ -1,7 +1,7 @@
 %{
 
 /* Includes the header in the wrapper code */
-#include "physics/ChParticlesClones.h"
+#include "chrono/physics/ChParticlesClones.h"
 
 %}
  
@@ -10,7 +10,7 @@
 //#define ChApi 
 
 // Forward ref
-%import "ChMaterialSurface.i"
+%import "ChMaterialSurfaceNSC.i"
 %import "ChCollisionModel.i"
 
 

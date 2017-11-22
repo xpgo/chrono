@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,7 +15,7 @@
 #ifndef CHFORCE_H
 #define CHFORCE_H
 
-#include <float.h>
+#include <cfloat>
 #include <memory.h>
 #include <cmath>
 #include <cstdlib>
@@ -37,8 +37,6 @@ class ChBody;
 /// represent either forces and torques, depending on a flag.
 
 class ChApi ChForce : public ChObj {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChForce, ChObj);
 
   public:
     // Types of force application
@@ -185,7 +183,7 @@ class ChApi ChForce : public ChObj {
     ChMatrix<>* GetQf() { return Qf; }
     /// Gets force-torque applied to rigid body, as force vector (in absol.coords)
     /// and torque vector (in body coords).
-    void GetBodyForceTorque(ChVector<>* body_force, ChVector<>* body_torque);
+    void GetBodyForceTorque(ChVector<>& body_force, ChVector<>& body_torque) const;
 
     //
     // UPDATING
@@ -205,6 +203,9 @@ class ChApi ChForce : public ChObj {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChForce,0)
+
 
 }  // end namespace chrono
 

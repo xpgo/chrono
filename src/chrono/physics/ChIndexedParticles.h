@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -46,8 +46,6 @@ class ChApi ChParticleBase : public ChFrameMoving<double> {
 /// Must be inherited by children classes.
 
 class ChApi ChIndexedParticles : public ChPhysicsItem {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChIndexedParticles, ChPhysicsItem);
 
   public:
     ChIndexedParticles() {}
@@ -69,15 +67,15 @@ class ChApi ChIndexedParticles : public ChPhysicsItem {
     virtual void AddParticle(ChCoordsys<double> initial_state = CSYSNORM) = 0;
 
     /// Number of coordinates of the particle cluster, x7 because with quaternions for rotation
-    virtual int GetDOF() { return 7 * (int)GetNparticles(); }
+    virtual int GetDOF() override { return 7 * (int)GetNparticles(); }
     /// Number of coordinates of the particle cluster, x6 because derivatives es. angular vel.
-    virtual int GetDOF_w() { return 6 * (int)GetNparticles(); }
+    virtual int GetDOF_w() override { return 6 * (int)GetNparticles(); }
 
     /// Get the master coordinate system for the assets (this will return the
     /// main coordinate system of the rigid body)
-    virtual ChFrame<> GetAssetsFrame(unsigned int nclone = 0);
+    virtual ChFrame<> GetAssetsFrame(unsigned int nclone = 0) override;
 
-    virtual unsigned int GetAssetsFrameNclones() { return (unsigned int)GetNparticles(); }
+    virtual unsigned int GetAssetsFrameNclones() override { return (unsigned int)GetNparticles(); }
 
     /// Method to allow serialization of transient data to archives.
     virtual void ArchiveOUT(ChArchiveOut& marchive) override;
@@ -85,6 +83,8 @@ class ChApi ChIndexedParticles : public ChPhysicsItem {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChIndexedParticles,0)
 
 }  // end namespace chrono
 

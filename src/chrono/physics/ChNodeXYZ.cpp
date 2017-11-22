@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -57,7 +57,7 @@ void ChNodeXYZ::ComputeNF(
 
 void ChNodeXYZ::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChNodeXYZ>();
 
     // serialize parent class
     ChNodeBase::ArchiveOUT(marchive);
@@ -71,7 +71,7 @@ void ChNodeXYZ::ArchiveOUT(ChArchiveOut& marchive) {
 /// Method to allow de serialization of transient data from archives.
 void ChNodeXYZ::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChNodeXYZ>();
 
     // deserialize parent class:
     ChNodeBase::ArchiveIN(marchive);

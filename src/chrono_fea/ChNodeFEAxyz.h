@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -26,10 +26,8 @@ namespace fea {
 class ChMesh;
 
 /// Class for a generic 3D finite element node, with x,y,z displacement.
-/// This is the typical node that can be used for tetahedrons, etc.
+/// This is the typical node that can be used for tetrahedrons, etc.
 class ChApiFea ChNodeFEAxyz : public ChNodeFEAbase, public ChNodeXYZ, public ChVariableTupleCarrier_1vars<3> {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChNodeFEAxyz, ChNodeXYZ);
 
   public:
     ChNodeFEAxyz(ChVector<> initial_pos = VNULL);
@@ -74,7 +72,7 @@ class ChApiFea ChNodeFEAxyz : public ChNodeFEAbase, public ChNodeXYZ, public ChV
     //
     // INTERFACE to ChVariableTupleCarrier_1vars
     //
-    virtual ChVariables* GetVariables1()  {return &Variables();}
+    virtual ChVariables* GetVariables1() override { return &Variables(); }
 
     //
     // Functions for interfacing to the state bookkeeping
@@ -132,12 +130,12 @@ class ChApiFea ChNodeFEAxyz : public ChNodeFEAbase, public ChNodeXYZ, public ChV
     virtual void NodeIntToDescriptor(const unsigned int off_v,
                                      const ChStateDelta& v,
                                      const ChVectorDynamic<>& R) override {
-        variables.Get_qb().PasteClippedMatrix(&v, off_v, 0, 3, 1, 0, 0);
-        variables.Get_fb().PasteClippedMatrix(&R, off_v, 0, 3, 1, 0, 0);
+        variables.Get_qb().PasteClippedMatrix(v, off_v, 0, 3, 1, 0, 0);
+        variables.Get_fb().PasteClippedMatrix(R, off_v, 0, 3, 1, 0, 0);
     }
 
     virtual void NodeIntFromDescriptor(const unsigned int off_v, ChStateDelta& v) override {
-        v.PasteMatrix(&variables.Get_qb(), off_v, 0);
+        v.PasteMatrix(variables.Get_qb(), off_v, 0);
     }
 
     //

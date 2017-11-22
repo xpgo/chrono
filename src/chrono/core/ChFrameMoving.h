@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -65,6 +65,9 @@ class ChFrameMoving : public ChFrame<Real> {
     /// Copy constructor, build from another moving frame
     ChFrameMoving(const ChFrameMoving<Real>& other)
         : ChFrame<Real>(other), coord_dt(other.coord_dt), coord_dtdt(other.coord_dtdt) {}
+
+    /// Destructor
+    virtual ~ChFrameMoving() {}
 
     //
     // OPERATORS OVERLOADING
@@ -481,14 +484,14 @@ class ChFrameMoving : public ChFrame<Real> {
     /// The transformation (also for speeds, accelerations) is
     /// inverted in place.
     /// That is if w=A*v, then A.Invert();v=A*w;
-    virtual void Invert() {
+    virtual void Invert() override {
         ChFrameMoving<Real> tmp;
         ChFrameMoving<Real> unit;
         tmp = *this;
         tmp.TransformParentToLocal(unit, *this);
     }
 
-    ChFrameMoving<Real> GetInverse() {
+    ChFrameMoving<Real> GetInverse() const {
         ChFrameMoving<Real> tmp(*this);
         tmp.Invert();
         return tmp;
@@ -500,7 +503,7 @@ class ChFrameMoving : public ChFrame<Real> {
 
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChFrameMoving>();
 
         // serialize parent class
         ChFrame<Real>::ArchiveOUT(marchive);
@@ -513,7 +516,7 @@ class ChFrameMoving : public ChFrame<Real> {
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChFrameMoving>();
 
         // deserialize parent class
         ChFrame<Real>::ArchiveIN(marchive);
@@ -523,6 +526,9 @@ class ChFrameMoving : public ChFrame<Real> {
         marchive >> CHNVP(coord_dtdt);
     }
 };
+
+CH_CLASS_VERSION(ChFrameMoving<double>,0)
+CH_CLASS_VERSION(ChFrameMoving<float>,0)
 
 //
 // MIXED ARGUMENT OPERATORS

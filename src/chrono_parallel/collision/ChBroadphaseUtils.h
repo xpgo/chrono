@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2016 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -13,9 +13,12 @@
 // =============================================================================
 //
 // Description: Utility functions used by multiple parts of the collision code
+//
 // =============================================================================
 
 #pragma once
+
+#include <climits>
 
 #include "chrono_parallel/ChParallelDefines.h"
 #include "chrono_parallel/math/ChParallelMath.h"
@@ -27,49 +30,37 @@
 namespace chrono {
 namespace collision {
 
-typedef thrust::pair<real3, real3> bbox;
-
-// reduce a pair of bounding boxes (a,b) to a bounding box containing a and b
-struct bbox_reduction : public thrust::binary_function<bbox, bbox, bbox> {
-    bbox operator()(bbox a, bbox b) {
-        real3 ll = real3(Min(a.first.x, b.first.x), Min(a.first.y, b.first.y),
-                         Min(a.first.z, b.first.z));  // lower left corner
-        real3 ur = real3(Max(a.second.x, b.second.x), Max(a.second.y, b.second.y),
-                         Max(a.second.z, b.second.z));  // upper right corner
-        return bbox(ll, ur);
-    }
-};
-
-// convert a point to a bbox containing that point, (point) -> (point, point)
-struct bbox_transformation : public thrust::unary_function<real3, bbox> {
-    bbox operator()(real3 point) { return bbox(point, point); }
-};
+/// @addtogroup parallel_collision
+/// @{
 
 // HASHING FUNCTIONS =======================================================================================
-// Convert a position into a bin index
+
+/// Convert a position into a bin index ("lower" corner).
 template <class T>
 inline vec3 HashMin(const T& A, const real3& inv_bin_size_vec) {
     vec3 temp;
-    temp.x = Floor(A.x * inv_bin_size_vec.x);
-    temp.y = Floor(A.y * inv_bin_size_vec.y);
-    temp.z = Floor(A.z * inv_bin_size_vec.z);
+    temp.x = (int)Floor(A.x * inv_bin_size_vec.x);
+    temp.y = (int)Floor(A.y * inv_bin_size_vec.y);
+    temp.z = (int)Floor(A.z * inv_bin_size_vec.z);
     return temp;
 }
 
+/// Convert a position into a bin index ("upper" corner).
 template <class T>
 inline vec3 HashMax(const T& A, const real3& inv_bin_size_vec) {
     vec3 temp;
-    temp.x = Ceil(A.x * inv_bin_size_vec.x) - 1;
-    temp.y = Ceil(A.y * inv_bin_size_vec.y) - 1;
-    temp.z = Ceil(A.z * inv_bin_size_vec.z) - 1;
+    temp.x = (int)Ceil(A.x * inv_bin_size_vec.x) - 1;
+    temp.y = (int)Ceil(A.y * inv_bin_size_vec.y) - 1;
+    temp.z = (int)Ceil(A.z * inv_bin_size_vec.z) - 1;
     return temp;
 }
 
-// Convert a bin index into a unique hash value
+/// Convert a bin index into a unique hash value.
 static inline uint Hash_Index(const vec3& A, vec3 bins_per_axis) {
     return ((A.z * bins_per_axis.y) * bins_per_axis.x) + (A.y * bins_per_axis.x) + A.x;
 }
-// Decodes a hash into it's associated bin position
+
+/// Decode a hash into it's associated bin position.
 static inline vec3 Hash_Decode(uint hash, vec3 bins_per_axis) {
     vec3 decoded_hash;
     decoded_hash.x = hash % (bins_per_axis.x * bins_per_axis.y) % bins_per_axis.x;
@@ -80,14 +71,14 @@ static inline vec3 Hash_Decode(uint hash, vec3 bins_per_axis) {
 
 // AABB COLLISION FUNCTIONS ================================================================================
 
-// Check if two bodies interact using their collision family data.
+/// Check if two bodies interact using their collision family data.
 static inline bool collide(short2 fam_data_A, short2 fam_data_B) {
     // Return true only if the bit corresponding to family of B is set in the mask
     // of A and vice-versa.
     return (fam_data_A.y & fam_data_B.x) && (fam_data_B.y & fam_data_A.x);
 }
 
-// Check if two AABBs overlap using their min/max corners.
+/// Check if two AABBs overlap using their min/max corners.
 static inline bool overlap(real3 Amin, real3 Amax, real3 Bmin, real3 Bmax) {
     // Return true only if the two AABBs overlap in all 3 directions.
     return (Amin.x <= Bmax.x && Bmin.x <= Amax.x) && (Amin.y <= Bmax.y && Bmin.y <= Amax.y) &&
@@ -109,8 +100,8 @@ current_bin(real3 Amin, real3 Amax, real3 Bmin, real3 Bmax, real3 inv_bin_size_v
 
 // Grid Size FUNCTIONS =====================================================================================
 
-// for a given number of aabbs in a grid, the grids maximum and minimum point along with the density factor
-// compute the size of the grid
+/// For a given number of aabbs in a grid, the grids maximum and minimum point along with the density factor
+/// compute the size of the grid.
 static vec3 function_Compute_Grid_Resolution(uint num_aabb, real3 d, real k = .1) {
     vec3 grid_size = vec3(0);
     real V = d.x * d.y * d.z;
@@ -136,12 +127,12 @@ static bool function_Check_Sphere(real3 pos_a, real3 pos_b, real radius) {
 }
 // TWO LEVEL FUNCTIONS==========================================================
 
-// For each bin determine the grid size and store it========================================================
+/// For each bin determine the grid size and store it.
 static void f_TL_Count_Leaves(const uint index,
-                       const real density,
-                       const real3& bin_size,
-                       const custom_vector<uint>& bin_start_index,
-                       custom_vector<uint>& leaves_per_bin) {
+                              const real density,
+                              const real3& bin_size,
+                              const custom_vector<uint>& bin_start_index,
+                              custom_vector<uint>& leaves_per_bin) {
     uint start = bin_start_index[index];
     uint end = bin_start_index[index + 1];
     uint num_aabb_in_cell = end - start;
@@ -150,17 +141,18 @@ static void f_TL_Count_Leaves(const uint index,
 
     leaves_per_bin[index] = cell_res.x * cell_res.y * cell_res.z;
 }
-// Count the number of AABB leaf intersections for each bin=================================================
+
+/// Count the number of AABB leaf intersections for each bin.
 static void f_TL_Count_AABB_Leaf_Intersection(const uint index,
-                                       const real density,
-                                       const real3& bin_size,
-                                       const vec3& bins_per_axis,
-                                       const custom_vector<uint>& bin_start_index,
-                                       const custom_vector<uint>& bin_number,
-                                       const custom_vector<uint>& shape_number,
-                                       const custom_vector<real3>& aabb_min,
-                                       const custom_vector<real3>& aabb_max,
-                                       custom_vector<uint>& leaves_intersected) {
+                                              const real density,
+                                              const real3& bin_size,
+                                              const vec3& bins_per_axis,
+                                              const custom_vector<uint>& bin_start_index,
+                                              const custom_vector<uint>& bin_number,
+                                              const custom_vector<uint>& shape_number,
+                                              const custom_vector<real3>& aabb_min,
+                                              const custom_vector<real3>& aabb_max,
+                                              custom_vector<uint>& leaves_intersected) {
     uint start = bin_start_index[index];
     uint end = bin_start_index[index + 1];
     uint count = 0;
@@ -192,20 +184,21 @@ static void f_TL_Count_AABB_Leaf_Intersection(const uint index,
 
     leaves_intersected[index] = count;
 }
-// Store the AABB leaf intersections for each bin===========================================================
+
+/// Store the AABB leaf intersections for each bin.
 static void f_TL_Write_AABB_Leaf_Intersection(const uint& index,
-                                       const real density,
-                                       const real3& bin_size,
-                                       const vec3& bin_resolution,
-                                       const custom_vector<uint>& bin_start_index,
-                                       const custom_vector<uint>& bin_number,
-                                       const custom_vector<uint>& bin_shape_number,
-                                       const custom_vector<real3>& aabb_min,
-                                       const custom_vector<real3>& aabb_max,
-                                       const custom_vector<uint>& leaves_intersected,
-                                       const custom_vector<uint>& leaves_per_bin,
-                                       custom_vector<uint>& leaf_number,
-                                       custom_vector<uint>& leaf_shape_number) {
+                                              const real density,
+                                              const real3& bin_size,
+                                              const vec3& bin_resolution,
+                                              const custom_vector<uint>& bin_start_index,
+                                              const custom_vector<uint>& bin_number,
+                                              const custom_vector<uint>& bin_shape_number,
+                                              const custom_vector<real3>& aabb_min,
+                                              const custom_vector<real3>& aabb_max,
+                                              const custom_vector<uint>& leaves_intersected,
+                                              const custom_vector<uint>& leaves_per_bin,
+                                              custom_vector<uint>& leaf_number,
+                                              custom_vector<uint>& leaf_shape_number) {
     uint start = bin_start_index[index];
     uint end = bin_start_index[index + 1];
     uint mInd = leaves_intersected[index];
@@ -251,33 +244,33 @@ static void f_TL_Write_AABB_Leaf_Intersection(const uint& index,
 
 // ONE AND TWO LEVEL FUNCTIONS==========================================================
 
-// Function to Count AABB Bin intersections=================================================================
+/// Function to Count AABB Bin intersections.
 static inline void f_Count_AABB_BIN_Intersection(const uint index,
-                                          const real3& inv_bin_size,
-                                          const custom_vector<real3>& aabb_min,
-                                          const custom_vector<real3>& aabb_max,
-                                          custom_vector<uint>& bins_intersected) {
+                                                 const real3& inv_bin_size,
+                                                 const custom_vector<real3>& aabb_min,
+                                                 const custom_vector<real3>& aabb_max,
+                                                 custom_vector<uint>& bins_intersected) {
     vec3 gmin = HashMin(aabb_min[index], inv_bin_size);
     vec3 gmax = HashMax(aabb_max[index], inv_bin_size);
     bins_intersected[index] = (gmax.x - gmin.x + 1) * (gmax.y - gmin.y + 1) * (gmax.z - gmin.z + 1);
 }
 
-// Function to Store AABB Bin Intersections=================================================================
+/// Function to Store AABB Bin Intersections.
 static inline void f_Store_AABB_BIN_Intersection(const uint index,
-                                          const vec3& bins_per_axis,
-                                          const real3& inv_bin_size,
-                                          const custom_vector<real3>& aabb_min_data,
-                                          const custom_vector<real3>& aabb_max_data,
-                                          const custom_vector<uint>& bins_intersected,
-                                          custom_vector<uint>& bin_number,
-                                          custom_vector<uint>& aabb_number) {
+                                                 const vec3& bins_per_axis,
+                                                 const real3& inv_bin_size,
+                                                 const custom_vector<real3>& aabb_min_data,
+                                                 const custom_vector<real3>& aabb_max_data,
+                                                 const custom_vector<uint>& bins_intersected,
+                                                 custom_vector<uint>& bin_number,
+                                                 custom_vector<uint>& aabb_number) {
     uint count = 0, i, j, k;
     vec3 gmin = HashMin(aabb_min_data[index], inv_bin_size);
     vec3 gmax = HashMax(aabb_max_data[index], inv_bin_size);
     uint mInd = bins_intersected[index];
-    for (i = gmin.x; i <= gmax.x; i++) {
-        for (j = gmin.y; j <= gmax.y; j++) {
-            for (k = gmin.z; k <= gmax.z; k++) {
+    for (i = gmin.x; i <= (uint)gmax.x; i++) {
+        for (j = gmin.y; j <= (uint)gmax.y; j++) {
+            for (k = gmin.z; k <= (uint)gmax.z; k++) {
                 bin_number[mInd + count] = Hash_Index(vec3(i, j, k), bins_per_axis);
                 aabb_number[mInd + count] = index;
                 count++;
@@ -286,19 +279,20 @@ static inline void f_Store_AABB_BIN_Intersection(const uint index,
     }
 }
 
-// Function to count AABB AABB intersection=================================================================
+/// Function to count AABB AABB intersection.
 static inline void f_Count_AABB_AABB_Intersection(const uint index,
-                                           const real3 inv_bin_size_vec,
-                                           const vec3 bins_per_axis,
-                                           const custom_vector<real3>& aabb_min_data,
-                                           const custom_vector<real3>& aabb_max_data,
-                                           const custom_vector<uint>& bin_number,
-                                           const custom_vector<uint>& aabb_number,
-                                           const custom_vector<uint>& bin_start_index,
-                                           const custom_vector<short2>& fam_data,
-                                           const custom_vector<char>& body_active,
-                                           const custom_vector<uint>& body_id,
-                                           custom_vector<uint>& num_contact) {
+                                                  const real3 inv_bin_size_vec,
+                                                  const vec3 bins_per_axis,
+                                                  const custom_vector<real3>& aabb_min_data,
+                                                  const custom_vector<real3>& aabb_max_data,
+                                                  const custom_vector<uint>& bin_number,
+                                                  const custom_vector<uint>& aabb_number,
+                                                  const custom_vector<uint>& bin_start_index,
+                                                  const custom_vector<short2>& fam_data,
+                                                  const custom_vector<char>& body_active,
+                                                  const custom_vector<char>& body_collide,
+                                                  const custom_vector<uint>& body_id,
+                                                  custom_vector<uint>& num_contact) {
     uint start = bin_start_index[index];
     uint end = bin_start_index[index + 1];
     uint count = 0;
@@ -314,15 +308,24 @@ static inline void f_Count_AABB_AABB_Intersection(const uint index,
         short2 famA = fam_data[shapeA];
         uint bodyA = body_id[shapeA];
 
+        if (bodyA == UINT_MAX)
+            continue;
+        if (body_collide[bodyA] == 0)
+            continue;
+
         for (uint k = i + 1; k < end; k++) {
             uint shapeB = aabb_number[k];
             uint bodyB = body_id[shapeB];
             real3 Bmin = aabb_min_data[shapeB];
             real3 Bmax = aabb_max_data[shapeB];
 
+            if (bodyB == UINT_MAX)
+                continue;
             if (shapeA == shapeB)
                 continue;
             if (bodyA == bodyB)
+                continue;
+            if (body_collide[bodyB] == 0)
                 continue;
             if (!body_active[bodyA] && !body_active[bodyB])
                 continue;
@@ -330,8 +333,8 @@ static inline void f_Count_AABB_AABB_Intersection(const uint index,
                 continue;
             if (!overlap(Amin, Amax, Bmin, Bmax))
                 continue;
-			if (current_bin(Amin, Amax, Bmin, Bmax, inv_bin_size_vec, bins_per_axis, bin_number[index]) == false)
-				continue;
+            if (current_bin(Amin, Amax, Bmin, Bmax, inv_bin_size_vec, bins_per_axis, bin_number[index]) == false)
+                continue;
             count++;
         }
     }
@@ -339,20 +342,21 @@ static inline void f_Count_AABB_AABB_Intersection(const uint index,
     num_contact[index] = count;
 }
 
-// Function to store AABB-AABB intersections================================================================
+/// Function to store AABB-AABB intersections.
 static inline void f_Store_AABB_AABB_Intersection(const uint index,
-                                           const real3 inv_bin_size_vec,
-                                           const vec3 bins_per_axis,
-                                           const custom_vector<real3>& aabb_min_data,
-                                           const custom_vector<real3>& aabb_max_data,
-                                           const custom_vector<uint>& bin_number,
-                                           const custom_vector<uint>& aabb_number,
-                                           const custom_vector<uint>& bin_start_index,
-                                           const custom_vector<uint>& num_contact,
-                                           const custom_vector<short2>& fam_data,
-                                           const custom_vector<char>& body_active,
-                                           const custom_vector<uint>& body_id,
-                                           custom_vector<long long>& potential_contacts) {
+                                                  const real3 inv_bin_size_vec,
+                                                  const vec3 bins_per_axis,
+                                                  const custom_vector<real3>& aabb_min_data,
+                                                  const custom_vector<real3>& aabb_max_data,
+                                                  const custom_vector<uint>& bin_number,
+                                                  const custom_vector<uint>& aabb_number,
+                                                  const custom_vector<uint>& bin_start_index,
+                                                  const custom_vector<uint>& num_contact,
+                                                  const custom_vector<short2>& fam_data,
+                                                  const custom_vector<char>& body_active,
+                                                  const custom_vector<char>& body_collide,
+                                                  const custom_vector<uint>& body_id,
+                                                  custom_vector<long long>& potential_contacts) {
     uint start = bin_start_index[index];
     uint end = bin_start_index[index + 1];
     // Terminate early if there is only one object in the bin
@@ -369,15 +373,24 @@ static inline void f_Store_AABB_AABB_Intersection(const uint index,
         short2 famA = fam_data[shapeA];
         uint bodyA = body_id[shapeA];
 
-        for (int k = i + 1; k < end; k++) {
+        if (bodyA == UINT_MAX)
+            continue;
+        if (body_collide[bodyA] == 0)
+            continue;
+
+        for (uint k = i + 1; k < end; k++) {
             uint shapeB = aabb_number[k];
             uint bodyB = body_id[shapeB];
             real3 Bmin = aabb_min_data[shapeB];
             real3 Bmax = aabb_max_data[shapeB];
 
+            if (bodyB == UINT_MAX)
+                continue;
             if (shapeA == shapeB)
                 continue;
             if (bodyA == bodyB)
+                continue;
+            if (body_collide[bodyB] == 0)
                 continue;
             if (!body_active[bodyA] && !body_active[bodyB])
                 continue;
@@ -385,8 +398,8 @@ static inline void f_Store_AABB_AABB_Intersection(const uint index,
                 continue;
             if (!overlap(Amin, Amax, Bmin, Bmax))
                 continue;
-			if (current_bin(Amin, Amax, Bmin, Bmax, inv_bin_size_vec, bins_per_axis, bin_number[index]) == false)
-				continue;
+            if (current_bin(Amin, Amax, Bmin, Bmax, inv_bin_size_vec, bins_per_axis, bin_number[index]) == false)
+                continue;
 
             if (shapeB < shapeA) {
                 uint t = shapeA;
@@ -399,5 +412,8 @@ static inline void f_Store_AABB_AABB_Intersection(const uint index,
         }
     }
 }
-}
-}
+
+/// @} parallel_colision
+
+} // end namespace collision
+} // end namespace chrono

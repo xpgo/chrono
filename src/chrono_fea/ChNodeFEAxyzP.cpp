@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -93,12 +93,12 @@ void ChNodeFEAxyzP::NodeIntLoadResidual_Mv(const unsigned int off,
 }
 
 void ChNodeFEAxyzP::NodeIntToDescriptor(const unsigned int off_v, const ChStateDelta& v, const ChVectorDynamic<>& R) {
-    variables.Get_qb().PasteClippedMatrix(&v, off_v, 0, 1, 1, 0, 0);
-    variables.Get_fb().PasteClippedMatrix(&R, off_v, 0, 1, 1, 0, 0);
+    variables.Get_qb().PasteClippedMatrix(v, off_v, 0, 1, 1, 0, 0);
+    variables.Get_fb().PasteClippedMatrix(R, off_v, 0, 1, 1, 0, 0);
 }
 
 void ChNodeFEAxyzP::NodeIntFromDescriptor(const unsigned int off_v, ChStateDelta& v) {
-    v.PasteMatrix(&variables.Get_qb(), off_v, 0);
+    v.PasteMatrix(variables.Get_qb(), off_v, 0);
 }
 
 // -----------------------------------------------------------------------------
@@ -151,7 +151,7 @@ void ChNodeFEAxyzP::VariablesQbIncrementPosition(double step) {
 
 void ChNodeFEAxyzP::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChNodeFEAxyzP>();
     // serialize parent class
     ChNodeFEAbase::ArchiveOUT(marchive);
     // serialize all member data:
@@ -162,7 +162,7 @@ void ChNodeFEAxyzP::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChNodeFEAxyzP::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChNodeFEAxyzP>();
     // deserialize parent class
     ChNodeFEAbase::ArchiveIN(marchive);
     // stream in all member data:

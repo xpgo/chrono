@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -12,7 +12,7 @@
 // Authors: Alessandro Tasora, Radu Serban
 // =============================================================================
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <algorithm>
 
 #include "chrono/collision/ChCModelBullet.h"
@@ -28,7 +28,7 @@ using namespace collision;
 using namespace geometry;
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChMatterMeshless> a_registration_ChMatterMeshless;
+CH_FACTORY_REGISTER(ChMatterMeshless)
 
 ChNodeMeshless::ChNodeMeshless()
     : pos_ref(VNULL), UserForce(VNULL), h_rad(0.1), coll_rad(0.001), volume(0.01), hardening(0), container(NULL) {
@@ -129,12 +129,12 @@ void ChNodeMeshless::ComputeJacobianForContactPart(const ChVector<>& abs_point,
     if (!second)
         Jx1.MatrNeg();
 
-    jacobian_tuple_N.Get_Cq()->PasteClippedMatrix(&Jx1, 0, 0, 1, 3, 0, 0);
-    jacobian_tuple_U.Get_Cq()->PasteClippedMatrix(&Jx1, 1, 0, 1, 3, 0, 0);
-    jacobian_tuple_V.Get_Cq()->PasteClippedMatrix(&Jx1, 2, 0, 1, 3, 0, 0);
+    jacobian_tuple_N.Get_Cq()->PasteClippedMatrix(Jx1, 0, 0, 1, 3, 0, 0);
+    jacobian_tuple_U.Get_Cq()->PasteClippedMatrix(Jx1, 1, 0, 1, 3, 0, 0);
+    jacobian_tuple_V.Get_Cq()->PasteClippedMatrix(Jx1, 2, 0, 1, 3, 0, 0);
 }
 
-std::shared_ptr<ChMaterialSurfaceBase>& ChNodeMeshless::GetMaterialSurfaceBase() {
+std::shared_ptr<ChMaterialSurface>& ChNodeMeshless::GetMaterialSurfaceBase() {
     return container->GetMaterialSurfaceBase();
 }
 
@@ -150,8 +150,8 @@ ChMatterMeshless::ChMatterMeshless() : do_collide(false), viscosity(0) {
     // Default: VonMises material
     material = std::make_shared<ChContinuumPlasticVonMises>();
 
-    // Default: DVI material
-    matsurface = std::make_shared<ChMaterialSurface>();
+    // Default: NSC material
+    matsurface = std::make_shared<ChMaterialSurfaceNSC>();
 }
 
 ChMatterMeshless::ChMatterMeshless(const ChMatterMeshless& other) : ChIndexedNodes(other) {
@@ -220,9 +220,9 @@ void ChMatterMeshless::FillBox(const ChVector<> size,
                                const bool do_centeredcube,
                                const double kernel_sfactor,
                                const double randomness) {
-    int samples_x = (int)(size.x / spacing);
-    int samples_y = (int)(size.y / spacing);
-    int samples_z = (int)(size.z / spacing);
+    int samples_x = (int)(size.x() / spacing);
+    int samples_y = (int)(size.y() / spacing);
+    int samples_z = (int)(size.z() / spacing);
     int totsamples = 0;
 
     double mrandomness = randomness;
@@ -232,7 +232,7 @@ void ChMatterMeshless::FillBox(const ChVector<> size,
     for (int ix = 0; ix < samples_x; ix++)
         for (int iy = 0; iy < samples_y; iy++)
             for (int iz = 0; iz < samples_z; iz++) {
-                ChVector<> pos(ix * spacing - 0.5 * size.x, iy * spacing - 0.5 * size.y, iz * spacing - 0.5 * size.z);
+                ChVector<> pos(ix * spacing - 0.5 * size.x(), iy * spacing - 0.5 * size.y(), iz * spacing - 0.5 * size.z());
                 pos += ChVector<>(mrandomness * ChRandom() * spacing, mrandomness * ChRandom() * spacing,
                                   mrandomness * ChRandom() * spacing);
                 AddNode(boxcoords.TransformLocalToParent(pos));
@@ -247,7 +247,7 @@ void ChMatterMeshless::FillBox(const ChVector<> size,
                 }
             }
 
-    double mtotvol = size.x * size.y * size.z;
+    double mtotvol = size.x() * size.y() * size.z();
     double mtotmass = mtotvol * initial_density;
     double nodemass = mtotmass / (double)totsamples;
     double kernelrad = kernel_sfactor * spacing;
@@ -320,7 +320,7 @@ void ChMatterMeshless::IntLoadResidual_F(
     std::vector<std::shared_ptr<ChPhysicsItem> >::iterator iterotherphysics =
         GetSystem()->Get_otherphysicslist()->begin();
     while (iterotherphysics != GetSystem()->Get_otherphysicslist()->end()) {
-        if (edges = std::dynamic_pointer_cast<ChProximityContainerMeshless>(*iterotherphysics))
+        if ((edges = std::dynamic_pointer_cast<ChProximityContainerMeshless>(*iterotherphysics)))
             break;
         iterotherphysics++;
     }
@@ -355,7 +355,7 @@ void ChMatterMeshless::IntLoadResidual_F(
 
         // Compute A inverse
         ChMatrix33<> M_tmp = mnode->Amoment;
-        double det = M_tmp.FastInvert(&mnode->Amoment);
+        double det = M_tmp.FastInvert(mnode->Amoment);
         if (fabs(det) < 0.00003) {
             mnode->Amoment.FillElem(0);     // deactivate if not possible to invert
             mnode->e_strain.FillElem(0.0);  // detach
@@ -437,24 +437,24 @@ void ChMatterMeshless::IntLoadResidual_Mv(const unsigned int off,      ///< offs
     }
 }
 
-void ChMatterMeshless::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+void ChMatterMeshless::IntToDescriptor(const unsigned int off_v,
                                        const ChStateDelta& v,
                                        const ChVectorDynamic<>& R,
-                                       const unsigned int off_L,  ///< offset in L, Qc
+                                       const unsigned int off_L,
                                        const ChVectorDynamic<>& L,
                                        const ChVectorDynamic<>& Qc) {
     for (unsigned int j = 0; j < nodes.size(); j++) {
-        nodes[j]->variables.Get_qb().PasteClippedMatrix(&v, off_v + 3 * j, 0, 3, 1, 0, 0);
-        nodes[j]->variables.Get_fb().PasteClippedMatrix(&R, off_v + 3 * j, 0, 3, 1, 0, 0);
+        nodes[j]->variables.Get_qb().PasteClippedMatrix(v, off_v + 3 * j, 0, 3, 1, 0, 0);
+        nodes[j]->variables.Get_fb().PasteClippedMatrix(R, off_v + 3 * j, 0, 3, 1, 0, 0);
     }
 }
 
-void ChMatterMeshless::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+void ChMatterMeshless::IntFromDescriptor(const unsigned int off_v,
                                          ChStateDelta& v,
-                                         const unsigned int off_L,  ///< offset in L
+                                         const unsigned int off_L,
                                          ChVectorDynamic<>& L) {
     for (unsigned int j = 0; j < nodes.size(); j++) {
-        v.PasteMatrix(&nodes[j]->variables.Get_qb(), off_v + 3 * j, 0);
+        v.PasteMatrix(nodes[j]->variables.Get_qb(), off_v + 3 * j, 0);
     }
 }
 
@@ -481,7 +481,7 @@ void ChMatterMeshless::VariablesFbLoadForces(double factor) {
     std::vector<std::shared_ptr<ChPhysicsItem> >::iterator iterotherphysics =
         GetSystem()->Get_otherphysicslist()->begin();
     while (iterotherphysics != GetSystem()->Get_otherphysicslist()->end()) {
-        if (edges = std::dynamic_pointer_cast<ChProximityContainerMeshless>(*iterotherphysics))
+        if ((edges = std::dynamic_pointer_cast<ChProximityContainerMeshless>(*iterotherphysics)))
             break;
         iterotherphysics++;
     }
@@ -516,7 +516,7 @@ void ChMatterMeshless::VariablesFbLoadForces(double factor) {
 
         // Compute A inverse
         ChMatrix33<> M_tmp = mnode->Amoment;
-        double det = M_tmp.FastInvert(&mnode->Amoment);
+        double det = M_tmp.FastInvert(mnode->Amoment);
         if (fabs(det) < 0.00003) {
             mnode->Amoment.FillElem(0);     // deactivate if not possible to invert
             mnode->e_strain.FillElem(0.0);  // detach
@@ -727,37 +727,29 @@ void ChMatterMeshless::UpdateParticleCollisionModels() {
 
 //////// FILE I/O
 
-void ChMatterMeshless::StreamOUT(ChStreamOutBinary& mstream) {
-    /*
-    // class version number
-    mstream.VersionWrite(1);
+void ChMatterMeshless::ArchiveOUT(ChArchiveOut& marchive) {
+    // version number
+    marchive.VersionWrite<ChMatterMeshless>();
 
-    // serialize parent class too
-    ChIndexedNodes::StreamOUT(mstream);
+    // serialize the parent class data too
+    ChIndexedNodes::ArchiveOUT(marchive);
 
-    // stream out all member data
-    mstream.AbstractWrite(material.get());
-    */
-
-    //***TO DO*** stream nodes
+    // serialize all member data:
+    //***TODO
 }
 
-void ChMatterMeshless::StreamIN(ChStreamInBinary& mstream) {
-    /*
-    // class version number
-    int version = mstream.VersionRead();
+void ChMatterMeshless::ArchiveIN(ChArchiveIn& marchive) {
+    // version number
+    int version = marchive.VersionRead<ChMatterMeshless>();
 
-    // deserialize parent class too
-    ChIndexedNodes::StreamIN(mstream);
+    // deserialize the parent class data too
+    ChIndexedNodes::ArchiveIN(marchive);
 
-    // stream in all member data
-    ChContinuumElastoplastic* mmat;
-    mstream.AbstractReadCreate(&mmat);
-    material = std::shared_ptr<ChContinuumElastoplastic>(mmat);
-    */
-
-    //***TO DO*** unstream nodes
+    // deserialize all member data:
+    //***TODO
 }
+
+
 
 }  // end namespace fea
 }  // end namespace chrono

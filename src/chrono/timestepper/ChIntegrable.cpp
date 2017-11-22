@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -93,15 +93,15 @@ void ChIntegrableIIorder::StateGather(ChState& y, double& T)  {
     ChState mx(GetNcoords_x(), y.GetIntegrable());
     ChStateDelta mv(GetNcoords_v(), y.GetIntegrable());
     this->StateGather(mx, mv, T);
-    y.PasteMatrix(&mx, 0, 0);
-    y.PasteMatrix(&mv, GetNcoords_x(), 0);
+    y.PasteMatrix(mx, 0, 0);
+    y.PasteMatrix(mv, GetNcoords_x(), 0);
 }
 
 void ChIntegrableIIorder::StateScatter(const ChState& y, const double T) {
     ChState mx(GetNcoords_x(), y.GetIntegrable());
     ChStateDelta mv(GetNcoords_v(), y.GetIntegrable());
-    mx.PasteClippedMatrix(&y, 0, 0, GetNcoords_x(), 1, 0, 0);
-    mv.PasteClippedMatrix(&y, GetNcoords_x(), 0, GetNcoords_v(), 1, 0, 0);
+    mx.PasteClippedMatrix(y, 0, 0, GetNcoords_x(), 1, 0, 0);
+    mv.PasteClippedMatrix(y, GetNcoords_x(), 0, GetNcoords_v(), 1, 0, 0);
     StateScatter(mx, mv, T);
 }
 
@@ -109,13 +109,13 @@ void ChIntegrableIIorder::StateGatherDerivative(ChStateDelta& Dydt) {
     ChStateDelta mv(GetNcoords_v(), Dydt.GetIntegrable());
     ChStateDelta ma(GetNcoords_v(), Dydt.GetIntegrable());
     StateGatherAcceleration(ma);
-    Dydt.PasteMatrix(&mv, 0, 0);
-    Dydt.PasteMatrix(&ma, GetNcoords_v(), 0);
+    Dydt.PasteMatrix(mv, 0, 0);
+    Dydt.PasteMatrix(ma, GetNcoords_v(), 0);
 }
 
 void ChIntegrableIIorder::StateScatterDerivative(const ChStateDelta& Dydt) {
     ChStateDelta ma(GetNcoords_v(), Dydt.GetIntegrable());
-    ma.PasteClippedMatrix(&Dydt, GetNcoords_v(), 0, GetNcoords_v(), 1, 0, 0);
+    ma.PasteClippedMatrix(Dydt, GetNcoords_v(), 0, GetNcoords_v(), 1, 0, 0);
     StateScatterAcceleration(ma);
 }
 
@@ -132,24 +132,24 @@ void ChIntegrableIIorder::StateIncrement(ChState& y_new,         // resulting y_
 
     if (y.GetRows() == this->GetNcoords_y()) {
         // Incrementing y in y={x, dx/dt}.
-        // PERFORMANCE WARNING! temporary vecotrs allocated on heap. This is only to support
+        // PERFORMANCE WARNING! temporary vectors allocated on heap. This is only to support
         // compatibility with 1st order integrators.
         ChState mx(this->GetNcoords_x(), y.GetIntegrable());
         ChStateDelta mv(this->GetNcoords_v(), y.GetIntegrable());
-        mx.PasteClippedMatrix(&y, 0, 0, this->GetNcoords_x(), 1, 0, 0);
-        mv.PasteClippedMatrix(&y, this->GetNcoords_x(), 0, this->GetNcoords_v(), 1, 0, 0);
+        mx.PasteClippedMatrix(y, 0, 0, this->GetNcoords_x(), 1, 0, 0);
+        mv.PasteClippedMatrix(y, this->GetNcoords_x(), 0, this->GetNcoords_v(), 1, 0, 0);
         ChStateDelta mDx(this->GetNcoords_v(), y.GetIntegrable());
         ChStateDelta mDv(this->GetNcoords_a(), y.GetIntegrable());
-        mDx.PasteClippedMatrix(&Dy, 0, 0, this->GetNcoords_v(), 1, 0, 0);
-        mDv.PasteClippedMatrix(&Dy, this->GetNcoords_v(), 0, this->GetNcoords_a(), 1, 0, 0);
+        mDx.PasteClippedMatrix(Dy, 0, 0, this->GetNcoords_v(), 1, 0, 0);
+        mDv.PasteClippedMatrix(Dy, this->GetNcoords_v(), 0, this->GetNcoords_a(), 1, 0, 0);
         ChState mx_new(this->GetNcoords_x(), y.GetIntegrable());
         ChStateDelta mv_new(this->GetNcoords_v(), y.GetIntegrable());
 
         StateIncrementX(mx_new, mx, mDx);  // increment positions
         mv_new = mv + mDv;                 // increment speeds
 
-        y_new.PasteMatrix(&mx_new, 0, 0);
-        y_new.PasteMatrix(&mv_new, this->GetNcoords_x(), 0);
+        y_new.PasteMatrix(mx_new, 0, 0);
+        y_new.PasteMatrix(mv_new, this->GetNcoords_x(), 0);
         return;
     }
     throw ChException("StateIncrement() called with a wrong number of elements");
@@ -159,13 +159,13 @@ bool ChIntegrableIIorder::StateSolve(ChStateDelta& dydt,       // result: comput
                                      ChVectorDynamic<>& L,     // result: computed lagrangian multipliers, if any
                                      const ChState& y,         // current state y
                                      const double T,           // current time T
-                                     const double dt,          // timestep (if needed, ex. in DVI)
+                                     const double dt,          // timestep (if needed, ex. in NSC)
                                      bool force_state_scatter  // if false, y and T are not scattered to the system
                                      ) {
     ChState mx(GetNcoords_x(), y.GetIntegrable());
     ChStateDelta mv(GetNcoords_v(), y.GetIntegrable());
-    mx.PasteClippedMatrix(&y, 0, 0, GetNcoords_x(), 1, 0, 0);
-    mv.PasteClippedMatrix(&y, GetNcoords_x(), 0, GetNcoords_v(), 1, 0, 0);
+    mx.PasteClippedMatrix(y, 0, 0, GetNcoords_x(), 1, 0, 0);
+    mv.PasteClippedMatrix(y, GetNcoords_x(), 0, GetNcoords_v(), 1, 0, 0);
     ChStateDelta ma(GetNcoords_v(), y.GetIntegrable());
 
     // Solve with custom II order solver
@@ -173,8 +173,8 @@ bool ChIntegrableIIorder::StateSolve(ChStateDelta& dydt,       // result: comput
         return false;
     }
 
-    dydt.PasteMatrix(&mv, 0, 0);
-    dydt.PasteMatrix(&ma, GetNcoords_v(), 0);
+    dydt.PasteMatrix(mv, 0, 0);
+    dydt.PasteMatrix(ma, GetNcoords_v(), 0);
 
     return true;
 }

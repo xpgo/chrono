@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -51,7 +51,7 @@ class ChApi ChFseqNode {
     /// Method to allow serialization of transient data to archives.
     void ArchiveOUT(ChArchiveOut& marchive) {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChFseqNode>();
 
         // serialize all member data:
         marchive << CHNVP(fx);
@@ -70,7 +70,7 @@ class ChApi ChFseqNode {
     /// Method to allow deserialization of transient data from archives.
     void ArchiveIN(ChArchiveIn& marchive) {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChFseqNode>();
 
         // stream in all member data:
         marchive >> CHNVP(fx);
@@ -87,6 +87,8 @@ class ChApi ChFseqNode {
     }
 };
 
+CH_CLASS_VERSION(ChFseqNode, 0)
+
 /// Sequence function:
 ///   y = sequence_of_functions(f1(y), f2(y), f3(y))
 /// All other function types can be inserted into this.
@@ -94,7 +96,6 @@ class ChApi ChFseqNode {
 /// laws can be created by sequencing many basic ChFunctions.
 
 class ChApi ChFunction_Sequence : public ChFunction {
-    CH_RTTI(ChFunction_Sequence, ChFunction);
 
   private:
     std::list<ChFseqNode> functions;  ///< the list of sub functions
@@ -137,19 +138,20 @@ class ChApi ChFunction_Sequence : public ChFunction {
     /// Set c0=true if you want to force C0 continuity with previous function (an offset
     /// will be implicitly added to the function, as y=f(x)+Offset). Same for C1 and C2 continuity,
     /// using c1 and c2 flags.
-    int InsertFunct(std::shared_ptr<ChFunction> myfx,  ///< the function to insert
-                    double duration,                   ///< duration of the time segment for this function
-                    double weight = 1,                 ///< optional weight scalar
-                    bool c0 = false,
-                    bool c1 = false,
-                    bool c2 = false,     ///< impose continuity to previous f() by offsetting/slanting
-                    int position = -1);  ///< position index, 0,1,2,3.. (if -1 insert at the end)
+    bool InsertFunct(std::shared_ptr<ChFunction> myfx,  ///< the function to insert
+                     double duration,                   ///< duration of the time segment for this function
+                     double weight = 1,                 ///< optional weight scalar
+                     bool c0 = false,                   ///< impose continuity to previous f() by offsetting/slanting
+                     bool c1 = false,                   ///< impose continuity to previous f() by offsetting/slanting
+                     bool c2 = false,                   ///< impose continuity to previous f() by offsetting/slanting
+                     int position = -1                  ///< position index, 0,1,2,3.. (if -1 insert at the end)
+    );
 
-    /// Remove and deletes function with defined "position", and returns TRUE.
+    /// Remove and deletes function with defined "position", and returns true.
     ///	 - If position = 0, removes always head (beginning),
     ///  - If position = -1 removes tail (end).
-    ///  - If position > max number of current nodes, removes tail anyway, but returns NULL.
-    int KillFunct(int position);
+    ///  - If position > max number of current nodes, removes tail anyway, but returns false.
+    bool KillFunct(int position);
 
     /// Returns the ChFunction with given "position".
     ///  - If position = 0, returns always head (beginning),
@@ -172,12 +174,12 @@ class ChApi ChFunction_Sequence : public ChFunction {
     virtual void Estimate_x_range(double& xmin, double& xmax) const override;
 
     virtual int HandleNumber() const override;
-    int HandleAccess(int handle_id, double mx, double my, bool set_mode);
+    virtual bool HandleAccess(int handle_id, double mx, double my, bool set_mode) override;
 
     /// Method to allow serialization of transient data to archives.
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChFunction_Sequence>();
         // serialize parent class
         ChFunction::ArchiveOUT(marchive);
         // serialize all member data:
@@ -188,7 +190,7 @@ class ChApi ChFunction_Sequence : public ChFunction {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChFunction_Sequence>();
         // deserialize parent class
         ChFunction::ArchiveIN(marchive);
         // stream in all member data:

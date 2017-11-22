@@ -1,17 +1,18 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-
+// =============================================================================
 //
 //  Models using the ANCF gradient-deficient cable element
 //
+// =============================================================================
 
 #include "chrono/physics/ChSystem.h"
 #include "chrono/physics/ChBodyEasy.h"
@@ -181,8 +182,8 @@ void model3(ChSystem& system, std::shared_ptr<ChMesh> mesh) {
     builder.BuildBeam(mesh,             // mesh where to put the created nodes and elements
       msection_cable2,  // ChBeamSectionCable to use for the ChElementBeamANCF elements
       1 + (6 - j),      // number of ChElementBeamANCF to create
-      ChVector<>(mbox->GetPos().x + 0.1, 0, -0.1 * j),  // point A (beginning of beam)
-      ChVector<>(mbox->GetPos().x + 0.1 + 0.1 * (6 - j), 0, -0.1 * j)  // point B (end of beam)
+      ChVector<>(mbox->GetPos().x() + 0.1, 0, -0.1 * j),  // point A (beginning of beam)
+      ChVector<>(mbox->GetPos().x() + 0.1 + 0.1 * (6 - j), 0, -0.1 * j)  // point B (end of beam)
       );
 
     auto constraint_pos2 = std::make_shared<ChLinkPointFrame>();

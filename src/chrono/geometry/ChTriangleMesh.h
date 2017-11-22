@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,7 +15,7 @@
 #ifndef CHC_TRIANGLEMESH_H
 #define CHC_TRIANGLEMESH_H
 
-#include <math.h>
+#include <cmath>
 
 #include "chrono/geometry/ChTriangle.h"
 
@@ -25,8 +25,6 @@ namespace geometry {
 /// Base class for triangle meshes.
 
 class ChApi ChTriangleMesh : public ChGeometry {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChTriangleMesh, ChGeometry);
 
   public:
     ChTriangleMesh() {}
@@ -79,7 +77,7 @@ class ChApi ChTriangleMesh : public ChGeometry {
 
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChTriangleMesh>();
         // serialize parent class
         ChGeometry::ArchiveOUT(marchive);
         // serialize all member data:
@@ -88,7 +86,7 @@ class ChApi ChTriangleMesh : public ChGeometry {
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChTriangleMesh>();
         // deserialize parent class
         ChGeometry::ArchiveIN(marchive);
         // stream in all member data:
@@ -96,6 +94,9 @@ class ChApi ChTriangleMesh : public ChGeometry {
 };
 
 }  // end namespace geometry
+
+CH_CLASS_VERSION(geometry::ChTriangleMesh,0)
+
 }  // end namespace chrono
 
 #endif

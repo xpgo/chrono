@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,6 +19,7 @@
 #include "chrono/assets/ChTriangleMeshShape.h"
 #include "chrono_vehicle/ChVehicleModelData.h"
 #include "chrono_vehicle/tracked_vehicle/idler/SingleIdler.h"
+#include "chrono_vehicle/utils/ChUtilsJSON.h"
 
 #include "chrono_thirdparty/rapidjson/filereadstream.h"
 
@@ -26,16 +27,6 @@ using namespace rapidjson;
 
 namespace chrono {
 namespace vehicle {
-
-// -----------------------------------------------------------------------------
-// This utility function returns a ChVector from the specified JSON array
-// -----------------------------------------------------------------------------
-static ChVector<> loadVector(const Value& a) {
-    assert(a.IsArray());
-    assert(a.Size() == 3);
-
-    return ChVector<>(a[0u].GetDouble(), a[1u].GetDouble(), a[2u].GetDouble());
-}
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
@@ -48,7 +39,7 @@ SingleIdler::SingleIdler(const std::string& filename) :ChSingleIdler(""), m_has_
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     Create(d);
 
@@ -72,22 +63,22 @@ void SingleIdler::Create(const rapidjson::Document& d) {
     m_wheel_radius = d["Wheel"]["Radius"].GetDouble();
     m_wheel_width = d["Wheel"]["Width"].GetDouble();
     m_wheel_mass = d["Wheel"]["Mass"].GetDouble();
-    m_wheel_inertia = loadVector(d["Wheel"]["Inertia"]);
-    m_points[WHEEL] = loadVector(d["Wheel"]["COM"]);
+    m_wheel_inertia = LoadVectorJSON(d["Wheel"]["Inertia"]);
+    m_points[WHEEL] = LoadVectorJSON(d["Wheel"]["COM"]);
 
     // Read carrier geometry and mass properties
     assert(d.HasMember("Carrier"));
     m_carrier_mass = d["Carrier"]["Mass"].GetDouble();
-    m_carrier_inertia = loadVector(d["Carrier"]["Inertia"]);
-    m_points[CARRIER] = loadVector(d["Carrier"]["COM"]);
-    m_points[CARRIER_CHASSIS] = loadVector(d["Carrier"]["Location Chassis"]);
+    m_carrier_inertia = LoadVectorJSON(d["Carrier"]["Inertia"]);
+    m_points[CARRIER] = LoadVectorJSON(d["Carrier"]["COM"]);
+    m_points[CARRIER_CHASSIS] = LoadVectorJSON(d["Carrier"]["Location Chassis"]);
     m_carrier_vis_radius = d["Carrier"]["Visualization Radius"].GetDouble();
     m_pitch_angle = d["Carrier"]["Pitch Angle"].GetDouble();
 
     // Read tensioner data
     assert(d.HasMember("Tensioner"));
-    m_points[TSDA_CARRIER] = loadVector(d["Tensioner"]["Location Carrier"]);
-    m_points[TSDA_CHASSIS] = loadVector(d["Tensioner"]["Location Chassis"]);
+    m_points[TSDA_CARRIER] = LoadVectorJSON(d["Tensioner"]["Location Carrier"]);
+    m_points[TSDA_CHASSIS] = LoadVectorJSON(d["Tensioner"]["Location Chassis"]);
     m_tensioner_l0 = d["Tensioner"]["Free Length"].GetDouble();
     double tensioner_f = d["Tensioner"]["Preload"].GetDouble();
     if (d["Tensioner"].HasMember("Spring Coefficient")) {
@@ -115,22 +106,22 @@ void SingleIdler::Create(const rapidjson::Document& d) {
     // Read contact material data
     assert(d.HasMember("Contact Material"));
 
-    float mu = d["Contact Material"]["Coefficient of Friction"].GetDouble();
-    float cr = d["Contact Material"]["Coefficient of Restitution"].GetDouble();
+    float mu = d["Contact Material"]["Coefficient of Friction"].GetFloat();
+    float cr = d["Contact Material"]["Coefficient of Restitution"].GetFloat();
 
     SetContactFrictionCoefficient(mu);
     SetContactRestitutionCoefficient(cr);
 
     if (d["Contact Material"].HasMember("Properties")) {
-        float ym = d["Contact Material"]["Properties"]["Young Modulus"].GetDouble();
-        float pr = d["Contact Material"]["Properties"]["Poisson Ratio"].GetDouble();
+        float ym = d["Contact Material"]["Properties"]["Young Modulus"].GetFloat();
+        float pr = d["Contact Material"]["Properties"]["Poisson Ratio"].GetFloat();
         //SetContactMaterialProperties(ym, pr);
     }
     if (d["Contact Material"].HasMember("Coefficients")) {
-        float kn = d["Contact Material"]["Coefficients"]["Normal Stiffness"].GetDouble();
-        float gn = d["Contact Material"]["Coefficients"]["Normal Damping"].GetDouble();
-        float kt = d["Contact Material"]["Coefficients"]["Tangential Stiffness"].GetDouble();
-        float gt = d["Contact Material"]["Coefficients"]["Tangential Damping"].GetDouble();
+        float kn = d["Contact Material"]["Coefficients"]["Normal Stiffness"].GetFloat();
+        float gn = d["Contact Material"]["Coefficients"]["Normal Damping"].GetFloat();
+        float kt = d["Contact Material"]["Coefficients"]["Tangential Stiffness"].GetFloat();
+        float gt = d["Contact Material"]["Coefficients"]["Tangential Damping"].GetFloat();
         SetContactMaterialCoefficients(kn, gn, kt, gt);
     }
 

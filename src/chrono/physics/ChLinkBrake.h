@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -27,7 +27,6 @@ namespace chrono {
 ///  shafts
 
 class ChApi ChLinkBrake : public ChLinkLock {
-    CH_RTTI(ChLinkBrake, ChLinkLock);
 
   protected:
     double brake_torque;  ///< applied torque.
@@ -61,11 +60,13 @@ class ChApi ChLinkBrake : public ChLinkLock {
     void Set_brake_mode(int mmode);
 
     /// Method to allow serialization of transient data to archives.
-    virtual void ArchiveOUT(ChArchiveOut& marchive);
+    virtual void ArchiveOUT(ChArchiveOut& marchive) override;
 
     /// Method to allow deserialization of transient data from archives.
-    virtual void ArchiveIN(ChArchiveIn& marchive);
+    virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLinkBrake,0)
 
 }  // end namespace chrono
 

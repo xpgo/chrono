@@ -9,7 +9,6 @@
 #-----------------------------------------------------------------------------
 
 option(BUILD_DEMOS "Build demo programs" ON)
-option(BUILD_ADDITIONAL_TESTS "Build additional test programs" OFF)
 
 #-----------------------------------------------------------------------------
 # Collect compiler flags required to build the Chrono libraries
@@ -19,11 +18,27 @@ set(CH_C_FLAGS "")
 set(CH_CXX_FLAGS "")
 
 #-----------------------------------------------------------------------------
-# Enable C++11 support
+# Enable C++11 support.  Check for C++14 support
 #-----------------------------------------------------------------------------
 
 find_package(ModernCXX)
-set(CH_CXX_FLAGS "${CH_CXX_FLAGS} ${CMAKE_CXX11_STANDARD_COMPILE_OPTION}")
+#set(CH_CXX_FLAGS "${CH_CXX_FLAGS} ${CMAKE_CXX11_STANDARD_COMPILE_OPTION}")
+set(CH_CXX_FLAGS "${CH_CXX_FLAGS} ${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
+
+# This is a hack -- look for a more robust solution
+set(CH_CXX14 FALSE)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  message(STATUS "GCC version:  ${CMAKE_CXX_COMPILER_VERSION}")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
+    set(CH_CXX14 TRUE)
+  endif()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  message(STATUS "Visual Studio version:  ${MSVC_VERSION}")
+  if(MSVC_VERSION GREATER 1800)
+    set(CH_CXX14 TRUE)
+  endif()
+endif()
+message(STATUS "Compiler supports C++14:  ${CH_CXX14}")
 
 #-----------------------------------------------------------------------------
 # Threads and OpenMP support
@@ -156,8 +171,22 @@ if(FMA_FOUND)
 	message(STATUS "  FMA found")
 	set(CHRONO_HAS_FMA "#define CHRONO_HAS_FMA")
 else()
-  message("  No FMA support")
+  message(STATUS "  No FMA support")
 endif()  
+
+# Pass -mfma flag to configuration file if fma is found
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FMA_FLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FMA_FLAGS}")
+  set(CH_CXX_FLAGS "${CH_CXX_FLAGS} ${FMA_FLAGS}")
+  set(CH_C_FLAGS "${CH_C_FLAGS} ${FMA_FLAGS}")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FMA_FLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FMA_FLAGS}")
+  set(CH_CXX_FLAGS "${CH_CXX_FLAGS} ${FMA_FLAGS}")
+  set(CH_C_FLAGS "${CH_C_FLAGS} ${FMA_FLAGS}")
+endif()
+
 
 #-----------------------------------------------------------------------------
 # MPI support
@@ -262,9 +291,6 @@ endif()
 if(BUILD_TESTING)
   add_subdirectory(unit_tests)
 endif()
-if(BUILD_ADDITIONAL_TESTS)
-  add_subdirectory(tests)
-endif()
 
 #------------------------------------------------------------
 # Install headers from chrono_thirdparty folder
@@ -272,7 +298,7 @@ endif()
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/chrono_thirdparty
         DESTINATION include
-        FILES_MATCHING PATTERN "*.h")
+	FILES_MATCHING PATTERN "*.h" PATTERN "*.cuh" PATTERN "*.hpp")
 
 #------------------------------------------------------------
 # Generate and install the Chrono configuration header
@@ -325,6 +351,7 @@ else()
   set(CHRONO_PARALLEL "#undef CHRONO_PARALLEL")
 endif()
 
+# Note: OPENGL must be configured *after* PARALLEL
 if(ENABLE_MODULE_OPENGL)
   set(CHRONO_OPENGL "#define CHRONO_OPENGL")
 else()
@@ -422,6 +449,12 @@ configure_file("${PROJECT_SOURCE_DIR}/cmake/ChronoConfig.cmake.in"
                "${PROJECT_BINARY_DIR}/cmake/ChronoConfig.cmake.install"
                @ONLY)
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(CH_CONFIG_INSTALL_PATH "cmake")
+else()
+    set(CH_CONFIG_INSTALL_PATH "lib64/cmake")
+endif()
+
 install(FILES "${PROJECT_BINARY_DIR}/cmake/ChronoConfig.cmake.install"
-        DESTINATION cmake
+        DESTINATION ${CH_CONFIG_INSTALL_PATH}
         RENAME ChronoConfig.cmake)

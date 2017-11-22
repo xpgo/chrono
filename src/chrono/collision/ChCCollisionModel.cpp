@@ -1,32 +1,26 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010-2011 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
-//////////////////////////////////////////////////
-//
-//   ChCCollisionModel.cpp
-//
-// ------------------------------------------------
-//             http://www.projectchrono.org
-// ------------------------------------------------
-///////////////////////////////////////////////////
-
-#include "ChCCollisionModel.h"
-#include "physics/ChBody.h"
+#include "chrono/collision/ChCCollisionModel.h"
+#include "chrono/physics/ChBody.h"
 
 namespace chrono {
 namespace collision {
 
 // Register into the object factory, to enable run-time
 // dynamic creation and persistence
-ChClassRegisterABSTRACT<ChCollisionModel> a_registration_ChCollisionModel;
+//CH_FACTORY_REGISTER(ChCollisionModel)  // NO! Abstract class!
 
 
 static double default_model_envelope = 0.03;
@@ -95,7 +89,7 @@ bool ChCollisionModel::GetFamilyMaskDoesCollisionWithFamily(int mfamily) {
 }
 
 // Set the collision family group of this model.
-// In orer to properly encode a collision family, the value 'group' must be a power of 2.
+// In order to properly encode a collision family, the value 'group' must be a power of 2.
 void ChCollisionModel::SetFamilyGroup(short group) {
     assert(group > 0 && !(group & (group - 1)));
     family_group = group;
@@ -155,9 +149,5 @@ bool ChCollisionModel::AddConvexHullsFromFile(ChStreamInAscii& mstream,
     return true;
 }
 
-
-
-
-
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace collision
+}  // end namespace chrono

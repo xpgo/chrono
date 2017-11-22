@@ -1,6 +1,24 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar
+// =============================================================================
+//
+// Minkowski Portal Refinement Narrowphase.
+//
+// =============================================================================
+
 #include <algorithm>
 
-#include "collision/ChCCollisionModel.h"
+#include "chrono/collision/ChCCollisionModel.h"
 
 #include "chrono_parallel/math/ChParallelMath.h"
 #include "chrono_parallel/collision/ChNarrowphaseMPR.h"
@@ -534,7 +552,7 @@ int DiscoverPortal(const ConvexBase* shapeA, const ConvexBase* shapeB, const rea
         Swap(portal.s1, portal.s2);
         n = -n;
     }
-    int cont;
+    //int cont;
     // FindPortal code
     for (int wi = 0; wi < WHILE_LOOP_MAX; wi++) {
         // Obtain the support point in a direction perpendicular to the existing plane

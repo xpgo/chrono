@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -24,8 +24,6 @@ namespace chrono {
 /// parts; i.e., shafts that can be used to build 1D models of powertrains.
 
 class ChApi ChShaftsClutch : public ChShaftsCouple {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChShaftsClutch, ChShaftsCouple);
 
   private:
     double maxT;                             ///< clutch max transmissible torque (for forward direction
@@ -43,7 +41,7 @@ class ChApi ChShaftsClutch : public ChShaftsCouple {
     virtual ChShaftsClutch* Clone() const override { return new ChShaftsClutch(*this); }
 
     /// Number of scalar constraints, for statistical reasons
-    virtual int GetDOC_c() { return 1; }
+    virtual int GetDOC_c() override { return 1; }
 
     // (override/implement interfaces for global state vectors, see ChPhysicsItem for comments.)
     virtual void IntStateGatherReactions(const unsigned int off_L, ChVectorDynamic<>& L) override;
@@ -88,7 +86,7 @@ class ChApi ChShaftsClutch : public ChShaftsCouple {
     /// Each shaft must belong to the same ChSystem.
     bool Initialize(std::shared_ptr<ChShaft> mshaft1,  ///< first  shaft to join
                     std::shared_ptr<ChShaft> mshaft2  ///< second shaft to join
-                    );
+                    ) override;
 
     /// Set the transmissible torque limit (the maximum torque that
     /// the clutch can transmit between the two shafts).
@@ -126,11 +124,11 @@ class ChApi ChShaftsClutch : public ChShaftsCouple {
 
     /// Get the reaction torque exchanged between the two shafts,
     /// considered as applied to the 1st axis.
-    virtual double GetTorqueReactionOn1() const { return torque_react; }
+    virtual double GetTorqueReactionOn1() const override { return torque_react; }
 
     /// Get the reaction torque exchanged between the two shafts,
     /// considered as applied to the 2nd axis.
-    virtual double GetTorqueReactionOn2() const { return -torque_react; }
+    virtual double GetTorqueReactionOn2() const override { return -torque_react; }
 
     /// Update all auxiliary data of the gear transmission at given time
     virtual void Update(double mytime, bool update_assets = true) override;
@@ -145,6 +143,8 @@ class ChApi ChShaftsClutch : public ChShaftsCouple {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChShaftsClutch,0)
 
 }  // end namespace chrono
 

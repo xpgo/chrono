@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,20 +15,15 @@
 #ifndef CHC_TRI_H
 #define CHC_TRI_H
 
-#include <math.h>
+#include <cmath>
 
 #include "chrono/geometry/ChGeometry.h"
 
 namespace chrono {
 namespace geometry {
 
-#define EPS_TRIDEGENERATE 1e-20
-
 /// A triangle geometric shape for collisions and visualization.
-
 class ChApi ChTriangle : public ChGeometry {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChTriangle, ChGeometry);
 
   public:
     ChVector<> p1;  ///< first triangle vertex
@@ -110,7 +105,7 @@ class ChApi ChTriangle : public ChGeometry {
 
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChTriangle>();
         // serialize parent class
         ChGeometry::ArchiveOUT(marchive);
         // serialize all member data:
@@ -122,7 +117,7 @@ class ChApi ChTriangle : public ChGeometry {
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChTriangle>();
         // deserialize parent class
         ChGeometry::ArchiveIN(marchive);
         // stream in all member data:
@@ -133,6 +128,9 @@ class ChApi ChTriangle : public ChGeometry {
 };
 
 }  // end namespace geometry
+
+CH_CLASS_VERSION(geometry::ChTriangle,0)
+
 }  // end namespace chrono
 
 #endif

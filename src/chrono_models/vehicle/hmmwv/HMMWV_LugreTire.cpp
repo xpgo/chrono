@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -32,6 +32,8 @@ namespace hmmwv {
 static const double in2m = 0.0254;
 
 const double HMMWV_LugreTire::m_radius = 18.15 * in2m;
+const double HMMWV_LugreTire::m_mass = 37.6;
+const ChVector<> HMMWV_LugreTire::m_inertia(3.84, 6.69, 3.84);
 const double HMMWV_LugreTire::m_discLocs[] = {-5 * in2m, 0 * in2m, 5 * in2m};
 
 const double HMMWV_LugreTire::m_normalStiffness = 2e6;

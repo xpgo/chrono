@@ -1,3 +1,22 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Alessandro Tasora, Hammad Mazhar
+// =============================================================================
+//
+// Based on the regular bullet collision system, some modifications made to
+// store contacts in the parallel data structures
+//
+// =============================================================================
+
 #include "chrono_parallel/collision/ChCollisionSystemBulletParallel.h"
 #include "chrono_parallel/ChDataManager.h"
 
@@ -95,7 +114,7 @@ void ChCollisionSystemBulletParallel::Run() {
     }
     data_manager->system_timer.stop("collision_broad");
 }
-void ChCollisionSystemBulletParallel::ReportContacts(ChContactContainerBase* mcontactcontainer) {
+void ChCollisionSystemBulletParallel::ReportContacts(ChContactContainer* mcontactcontainer) {
     data_manager->system_timer.start("collision_narrow");
     data_manager->host_data.norm_rigid_rigid.clear();
     data_manager->host_data.cpta_rigid_rigid.clear();
@@ -132,7 +151,7 @@ void ChCollisionSystemBulletParallel::ReportContacts(ChContactContainerBase* mco
         // Execute custom broadphase callback, if any
         bool do_narrow_contactgeneration = true;
         if (this->broad_callback)
-            do_narrow_contactgeneration = this->broad_callback->BroadCallback(icontact.modelA, icontact.modelB);
+            do_narrow_contactgeneration = this->broad_callback->OnBroadphase(icontact.modelA, icontact.modelB);
 
         if (do_narrow_contactgeneration) {
             int numContacts = contactManifold->getNumContacts();
@@ -140,9 +159,8 @@ void ChCollisionSystemBulletParallel::ReportContacts(ChContactContainerBase* mco
             for (int j = 0; j < numContacts; j++) {
                 btManifoldPoint& pt = contactManifold->getContactPoint(j);
 
-                if (pt.getDistance() <
-                    marginA + marginB)  // to discard "too far" constraints (the Bullet engine also has its threshold)
-                {
+                // Discard "too far" constraints (the Bullet engine also has its threshold)
+                if (pt.getDistance() < marginA + marginB) {
                     btVector3 ptA = pt.getPositionWorldOnA();
                     btVector3 ptB = pt.getPositionWorldOnB();
 
@@ -164,17 +182,17 @@ void ChCollisionSystemBulletParallel::ReportContacts(ChContactContainerBase* mco
 
                     // Execute some user custom callback, if any
                     if (this->narrow_callback)
-                        this->narrow_callback->NarrowCallback(icontact);
+                        this->narrow_callback->OnNarrowphase(icontact);
 
                     // Add to contact container
                     // mcontactcontainer->AddContact(icontact);
 
                     data_manager->host_data.norm_rigid_rigid.push_back(
-                        real3(icontact.vN.x, icontact.vN.y, icontact.vN.z));
+                        real3(icontact.vN.x(), icontact.vN.y(), icontact.vN.z()));
                     data_manager->host_data.cpta_rigid_rigid.push_back(
-                        real3(icontact.vpA.x, icontact.vpA.y, icontact.vpA.z));
+                        real3(icontact.vpA.x(), icontact.vpA.y(), icontact.vpA.z()));
                     data_manager->host_data.cptb_rigid_rigid.push_back(
-                        real3(icontact.vpB.x, icontact.vpB.y, icontact.vpB.z));
+                        real3(icontact.vpB.x(), icontact.vpB.y(), icontact.vpB.z()));
                     data_manager->host_data.dpth_rigid_rigid.push_back(icontact.distance);
                     data_manager->host_data.bids_rigid_rigid.push_back(
                         I2(obA->getCompanionId(), obB->getCompanionId()));
@@ -189,5 +207,6 @@ void ChCollisionSystemBulletParallel::ReportContacts(ChContactContainerBase* mco
     // mcontactcontainer->EndAddContact();
     data_manager->system_timer.stop("collision_narrow");
 }
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+
+}  // end namespace collision
+}  // end namespace chrono

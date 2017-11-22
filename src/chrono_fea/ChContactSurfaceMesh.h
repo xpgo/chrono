@@ -1,14 +1,16 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-// File authors: Alessandro Tasora
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHCONTACTSURFACEMESH_H
 #define CHCONTACTSURFACEMESH_H
@@ -24,11 +26,9 @@ namespace chrono {
 namespace fea {
 
 /// Contact element of triangular type.
-/// This can be used to 'tesselate' a generic surface like the
+/// This can be used to 'tessellate' a generic surface like the
 /// outer of tetrahedral meshes
-class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public ChLoadableUV {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI_ROOT(ChContactTriangleXYZ);
+class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3, 3, 3>, public ChLoadableUV {
 
   public:
     ChContactTriangleXYZ();
@@ -109,7 +109,7 @@ class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public 
     /// Express the local point in absolute frame, for the given state position.
     virtual ChVector<> GetContactPoint(const ChVector<>& loc_point, const ChState& state_x) override {
         // Note: because the reference coordinate system for a ChcontactTriangleXYZ is the identity,
-        // the given point loc_point is actually expressed in the global frame. In this case, we 
+        // the given point loc_point is actually expressed in the global frame. In this case, we
         // calculate the output point here by assuming that its barycentric coordinates do not change
         // with a change in the states of this object.
         double s2, s3;
@@ -130,7 +130,7 @@ class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public 
                                             const ChState& state_x,
                                             const ChStateDelta& state_w) override {
         // Note: because the reference coordinate system for a ChcontactTriangleXYZ is the identity,
-        // the given point loc_point is actually expressed in the global frame. In this case, we 
+        // the given point loc_point is actually expressed in the global frame. In this case, we
         // calculate the output point here by assuming that its barycentric coordinates do not change
         // with a change in the states of this object.
         double s2, s3;
@@ -145,7 +145,7 @@ class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public 
     }
 
     /// Get the absolute speed of point abs_point if attached to the
-    /// surface. Easy in this case because there are no roations..
+    /// surface. Easy in this case because there are no rotations..
     virtual ChVector<> GetContactPointSpeed(const ChVector<>& abs_point) override {
         double s2, s3;
         this->ComputeUVfromP(abs_point, s2, s3);
@@ -172,7 +172,7 @@ class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public 
     }
 
     /// Apply the given force at the given point and load the generalized force array.
-    /// The force and its application point are specified in the gloabl frame.
+    /// The force and its application point are specified in the global frame.
     /// Each object must set the entries in Q corresponding to its variables, starting at the specified offset.
     /// If needed, the object states must be extracted from the provided state position.
     virtual void ContactForceLoadQ(const ChVector<>& F,
@@ -204,10 +204,45 @@ class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public 
                                                type_constraint_tuple& jacobian_tuple_U,
                                                type_constraint_tuple& jacobian_tuple_V,
                                                bool second) override {
-        //***TODO***!!!!!!!!!!!!!!!!!!!!
+        
+        // compute the triangular area-parameters s1 s2 s3:
+        double s2, s3;
+        double dist;
+        int is_into;
+        ChVector<> p_projected;
+        dist = collision::ChCollisionUtils::PointTriangleDistance(abs_point, 
+                                    this->GetNode1()->pos, 
+                                    this->GetNode2()->pos, 
+                                    this->GetNode3()->pos, 
+                                    s2, s3, is_into, p_projected);
+        double s1 = 1 - s2 - s3;
+
+        ChMatrix33<> Jx1;
+
+        Jx1.CopyFromMatrixT(contact_plane);
+        if (!second)
+            Jx1.MatrNeg();
+        jacobian_tuple_N.Get_Cq_1()->PasteClippedMatrix(Jx1, 0, 0, 1, 3, 0, 0);
+        jacobian_tuple_U.Get_Cq_1()->PasteClippedMatrix(Jx1, 1, 0, 1, 3, 0, 0);
+        jacobian_tuple_V.Get_Cq_1()->PasteClippedMatrix(Jx1, 2, 0, 1, 3, 0, 0);
+        jacobian_tuple_N.Get_Cq_1()->MatrScale(s1);
+        jacobian_tuple_U.Get_Cq_1()->MatrScale(s1);
+        jacobian_tuple_V.Get_Cq_1()->MatrScale(s1);
+        jacobian_tuple_N.Get_Cq_2()->PasteClippedMatrix(Jx1, 0, 0, 1, 3, 0, 0);
+        jacobian_tuple_U.Get_Cq_2()->PasteClippedMatrix(Jx1, 1, 0, 1, 3, 0, 0);
+        jacobian_tuple_V.Get_Cq_2()->PasteClippedMatrix(Jx1, 2, 0, 1, 3, 0, 0);
+        jacobian_tuple_N.Get_Cq_2()->MatrScale(s2);
+        jacobian_tuple_U.Get_Cq_2()->MatrScale(s2);
+        jacobian_tuple_V.Get_Cq_2()->MatrScale(s2);
+        jacobian_tuple_N.Get_Cq_3()->PasteClippedMatrix(Jx1, 0, 0, 1, 3, 0, 0);
+        jacobian_tuple_U.Get_Cq_3()->PasteClippedMatrix(Jx1, 1, 0, 1, 3, 0, 0);
+        jacobian_tuple_V.Get_Cq_3()->PasteClippedMatrix(Jx1, 2, 0, 1, 3, 0, 0);
+        jacobian_tuple_N.Get_Cq_3()->MatrScale(s3);
+        jacobian_tuple_U.Get_Cq_3()->MatrScale(s3);
+        jacobian_tuple_V.Get_Cq_3()->MatrScale(s3);
     }
 
-    /// Might be needed by some DEM models
+    /// Might be needed by some SMC models
     virtual double GetContactableMass() override {
         //***TODO***!!!!!!!!!!!!!!!!!!!!
         return 1;
@@ -216,15 +251,14 @@ class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public 
     }
 
     /// Return the pointer to the surface material.
-    virtual std::shared_ptr<ChMaterialSurfaceBase>& GetMaterialSurfaceBase() override ;
+    virtual std::shared_ptr<ChMaterialSurface>& GetMaterialSurfaceBase() override;
 
     /// This is only for backward compatibility
     virtual ChPhysicsItem* GetPhysicsItem() override;
 
-
     //
-    // INTERFACE TO ChLoadable 
-    // 
+    // INTERFACE TO ChLoadable
+    //
 
     /// Gets the number of DOFs affected by this element (position part).
     virtual int LoadableGet_ndof_x() override { return 3 * 3; }
@@ -233,10 +267,13 @@ class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public 
     virtual int LoadableGet_ndof_w() override { return 3 * 3; }
 
     /// Gets all the DOFs packed in a single vector (position part).
-    virtual void LoadableGetStateBlock_x(int block_offset, ChVectorDynamic<>& mD) override;
+    virtual void LoadableGetStateBlock_x(int block_offset, ChState& mD) override;
 
     /// Gets all the DOFs packed in a single vector (velocity part).
-    virtual void LoadableGetStateBlock_w(int block_offset, ChVectorDynamic<>& mD) override;
+    virtual void LoadableGetStateBlock_w(int block_offset, ChStateDelta& mD) override;
+
+    /// Increment all DOFs using a delta.
+    virtual void LoadableStateIncrement(const unsigned int off_x, ChState& x_new, const ChState& x, const unsigned int off_v, const ChStateDelta& Dv) override;
 
     /// Number of coordinates in the interpolated field, ex=3 for a
     /// tetrahedron finite element or a cable, = 1 for a thermal problem, etc.
@@ -246,18 +283,18 @@ class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public 
     virtual int GetSubBlocks() override { return 3; }
 
     /// Get the offset of the i-th sub-block of DOFs in global vector.
-    virtual unsigned int GetSubBlockOffset(int nblock) override { 
-        if (nblock==0)
+    virtual unsigned int GetSubBlockOffset(int nblock) override {
+        if (nblock == 0)
             return this->GetNode1()->NodeGetOffset_w();
-        if (nblock==1)
+        if (nblock == 1)
             return this->GetNode2()->NodeGetOffset_w();
-        if (nblock==2)
+        if (nblock == 2)
             return this->GetNode3()->NodeGetOffset_w();
         return 0;
     }
 
     /// Get the size of the i-th sub-block of DOFs in global vector.
-    virtual unsigned int GetSubBlockSize(int nblock) { return 3; }
+    virtual unsigned int GetSubBlockSize(int nblock) override { return 3; }
 
     /// Get the pointers to the contained ChVariables, appending to the mvars vector.
     virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) override;
@@ -280,8 +317,7 @@ class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public 
     virtual ChVector<> ComputeNormal(const double U, const double V) override;
 
     /// If true, use quadrature over u,v in [0..1] range as triangle volumetric coords
-    virtual bool IsTriangleIntegrationNeeded() override {return true;}
-
+    virtual bool IsTriangleIntegrationNeeded() override { return true; }
 
   private:
     /// Compute u,v of contact point respect to triangle.
@@ -291,10 +327,11 @@ class ChApiFea ChContactTriangleXYZ : public ChContactable_3vars<3,3,3>, public 
         double dist;
         int is_into;
         ChVector<> p_projected;
-        dist = collision::ChCollisionUtils::PointTriangleDistance(P, mnode1->pos, mnode2->pos, mnode3->pos, u, v, is_into, p_projected);
+        dist = collision::ChCollisionUtils::PointTriangleDistance(P, mnode1->pos, mnode2->pos, mnode3->pos, u, v,
+                                                                  is_into, p_projected);
     }
 
-private:
+  private:
     collision::ChCollisionModel* collision_model;
 
     std::shared_ptr<ChNodeFEAxyz> mnode1;
@@ -304,21 +341,15 @@ private:
     ChContactSurface* container;
 };
 
-
 ///////////////////////////////////////////////////////////////////////////////////
 
-
-
-
-/// Contact element of triangular type - version for triangles where the 
+/// Contact element of triangular type - version for triangles where the
 /// nodes are of ChNodeFEAxyzrot type.
 /// NOTE! if in future we could have ChNodeFEAxyzrot inherited from ChNodeFEAxyz,
 /// probably this class would be unnecessary! (Now, it is a bit redundant with ChContactTriangleXYZ)
-/// This can be used to 'tesselate' a generic surface like the
+/// This can be used to 'tessellate' a generic surface like the
 /// outer of tetrahedral meshes
-class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, public ChLoadableUV {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI_ROOT(ChContactTriangleXYZROT);
+class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6, 6, 6>, public ChLoadableUV {
 
   public:
     ChContactTriangleXYZROT();
@@ -376,44 +407,44 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
 
     /// Get all the DOFs packed in a single vector (position part)
     virtual void ContactableGetStateBlock_x(ChState& x) override {
-        x.PasteVector    (this->mnode1->GetPos(), 0, 0);
+        x.PasteVector(this->mnode1->GetPos(), 0, 0);
         x.PasteQuaternion(this->mnode1->GetRot(), 3, 0);
-        x.PasteVector    (this->mnode2->GetPos(), 7, 0);
-        x.PasteQuaternion(this->mnode2->GetRot(),10, 0);
-        x.PasteVector    (this->mnode3->GetPos(),14, 0);
-        x.PasteQuaternion(this->mnode3->GetRot(),17, 0);
+        x.PasteVector(this->mnode2->GetPos(), 7, 0);
+        x.PasteQuaternion(this->mnode2->GetRot(), 10, 0);
+        x.PasteVector(this->mnode3->GetPos(), 14, 0);
+        x.PasteQuaternion(this->mnode3->GetRot(), 17, 0);
     }
 
     /// Get all the DOFs packed in a single vector (speed part)
     virtual void ContactableGetStateBlock_w(ChStateDelta& w) override {
-        w.PasteVector(this->mnode1->GetPos_dt(),   0, 0);
+        w.PasteVector(this->mnode1->GetPos_dt(), 0, 0);
         w.PasteVector(this->mnode1->GetWvel_loc(), 3, 0);
-        w.PasteVector(this->mnode2->GetPos_dt(),   6, 0);
+        w.PasteVector(this->mnode2->GetPos_dt(), 6, 0);
         w.PasteVector(this->mnode2->GetWvel_loc(), 9, 0);
-        w.PasteVector(this->mnode3->GetPos_dt(),  12, 0);
-        w.PasteVector(this->mnode3->GetWvel_loc(),15, 0);
+        w.PasteVector(this->mnode3->GetPos_dt(), 12, 0);
+        w.PasteVector(this->mnode3->GetWvel_loc(), 15, 0);
     }
 
     /// Increment the provided state of this object by the given state-delta increment.
     /// Compute: x_new = x + dw.
     virtual void ContactableIncrementState(const ChState& x, const ChStateDelta& dw, ChState& x_new) override {
-        this->mnode1->NodeIntStateIncrement(0,  x_new, x,  0, dw);
-        this->mnode2->NodeIntStateIncrement(7,  x_new, x,  6, dw);
+        this->mnode1->NodeIntStateIncrement(0, x_new, x, 0, dw);
+        this->mnode2->NodeIntStateIncrement(7, x_new, x, 6, dw);
         this->mnode3->NodeIntStateIncrement(14, x_new, x, 12, dw);
     }
 
     /// Express the local point in absolute frame, for the given state position.
     virtual ChVector<> GetContactPoint(const ChVector<>& loc_point, const ChState& state_x) override {
         // Note: because the reference coordinate system for a ChContactTriangleXYZROT is the identity,
-        // the given point loc_point is actually expressed in the global frame. In this case, we 
+        // the given point loc_point is actually expressed in the global frame. In this case, we
         // calculate the output point here by assuming that its barycentric coordinates do not change
         // with a change in the states of this object.
         double s2, s3;
         this->ComputeUVfromP(loc_point, s2, s3);
         double s1 = 1 - s2 - s3;
 
-        ChVector<> A1 = state_x.ClipVector( 0, 0);
-        ChVector<> A2 = state_x.ClipVector( 7, 0);
+        ChVector<> A1 = state_x.ClipVector(0, 0);
+        ChVector<> A2 = state_x.ClipVector(7, 0);
         ChVector<> A3 = state_x.ClipVector(14, 0);
 
         return s1 * A1 + s2 * A2 + s3 * A3;
@@ -426,29 +457,27 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
                                             const ChState& state_x,
                                             const ChStateDelta& state_w) override {
         // Note: because the reference coordinate system for a ChContactTriangleXYZROT is the identity,
-        // the given point loc_point is actually expressed in the global frame. In this case, we 
+        // the given point loc_point is actually expressed in the global frame. In this case, we
         // calculate the output point here by assuming that its barycentric coordinates do not change
         // with a change in the states of this object.
         double s2, s3;
         this->ComputeUVfromP(loc_point, s2, s3);
         double s1 = 1 - s2 - s3;
 
-        ChVector<> A1_dt = state_w.ClipVector( 0, 0);
-        ChVector<> A2_dt = state_w.ClipVector( 6, 0);
+        ChVector<> A1_dt = state_w.ClipVector(0, 0);
+        ChVector<> A2_dt = state_w.ClipVector(6, 0);
         ChVector<> A3_dt = state_w.ClipVector(12, 0);
 
         return s1 * A1_dt + s2 * A2_dt + s3 * A3_dt;
     }
 
     /// Get the absolute speed of point abs_point if attached to the
-    /// surface. Easy in this case because there are no roations..
+    /// surface. Easy in this case because there are no rotations..
     virtual ChVector<> GetContactPointSpeed(const ChVector<>& abs_point) override {
         double s2, s3;
         this->ComputeUVfromP(abs_point, s2, s3);
         double s1 = 1 - s2 - s3;
-        return ( s1 * this->mnode1->GetPos_dt() + 
-                 s2 * this->mnode2->GetPos_dt() + 
-                 s3 * this->mnode3->GetPos_dt());
+        return (s1 * this->mnode1->GetPos_dt() + s2 * this->mnode2->GetPos_dt() + s3 * this->mnode3->GetPos_dt());
     }
 
     /// Return the coordinate system for the associated collision model.
@@ -470,7 +499,7 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
     }
 
     /// Apply the given force at the given point and load the generalized force array.
-    /// The force and its application point are specified in the gloabl frame.
+    /// The force and its application point are specified in the global frame.
     /// Each object must set the entries in Q corresponding to its variables, starting at the specified offset.
     /// If needed, the object states must be extracted from the provided state position.
     virtual void ContactForceLoadQ(const ChVector<>& F,
@@ -479,8 +508,8 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
                                    ChVectorDynamic<>& Q,
                                    int offset) override {
         // Calculate barycentric coordinates
-        ChVector<> A1 = state_x.ClipVector( 0, 0);
-        ChVector<> A2 = state_x.ClipVector( 7, 0);
+        ChVector<> A1 = state_x.ClipVector(0, 0);
+        ChVector<> A2 = state_x.ClipVector(7, 0);
         ChVector<> A3 = state_x.ClipVector(14, 0);
 
         double s2, s3;
@@ -491,7 +520,7 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
         double s1 = 1 - s2 - s3;
         Q.PasteVector(F * s1, offset + 0, 0);
         Q.PasteVector(F * s2, offset + 6, 0);
-        Q.PasteVector(F * s3, offset +12, 0);
+        Q.PasteVector(F * s3, offset + 12, 0);
     }
 
     /// Compute the jacobian(s) part(s) for this contactable item. For example,
@@ -502,10 +531,44 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
                                                type_constraint_tuple& jacobian_tuple_U,
                                                type_constraint_tuple& jacobian_tuple_V,
                                                bool second) override {
-        //***TODO***!!!!!!!!!!!!!!!!!!!!
+        // compute the triangular area-parameters s1 s2 s3:
+        double s2, s3;
+        double dist;
+        int is_into;
+        ChVector<> p_projected;
+        dist = collision::ChCollisionUtils::PointTriangleDistance(abs_point, 
+                                    this->GetNode1()->coord.pos, 
+                                    this->GetNode2()->coord.pos, 
+                                    this->GetNode3()->coord.pos, 
+                                    s2, s3, is_into, p_projected);
+        double s1 = 1 - s2 - s3;
+
+        ChMatrix33<> Jx1;
+
+        Jx1.CopyFromMatrixT(contact_plane);
+        if (!second)
+            Jx1.MatrNeg();
+        jacobian_tuple_N.Get_Cq_1()->PasteClippedMatrix(Jx1, 0, 0, 1, 3, 0, 0);
+        jacobian_tuple_U.Get_Cq_1()->PasteClippedMatrix(Jx1, 1, 0, 1, 3, 0, 0);
+        jacobian_tuple_V.Get_Cq_1()->PasteClippedMatrix(Jx1, 2, 0, 1, 3, 0, 0);
+        jacobian_tuple_N.Get_Cq_1()->MatrScale(s1);
+        jacobian_tuple_U.Get_Cq_1()->MatrScale(s1);
+        jacobian_tuple_V.Get_Cq_1()->MatrScale(s1);
+        jacobian_tuple_N.Get_Cq_2()->PasteClippedMatrix(Jx1, 0, 0, 1, 3, 0, 0);
+        jacobian_tuple_U.Get_Cq_2()->PasteClippedMatrix(Jx1, 1, 0, 1, 3, 0, 0);
+        jacobian_tuple_V.Get_Cq_2()->PasteClippedMatrix(Jx1, 2, 0, 1, 3, 0, 0);
+        jacobian_tuple_N.Get_Cq_2()->MatrScale(s2);
+        jacobian_tuple_U.Get_Cq_2()->MatrScale(s2);
+        jacobian_tuple_V.Get_Cq_2()->MatrScale(s2);
+        jacobian_tuple_N.Get_Cq_3()->PasteClippedMatrix(Jx1, 0, 0, 1, 3, 0, 0);
+        jacobian_tuple_U.Get_Cq_3()->PasteClippedMatrix(Jx1, 1, 0, 1, 3, 0, 0);
+        jacobian_tuple_V.Get_Cq_3()->PasteClippedMatrix(Jx1, 2, 0, 1, 3, 0, 0);
+        jacobian_tuple_N.Get_Cq_3()->MatrScale(s3);
+        jacobian_tuple_U.Get_Cq_3()->MatrScale(s3);
+        jacobian_tuple_V.Get_Cq_3()->MatrScale(s3);
     }
 
-    /// Might be needed by some DEM models
+    /// Might be needed by some SMC models
     virtual double GetContactableMass() override {
         //***TODO***!!!!!!!!!!!!!!!!!!!!
         return 1;
@@ -514,14 +577,14 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
     }
 
     /// Return the pointer to the surface material.
-    virtual std::shared_ptr<ChMaterialSurfaceBase>& GetMaterialSurfaceBase() override ;
+    virtual std::shared_ptr<ChMaterialSurface>& GetMaterialSurfaceBase() override;
 
     /// This is only for backward compatibility
     virtual ChPhysicsItem* GetPhysicsItem() override;
 
     //
-    // INTERFACE TO ChLoadable 
-    // 
+    // INTERFACE TO ChLoadable
+    //
 
     /// Gets the number of DOFs affected by this element (position part).
     virtual int LoadableGet_ndof_x() override { return 3 * 7; }
@@ -530,10 +593,13 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
     virtual int LoadableGet_ndof_w() override { return 3 * 6; }
 
     /// Gets all the DOFs packed in a single vector (position part).
-    virtual void LoadableGetStateBlock_x(int block_offset, ChVectorDynamic<>& mD) override;
+    virtual void LoadableGetStateBlock_x(int block_offset, ChState& mD) override;
 
     /// Gets all the DOFs packed in a single vector (velocity part).
-    virtual void LoadableGetStateBlock_w(int block_offset, ChVectorDynamic<>& mD) override;
+    virtual void LoadableGetStateBlock_w(int block_offset, ChStateDelta& mD) override;
+
+    /// Increment all DOFs using a delta.
+    virtual void LoadableStateIncrement(const unsigned int off_x, ChState& x_new, const ChState& x, const unsigned int off_v, const ChStateDelta& Dv) override;
 
     /// Number of coordinates in the interpolated field, ex=3 for a
     /// tetrahedron finite element or a cable, = 1 for a thermal problem, etc.
@@ -543,18 +609,18 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
     virtual int GetSubBlocks() override { return 3; }
 
     /// Get the offset of the i-th sub-block of DOFs in global vector.
-    virtual unsigned int GetSubBlockOffset(int nblock) override { 
-        if (nblock==0)
+    virtual unsigned int GetSubBlockOffset(int nblock) override {
+        if (nblock == 0)
             return this->GetNode1()->NodeGetOffset_w();
-        if (nblock==1)
+        if (nblock == 1)
             return this->GetNode2()->NodeGetOffset_w();
-        if (nblock==2)
+        if (nblock == 2)
             return this->GetNode3()->NodeGetOffset_w();
         return 0;
     }
 
     /// Get the size of the i-th sub-block of DOFs in global vector.
-    virtual unsigned int GetSubBlockSize(int nblock) { return 6; }
+    virtual unsigned int GetSubBlockSize(int nblock) override { return 6; }
 
     /// Get the pointers to the contained ChVariables, appending to the mvars vector.
     virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) override;
@@ -577,8 +643,7 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
     virtual ChVector<> ComputeNormal(const double U, const double V) override;
 
     /// If true, use quadrature over u,v in [0..1] range as triangle volumetric coords
-    virtual bool IsTriangleIntegrationNeeded() override {return true;}
-
+    virtual bool IsTriangleIntegrationNeeded() override { return true; }
 
   private:
     /// Compute u,v of contact point respect to triangle.
@@ -588,10 +653,11 @@ class ChApiFea ChContactTriangleXYZROT : public ChContactable_3vars<6,6,6>, publ
         double dist;
         int is_into;
         ChVector<> p_projected;
-        dist = collision::ChCollisionUtils::PointTriangleDistance(P, mnode1->GetPos(), mnode2->GetPos(), mnode3->GetPos(), u, v, is_into, p_projected);
+        dist = collision::ChCollisionUtils::PointTriangleDistance(P, mnode1->GetPos(), mnode2->GetPos(),
+                                                                  mnode3->GetPos(), u, v, is_into, p_projected);
     }
 
-private:
+  private:
     collision::ChCollisionModel* collision_model;
 
     std::shared_ptr<ChNodeFEAxyzrot> mnode1;
@@ -601,35 +667,29 @@ private:
     ChContactSurface* container;
 };
 
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////////
 
 /// Class which defines a contact surface for FEA elements, using a mesh of triangles.
 /// Differently from ChContactSurfaceNodeCloud, this also captures the FEAnodes-vs-FEAfaces
 /// and FEAedge-vs-FEAedges cases, but it has a higher computational overhead
 class ChApiFea ChContactSurfaceMesh : public ChContactSurface {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChContactSurfaceMesh, ChContactSurface);
 
   public:
     ChContactSurfaceMesh(ChMesh* parentmesh = 0) : ChContactSurface(parentmesh) {}
 
     virtual ~ChContactSurfaceMesh() {}
 
-    // 
+    //
     // FUNCTIONS
     //
 
-    /// Given a FEA mesh (ex a mesh of tetrahetrons) it finds the faces on the outer boundary.
+    /// Given a FEA mesh (ex a mesh of tetrahedrons) it finds the faces on the outer boundary.
     /// That is, it scans all the finite elements already added in the parent ChMesh and adds the faces
     /// that are not shared (ie. the faces on the boundary 'skin').
     /// For shells, the argument 'ccw' indicates whether the face vertices are provided in a counter-clockwise (default)
     /// or clockwise order, this has a reason: shells collisions are oriented and might work only from the "outer" side.
     /// Supported elements that generate boundary skin:
-    /// - solids: 
+    /// - solids:
     ///     - ChElementTetra_4: tetrahedrons
     ///     - ChFaceBrick_9: solid hexahedrons
     /// - shells:
@@ -645,7 +705,7 @@ class ChApiFea ChContactSurfaceMesh : public ChContactSurface {
                               );
 
     /// As AddFacesFromBoundary, but only for faces containing selected nodes in node_set.
-    //void AddFacesFromNodeSet(std::vector<std::shared_ptr<ChNodeFEAbase> >& node_set); ***TODO***
+    // void AddFacesFromNodeSet(std::vector<std::shared_ptr<ChNodeFEAbase> >& node_set); ***TODO***
 
     /// Get the list of triangles.
     std::vector<std::shared_ptr<ChContactTriangleXYZ> >& GetTriangleList() { return vfaces; }
@@ -653,7 +713,7 @@ class ChApiFea ChContactSurfaceMesh : public ChContactSurface {
     std::vector<std::shared_ptr<ChContactTriangleXYZROT> >& GetTriangleListRot() { return vfaces_rot; }
 
     /// Get the number of triangles.
-    unsigned int GetNumTriangles() const { return (unsigned int) (vfaces.size() + vfaces_rot.size()); }
+    unsigned int GetNumTriangles() const { return (unsigned int)(vfaces.size() + vfaces_rot.size()); }
 
     /// Get the number of vertices.
     unsigned int GetNumVertices() const;
@@ -664,11 +724,12 @@ class ChApiFea ChContactSurfaceMesh : public ChContactSurface {
     virtual void SurfaceRemoveCollisionModelsFromSystem(ChSystem* msys);
 
   private:
-    std::vector<std::shared_ptr<ChContactTriangleXYZ> > vfaces;         //  faces that collide
-    std::vector<std::shared_ptr<ChContactTriangleXYZROT> > vfaces_rot;  //  faces that collide (for nodes with rotation too)
+    std::vector<std::shared_ptr<ChContactTriangleXYZ> > vfaces;  //  faces that collide
+    std::vector<std::shared_ptr<ChContactTriangleXYZROT> >
+        vfaces_rot;  //  faces that collide (for nodes with rotation too)
 };
 
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace fea
+}  // end namespace chrono
 
 #endif

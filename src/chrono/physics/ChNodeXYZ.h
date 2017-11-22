@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -25,8 +25,6 @@ namespace chrono {
 /// Class for a single 'point' node, that has 3 DOF degrees of freedom and a mass.
 
 class ChApi ChNodeXYZ : public virtual ChNodeBase, public ChLoadableUVW {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChNodeXYZ, ChNodeBase);
 
   public:
     ChNodeXYZ();
@@ -77,13 +75,18 @@ class ChApi ChNodeXYZ : public virtual ChNodeBase, public ChLoadableUVW {
     virtual int LoadableGet_ndof_w() override { return 3; }
 
     /// Gets all the DOFs packed in a single vector (position part)
-    virtual void LoadableGetStateBlock_x(int block_offset, ChVectorDynamic<>& mD) override {
+    virtual void LoadableGetStateBlock_x(int block_offset, ChState& mD) override {
         mD.PasteVector(pos, block_offset, 0);
     }
 
     /// Gets all the DOFs packed in a single vector (speed part)
-    virtual void LoadableGetStateBlock_w(int block_offset, ChVectorDynamic<>& mD) override {
+    virtual void LoadableGetStateBlock_w(int block_offset, ChStateDelta& mD) override {
         mD.PasteVector(pos_dt, block_offset, 0);
+    }
+
+    /// Increment all DOFs using a delta.
+    virtual void LoadableStateIncrement(const unsigned int off_x, ChState& x_new, const ChState& x, const unsigned int off_v, const ChStateDelta& Dv) override {
+        NodeIntStateIncrement(off_x, x_new, x, off_v, Dv);
     }
 
     /// Number of coordinates in the interpolated field, ex=3 for a
@@ -133,6 +136,8 @@ class ChApi ChNodeXYZ : public virtual ChNodeBase, public ChLoadableUVW {
     ChVector<> pos_dt;
     ChVector<> pos_dtdt;
 };
+
+CH_CLASS_VERSION(ChNodeXYZ,0)
 
 }  // end namespace chrono
 

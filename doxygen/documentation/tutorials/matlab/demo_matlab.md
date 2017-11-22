@@ -1,8 +1,8 @@
-Matlab engine example (demo_matlab.cpp)  {#tutorial_demo_matlab}
+Matlab engine example (demo_MTLB_matlab.cpp)  {#tutorial_demo_matlab}
 ==========================
 
 Entry level demo about how to use Matlab(TM) and the
-[MATLAB module](@ref module_matlab_installation)
+[MATLAB module](group__matlab__module.html)
 to plot Chrono::Engine data, 
 to perform computations, etc. 
 
@@ -18,5 +18,5 @@ This tutorial shows how to:
 - plot data using Matlab. 
 
 
-\include demo_matlab.cpp
+\include demo_MTLB_matlab.cpp
 

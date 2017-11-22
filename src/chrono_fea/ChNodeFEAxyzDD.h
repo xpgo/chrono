@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -21,8 +21,10 @@
 namespace chrono {
 namespace fea {
 
-/// Class for a generic 3D finite element node, with x,y,z displacement, direction, and one curvature vector OR additional direction.
-/// The variable DD represents the derivative of a gradient vector or an additional gradient, to be used in ANCF elements.
+/// Class for a generic 3D finite element node, with x,y,z displacement, direction, and one curvature vector OR
+/// additional direction.
+/// The variable DD represents the derivative of a gradient vector or an additional gradient, to be used in ANCF
+/// elements.
 
 class ChApiFea ChNodeFEAxyzDD : public ChNodeFEAxyzD {
   public:
@@ -53,9 +55,7 @@ class ChApiFea ChNodeFEAxyzDD : public ChNodeFEAxyzD {
     virtual void SetNoSpeedNoAcceleration() override;
 
     /// Get mass of the node (for DD variables).
-    virtual ChVectorDynamic<>& GetMassDiagonalDD() {
-        return variables_DD->GetMassDiagonal();
-    }
+    virtual ChVectorDynamic<>& GetMassDiagonalDD() { return variables_DD->GetMassDiagonal(); }
     /// Sets the 'fixed' state of the node. If true, it does not move
     /// respect to the absolute world, despite constraints, forces, etc.
     virtual void SetFixed(bool mev) override;
@@ -120,17 +120,22 @@ class ChApiFea ChNodeFEAxyzDD : public ChNodeFEAxyzD {
     virtual int LoadableGet_ndof_w() override { return 9; }
 
     /// Gets all the DOFs packed in a single vector (position part)
-    virtual void LoadableGetStateBlock_x(int block_offset, ChVectorDynamic<>& mDD) override {
+    virtual void LoadableGetStateBlock_x(int block_offset, ChState& mDD) override {
         mDD.PasteVector(pos, block_offset, 0);
         mDD.PasteVector(D, block_offset + 3, 0);
         mDD.PasteVector(DD, block_offset + 6, 0);
     }
 
     /// Gets all the DOFs packed in a single vector (speed part)
-    virtual void LoadableGetStateBlock_w(int block_offset, ChVectorDynamic<>& mDD) override {
+    virtual void LoadableGetStateBlock_w(int block_offset, ChStateDelta& mDD) override {
         mDD.PasteVector(pos_dt, block_offset, 0);
         mDD.PasteVector(D_dt, block_offset + 3, 0);
         mDD.PasteVector(DD_dt, block_offset + 6, 0);
+    }
+
+    /// Increment all DOFs using a delta.
+    virtual void LoadableStateIncrement(const unsigned int off_x, ChState& x_new, const ChState& x, const unsigned int off_v, const ChStateDelta& Dv) override {
+        this->NodeIntStateIncrement(off_x, x_new, x, off_v, Dv);
     }
 
     /// Number of coordinates in the interpolated field, ex=3 for a

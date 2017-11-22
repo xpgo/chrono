@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegisterABSTRACT<ChPhysicsItem> a_registration_ChPhysicsItem;
+CH_FACTORY_REGISTER(ChPhysicsItem)
 
 ChPhysicsItem::ChPhysicsItem(const ChPhysicsItem& other) : ChObj(other) {
     assets = other.assets;
@@ -75,7 +75,7 @@ void ChPhysicsItem::Update(double mytime, bool update_assets) {
 
 void ChPhysicsItem::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChPhysicsItem>();
 
     // serialize parent class
     ChObj::ArchiveOUT(marchive);
@@ -91,7 +91,7 @@ void ChPhysicsItem::ArchiveOUT(ChArchiveOut& marchive) {
 /// Method to allow de serialization of transient data from archives.
 void ChPhysicsItem::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChPhysicsItem>();
 
     // deserialize parent class
     ChObj::ArchiveIN(marchive);

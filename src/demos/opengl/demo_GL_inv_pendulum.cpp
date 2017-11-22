@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -23,9 +23,9 @@
 //
 // =============================================================================
 
-#include <math.h>
+#include <cmath>
 
-#include "chrono/physics/ChSystem.h"
+#include "chrono/physics/ChSystemNSC.h"
 #include "chrono/core/ChRealtimeStep.h"
 #include "chrono/assets/ChSphereShape.h"
 #include "chrono/assets/ChBoxShape.h"
@@ -101,11 +101,11 @@ MyController::MyController(std::shared_ptr<ChBody> cart, std::shared_ptr<ChBody>
 
     // Initialize errors
     m_e_cart = 0;
-    m_ed_cart = m_cart->GetPos_dt().x;
+    m_ed_cart = m_cart->GetPos_dt().x();
     m_ei_cart = 0;
 
     m_e_pend = 0;
-    m_ed_pend = m_pend->GetWvel_loc().z;
+    m_ed_pend = m_pend->GetWvel_loc().z();
     m_ei_pend = 0;
 }
 
@@ -130,12 +130,12 @@ void MyController::SetTargetPendAngle(double a_pend) {
 }
 
 double MyController::GetCurrentCartLocation() {
-    return m_cart->GetPos().x;
+    return m_cart->GetPos().x();
 }
 
 double MyController::GetCurrentPendAngle() {
     ChVector<> dir = m_pend->TransformDirectionLocalToParent(ChVector<>(0, 1, 0));
-    return atan2(-dir.x, dir.y);
+    return atan2(-dir.x(), dir.y());
 }
 
 void MyController::Advance(double step) {
@@ -144,8 +144,8 @@ void MyController::Advance(double step) {
     double e_pend = GetCurrentPendAngle() - m_a_pend;
 
     // Calculate current error derivatives
-    m_ed_cart = m_cart->GetPos_dt().x;
-    m_ed_pend = m_pend->GetWvel_loc().z;
+    m_ed_cart = m_cart->GetPos_dt().x();
+    m_ed_pend = m_pend->GetWvel_loc().z();
 
     // Calculate current error integrals (trapezoidal rule)
     m_ei_cart += (m_e_cart + e_cart) * step / 2;
@@ -165,6 +165,8 @@ void MyController::Advance(double step) {
 // =============================================================================
 
 int main(int argc, char* argv[]) {
+    GetLog() << "Copyright (c) 2017 projectchrono.org\nChrono version: " << CHRONO_VERSION << "\n\n";
+
     // Problem parameters
     // ------------------
     double mass_cart = 1.0;    // mass of the cart
@@ -178,7 +180,7 @@ int main(int argc, char* argv[]) {
 
     // Create the Chrono physical system
     // ---------------------------------
-    ChSystem system;
+    ChSystemNSC system;
 
     // Create the ground body
     // ----------------------

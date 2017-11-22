@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -27,7 +27,7 @@ ChNodeFEAxyz::ChNodeFEAxyz(const ChNodeFEAxyz& other) : ChNodeFEAbase(other), Ch
     variables = other.variables;
 }
 
-ChNodeFEAxyz& ChNodeFEAxyz::operator = (const ChNodeFEAxyz& other) {
+ChNodeFEAxyz& ChNodeFEAxyz::operator=(const ChNodeFEAxyz& other) {
     if (&other == this)
         return *this;
 
@@ -53,7 +53,7 @@ void ChNodeFEAxyz::SetNoSpeedNoAcceleration() {
 
 void ChNodeFEAxyz::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChNodeFEAxyz>();
     // serialize parent class
     ChNodeFEAbase::ArchiveOUT(marchive);
     // serialize parent class
@@ -65,7 +65,7 @@ void ChNodeFEAxyz::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChNodeFEAxyz::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChNodeFEAxyz>();
     // deserialize parent class
     ChNodeFEAbase::ArchiveIN(marchive);
     // serialize parent class

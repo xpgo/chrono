@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -12,8 +12,8 @@
 // Authors: Alessandro Tasora, Radu Serban
 // =============================================================================
 
-#include <stdlib.h>
 #include <algorithm>
+#include <cstdlib>
 
 #include "chrono/core/ChLinearAlgebra.h"
 #include "chrono/core/ChTransform.h"
@@ -28,7 +28,7 @@ using namespace collision;
 using namespace geometry;
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChAssembly> a_registration_ChAssembly;
+CH_FACTORY_REGISTER(ChAssembly)
 
 ChAssembly::ChAssembly()
     : nbodies(0),
@@ -555,7 +555,7 @@ void ChAssembly::Setup() {
             Bpointer->SetOffset_w(this->offset_w + ncoords_w);
             Bpointer->SetOffset_L(this->offset_L + ndoc_w);
 
-            // Bpointer->Setup(); // unneded since in bodies does nothing
+            // Bpointer->Setup(); // not needed since in bodies does nothing
 
             ncoords += Bpointer->GetDOF();
             ncoords_w += Bpointer->GetDOF_w();
@@ -619,8 +619,8 @@ void ChAssembly::Setup() {
 // Update assemblies own properties first (ChTime and assets, if any).
 // Then update all contents of this assembly.
 void ChAssembly::Update(double mytime, bool update_assets) {
-	ChPhysicsItem::Update(mytime, update_assets);
-	Update(update_assets);
+    ChPhysicsItem::Update(mytime, update_assets);
+    Update(update_assets);
 }
 
 // - ALL PHYSICAL ITEMS (BODIES, LINKS,ETC.) ARE UPDATED,
@@ -651,12 +651,11 @@ void ChAssembly::SetNoSpeedNoAcceleration() {
     }
 }
 
-void ChAssembly::IntStateGather(const unsigned int off_x,  ///< offset in x state vector
-                                ChState& x,                ///< state vector, position part
-                                const unsigned int off_v,  ///< offset in v state vector
-                                ChStateDelta& v,           ///< state vector, speed part
-                                double& T)                 ///< time
-{
+void ChAssembly::IntStateGather(const unsigned int off_x,
+                                ChState& x,
+                                const unsigned int off_v,
+                                ChStateDelta& v,
+                                double& T) {
     unsigned int displ_x = off_x - this->offset_x;
     unsigned int displ_v = off_v - this->offset_w;
 
@@ -677,12 +676,11 @@ void ChAssembly::IntStateGather(const unsigned int off_x,  ///< offset in x stat
     T = this->GetChTime();
 }
 
-void ChAssembly::IntStateScatter(const unsigned int off_x,  ///< offset in x state vector
-                                 const ChState& x,          ///< state vector, position part
-                                 const unsigned int off_v,  ///< offset in v state vector
-                                 const ChStateDelta& v,     ///< state vector, speed part
-                                 const double T)            ///< time
-{
+void ChAssembly::IntStateScatter(const unsigned int off_x,
+                                 const ChState& x,
+                                 const unsigned int off_v,
+                                 const ChStateDelta& v,
+                                 const double T) {
     unsigned int displ_x = off_x - this->offset_x;
     unsigned int displ_v = off_v - this->offset_w;
 
@@ -702,7 +700,7 @@ void ChAssembly::IntStateScatter(const unsigned int off_x,  ///< offset in x sta
     }
     this->SetChTime(T);
 
-    // Note: all those IntStateScatter() above should call Update() automatically 
+    // Note: all those IntStateScatter() above should call Update() automatically
     // for each object in the loop, therefore:
     // -do not call Update() on this.
     // -do not call ChPhysicsItem::IntStateScatter() -it calls this->Update() anyway-
@@ -788,12 +786,11 @@ void ChAssembly::IntStateScatterReactions(const unsigned int off_L, const ChVect
     }
 }
 
-void ChAssembly::IntStateIncrement(const unsigned int off_x,  ///< offset in x state vector
-                                   ChState& x_new,            ///< state vector, position part, incremented result
-                                   const ChState& x,          ///< state vector, initial position part
-                                   const unsigned int off_v,  ///< offset in v state vector
-                                   const ChStateDelta& Dv)    ///< state vector, increment
-{
+void ChAssembly::IntStateIncrement(const unsigned int off_x,
+                                   ChState& x_new,
+                                   const ChState& x,
+                                   const unsigned int off_v,
+                                   const ChStateDelta& Dv) {
     unsigned int displ_x = off_x - this->offset_x;
     unsigned int displ_v = off_v - this->offset_w;
 
@@ -843,7 +840,7 @@ void ChAssembly::IntLoadResidual_Mv(const unsigned int off,      ///< offset in 
                                     ChVectorDynamic<>& R,        ///< result: the R residual, R += c*M*v
                                     const ChVectorDynamic<>& w,  ///< the w vector
                                     const double c               ///< a scaling factor
-                                    ) {
+) {
     unsigned int displ_v = off - this->offset_w;
 
     for (unsigned int ip = 0; ip < bodylist.size(); ++ip) {
@@ -866,7 +863,7 @@ void ChAssembly::IntLoadResidual_CqL(const unsigned int off_L,    ///< offset in
                                      ChVectorDynamic<>& R,        ///< result: the R residual, R += c*Cq'*L
                                      const ChVectorDynamic<>& L,  ///< the L vector
                                      const double c               ///< a scaling factor
-                                     ) {
+) {
     unsigned int displ_L = off_L - this->offset_L;
 
     for (unsigned int ip = 0; ip < bodylist.size(); ++ip) {
@@ -890,7 +887,7 @@ void ChAssembly::IntLoadConstraint_C(const unsigned int off_L,  ///< offset in Q
                                      const double c,            ///< a scaling factor
                                      bool do_clamp,             ///< apply clamping to c*C?
                                      double recovery_clamp      ///< value for min/max clamping of c*C
-                                     ) {
+) {
     unsigned int displ_L = off_L - this->offset_L;
 
     for (unsigned int ip = 0; ip < bodylist.size(); ++ip) {
@@ -912,7 +909,7 @@ void ChAssembly::IntLoadConstraint_C(const unsigned int off_L,  ///< offset in Q
 void ChAssembly::IntLoadConstraint_Ct(const unsigned int off_L,  ///< offset in Qc residual
                                       ChVectorDynamic<>& Qc,     ///< result: the Qc residual, Qc += c*Ct
                                       const double c             ///< a scaling factor
-                                      ) {
+) {
     unsigned int displ_L = off_L - this->offset_L;
 
     for (unsigned int ip = 0; ip < bodylist.size(); ++ip) {
@@ -931,10 +928,10 @@ void ChAssembly::IntLoadConstraint_Ct(const unsigned int off_L,  ///< offset in 
     }
 }
 
-void ChAssembly::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+void ChAssembly::IntToDescriptor(const unsigned int off_v,
                                  const ChStateDelta& v,
                                  const ChVectorDynamic<>& R,
-                                 const unsigned int off_L,  ///< offset in L, Qc
+                                 const unsigned int off_L,
                                  const ChVectorDynamic<>& L,
                                  const ChVectorDynamic<>& Qc) {
     unsigned int displ_L = off_L - this->offset_L;
@@ -960,9 +957,9 @@ void ChAssembly::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
     }
 }
 
-void ChAssembly::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+void ChAssembly::IntFromDescriptor(const unsigned int off_v,
                                    ChStateDelta& v,
-                                   const unsigned int off_L,  ///< offset in L
+                                   const unsigned int off_L,
                                    ChVectorDynamic<>& L) {
     unsigned int displ_L = off_L - this->offset_L;
     unsigned int displ_v = off_v - this->offset_w;
@@ -1263,88 +1260,45 @@ void ChAssembly::ShowHierarchy(ChStreamOutAscii& m_file, int level) {
 
 void ChAssembly::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChAssembly>();
 
     // serialize parent class
     ChPhysicsItem::ArchiveOUT(marchive);
 
     // serialize all member data:
 
-    // marchive << CHNVP(bodylist);
-    // do rather a custom array save:
-    marchive.out_array_pre("bodies", bodylist.size(), "ChBody");
-    for (int i = 0; i < bodylist.size(); i++) {
-        marchive << CHNVP(bodylist[i], "");
-        marchive.out_array_between(bodylist.size(), "bodies");
-    }
-    marchive.out_array_end(bodylist.size(), "bodies");
-
-    // marchive << CHNVP(linklist);
-    // do rather a custom array save:
-    marchive.out_array_pre("links", linklist.size(), "ChLink");
-    for (int i = 0; i < linklist.size(); i++) {
-        marchive << CHNVP(linklist[i], "");
-        marchive.out_array_between(linklist.size(), "links");
-    }
-    marchive.out_array_end(linklist.size(), "links");
-
-    // marchive << CHNVP(otherphysicsitems);
-    // do rather a custom array save:
-    marchive.out_array_pre("other_physics_list", otherphysicslist.size(), "ChPhysicsItem");
-    for (int i = 0; i < otherphysicslist.size(); i++) {
-        marchive << CHNVP(otherphysicslist[i], "");
-        marchive.out_array_between(otherphysicslist.size(), "other_physics_list");
-    }
-    marchive.out_array_end(otherphysicslist.size(), "other_physics_list");
+    marchive << CHNVP(bodylist, "bodies");
+    marchive << CHNVP(linklist, "links");
+    marchive << CHNVP(otherphysicslist , "other_physics_items");
 }
 
 void ChAssembly::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChAssembly>();
 
     // deserialize parent class
     ChPhysicsItem::ArchiveIN(marchive);
 
     // stream in all member data:
-
-    // marchive >> CHNVP(bodylist);
-    // do rather a custom array load:
+    std::vector< std::shared_ptr<ChBody>> tempbodies;
+    std::vector< std::shared_ptr<ChLink>> templinks;
+    std::vector< std::shared_ptr<ChPhysicsItem>> tempitems;
+    marchive >> CHNVP(tempbodies, "bodies");
+    marchive >> CHNVP(templinks,  "links");
+    marchive >> CHNVP(tempitems , "other_physics_items");
+    // trick needed because the "Add...()" functions are required
     this->RemoveAllBodies();
-    size_t num_bodies;
-    marchive.in_array_pre("bodies", num_bodies);
-    for (int i = 0; i < num_bodies; i++) {
-        std::shared_ptr<ChBody> a_body;
-        marchive >> CHNVP(a_body, "");
-        this->AddBody(a_body);
-        marchive.in_array_between("bodies");
+    for (auto i : tempbodies) {
+        this->AddBody(i);
     }
-    marchive.in_array_end("bodies");
-
-    // marchive >> CHNVP(linklist);
-    // do rather a custom array load:
     this->RemoveAllLinks();
-    size_t num_links;
-    marchive.in_array_pre("links", num_links);
-    for (int i = 0; i < num_links; i++) {
-        std::shared_ptr<ChLink> a_link;
-        marchive >> CHNVP(a_link, "");
-        this->AddLink(a_link);
-        marchive.in_array_between("links");
+    for (auto i : templinks) {
+        this->AddLink(i);
     }
-    marchive.in_array_end("links");
-
-    // marchive >> CHNVP(otherphysiscslist);
-    // do rather a custom array load:
     this->RemoveAllOtherPhysicsItems();
-    size_t num_otherphysics;
-    marchive.in_array_pre("other_physics_list", num_otherphysics);
-    for (int i = 0; i < num_otherphysics; i++) {
-        std::shared_ptr<ChPhysicsItem> a_item;
-        marchive >> CHNVP(a_item, "");
-        this->AddOtherPhysicsItem(a_item);
-        marchive.in_array_between("other_physics_list");
-    }
-    marchive.in_array_end("other_physics_list");
+    for (auto i : tempitems) {
+        this->AddOtherPhysicsItem(i);
+    }  
 
     // Recompute statistics, offsets, etc.
     this->Setup();

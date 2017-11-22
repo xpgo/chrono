@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChVariablesBodyOwnMass> a_registration_ChVariablesBodyOwnMass;
+CH_FACTORY_REGISTER(ChVariablesBodyOwnMass)
 
 ChVariablesBodyOwnMass::ChVariablesBodyOwnMass() : mass(1), inv_mass(1) {
     inertia.Set33Identity();
@@ -44,7 +44,7 @@ ChVariablesBodyOwnMass& ChVariablesBodyOwnMass::operator=(const ChVariablesBodyO
 // Set the inertia matrix
 void ChVariablesBodyOwnMass::SetBodyInertia(const ChMatrix33<>& minertia) {
     inertia.CopyFromMatrix(minertia);
-    inertia.FastInvert(&inv_inertia);
+    inertia.FastInvert(inv_inertia);
 }
 
 // Set the mass associated with translation of body
@@ -141,13 +141,13 @@ void ChVariablesBodyOwnMass::DiagonalAdd(ChMatrix<double>& result, const double 
 // Build the mass matrix (for these variables) scaled by c_a, storing
 // it in 'storage' sparse matrix, at given column/row offset.
 // Note, most iterative solvers don't need to know mass matrix explicitly.
-// Optimised: doesn't fill unneeded elements except mass and 3x3 inertia.
+// Optimized: doesn't fill unneeded elements except mass and 3x3 inertia.
 void ChVariablesBodyOwnMass::Build_M(ChSparseMatrix& storage, int insrow, int inscol, const double c_a) {
     storage.SetElement(insrow + 0, inscol + 0, c_a * mass);
     storage.SetElement(insrow + 1, inscol + 1, c_a * mass);
     storage.SetElement(insrow + 2, inscol + 2, c_a * mass);
     ChMatrix33<> scaledJ = inertia * c_a;
-    storage.PasteMatrix(&scaledJ, insrow + 3, inscol + 3);
+    storage.PasteMatrix(scaledJ, insrow + 3, inscol + 3);
 }
 
 }  // end namespace chrono

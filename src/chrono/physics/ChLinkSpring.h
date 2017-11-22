@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -23,7 +23,6 @@ namespace chrono {
 /// distance of two markers
 
 class ChApi ChLinkSpring : public ChLinkMarkers {
-    CH_RTTI(ChLinkSpring, ChLinkMarkers);
 
   protected:
     double spr_restlength;                    ///< spring rest (undeformed) length
@@ -44,8 +43,6 @@ class ChApi ChLinkSpring : public ChLinkMarkers {
 
     /// "Virtual" copy constructor (covariant return type).
     virtual ChLinkSpring* Clone() const override { return new ChLinkSpring(*this); }
-
-    virtual int GetType() const override { return LNK_SPRING; }
 
     // data fetch/store
     double Get_SpringRestLength() const { return spr_restlength; }
@@ -116,6 +113,8 @@ class ChApi ChLinkSpring : public ChLinkMarkers {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLinkSpring,0)
 
 }  // end namespace chrono
 

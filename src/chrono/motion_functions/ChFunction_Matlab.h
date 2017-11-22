@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,14 +19,12 @@
 
 namespace chrono {
 
-#define CHF_MATLAB_STRING_LEN 200
-
 /// Matlab function: y = matlab evaluation of function y=f(x)
 
 class ChApi ChFunction_Matlab : public ChFunction {
-    CH_RTTI(ChFunction_Matlab, ChFunction);
 
   private:
+    static const int CHF_MATLAB_STRING_LEN = 200;
     char mat_command[CHF_MATLAB_STRING_LEN];  ///< matlab command
 
   public:
@@ -50,7 +48,7 @@ class ChApi ChFunction_Matlab : public ChFunction {
     /// Method to allow serialization of transient data to archives.
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChFunction_Matlab>();
         // serialize parent class
         ChFunction::ArchiveOUT(marchive);
         // serialize all member data:
@@ -60,13 +58,15 @@ class ChApi ChFunction_Matlab : public ChFunction {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChFunction_Matlab>();
         // deserialize parent class
         ChFunction::ArchiveIN(marchive);
         // stream in all member data:
         marchive >> CHNVP(mat_command);
     }
 };
+
+CH_CLASS_VERSION(ChFunction_Matlab,0)
 
 }  // end namespace chrono
 

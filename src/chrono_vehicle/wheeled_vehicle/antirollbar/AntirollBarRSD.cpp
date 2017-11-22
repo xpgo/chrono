@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,6 +17,7 @@
 // =============================================================================
 
 #include "chrono_vehicle/wheeled_vehicle/antirollbar/AntirollBarRSD.h"
+#include "chrono_vehicle/utils/ChUtilsJSON.h"
 
 #include "chrono_thirdparty/rapidjson/filereadstream.h"
 
@@ -24,16 +25,6 @@ using namespace rapidjson;
 
 namespace chrono {
 namespace vehicle {
-
-// -----------------------------------------------------------------------------
-// This utility function returns a ChVector from the specified JSON array
-// -----------------------------------------------------------------------------
-static ChVector<> loadVector(const Value& a) {
-    assert(a.IsArray());
-    assert(a.Size() == 3);
-
-    return ChVector<>(a[0u].GetDouble(), a[1u].GetDouble(), a[2u].GetDouble());
-}
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
@@ -46,7 +37,7 @@ AntirollBarRSD::AntirollBarRSD(const std::string& filename) : ChAntirollBarRSD("
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     Create(d);
 
@@ -67,7 +58,7 @@ void AntirollBarRSD::Create(const rapidjson::Document& d) {
 
     // Read arm data
     m_arm_mass = d["Arm"]["Mass"].GetDouble();
-    m_arm_inertia = loadVector(d["Arm"]["Inertia"]);
+    m_arm_inertia = LoadVectorJSON(d["Arm"]["Inertia"]);
     m_arm_length = d["Arm"]["Length"].GetDouble();
     m_arm_width = d["Arm"]["Width"].GetDouble();
     m_arm_radius = d["Arm"]["Radius"].GetDouble();

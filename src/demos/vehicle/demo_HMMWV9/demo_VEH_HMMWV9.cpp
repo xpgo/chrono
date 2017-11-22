@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -22,7 +22,6 @@
 #include "chrono/core/ChFileutils.h"
 #include "chrono/core/ChStream.h"
 #include "chrono/core/ChRealtimeStep.h"
-#include "chrono/physics/ChSystem.h"
 #include "chrono/utils/ChUtilsInputOutput.h"
 
 #include "chrono_vehicle/ChConfigVehicle.h"
@@ -71,12 +70,14 @@ double render_step_size = 1.0 / FPS;  // FPS = 50
 
 // POV-Ray output
 bool povray_output = false;
-const std::string out_dir = "../HMMWV9";
+const std::string out_dir = GetChronoOutputPath() + "HMMWV9";
 const std::string pov_dir = out_dir + "/POVRAY";
 
 // =============================================================================
 
 int main(int argc, char* argv[]) {
+    GetLog() << "Copyright (c) 2017 projectchrono.org\nChrono version: " << CHRONO_VERSION << "\n\n";
+
     // --------------
     // Create systems
     // --------------
@@ -84,6 +85,7 @@ int main(int argc, char* argv[]) {
     // Create the HMMWV vehicle, set parameters, and initialize
     HMMWV_Reduced my_hmmwv;
     my_hmmwv.SetChassisFixed(false);
+    my_hmmwv.SetChassisCollisionType(ChassisCollisionType::NONE);
     my_hmmwv.SetInitPosition(ChCoordsys<>(initLoc, initRot));
     my_hmmwv.SetPowertrainType(powertrain_model);
     my_hmmwv.SetDriveType(DrivelineType::RWD);

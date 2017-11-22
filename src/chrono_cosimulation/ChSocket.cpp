@@ -1,9 +1,24 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2014 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
+
 #include "chrono_cosimulation/ChSocket.h"
 #include "chrono_cosimulation/ChExceptionSocket.h"
 
 using namespace std;
-using namespace chrono;
-using namespace chrono::cosimul;
+
+namespace chrono {
+namespace cosimul {
 
 const int MSG_HEADER_LEN = 6;
 
@@ -1054,7 +1069,7 @@ int ChSocketTCP::XPrecieveMessage(string& message)
 {
     int numBytes = 0;                 // The number of bytes received
     int currentSize = MSG_HEADER_LEN; // The number of bytes wanted to receive
-    int offsetSize = 0;               // The number of bytes currently recieved
+    int offsetSize = 0;               // The number of bytes currently received
 
     // retrieve the length of the message received
 
@@ -1134,7 +1149,7 @@ int ChSocketTCP::XPrecieveMessage(string& message)
 int ChSocketTCP::XPrecieveMessage(string& message) {
     int received = 0;            // The number of bytes received
     int msgSize = MAX_RECV_LEN;  // The number of bytes wanted to receive
-    int numBytes = 0;            // The number of bytes currently recieved
+    int numBytes = 0;            // The number of bytes currently received
     int totalRecvNum = 0;
     bool headerFinished = false;
 
@@ -1185,7 +1200,7 @@ int ChSocketTCP::XPrecieveMessage(string& message) {
 #endif
 
 int ChSocketTCP::receiveMessage(string& message) {
-    int numBytes;  // The number of bytes recieved
+    int numBytes;  // The number of bytes received
 
 #ifdef WINDOWS_XP
     return XPrecieveMessage(message);
@@ -1279,3 +1294,6 @@ int ChSocketTCP::ReceiveBuffer(std::vector<char>& dest_buf, int bsize) {
 
     return receivedBytes;
 }
+
+}  // end namespace cosimul
+}  // end namespace chrono

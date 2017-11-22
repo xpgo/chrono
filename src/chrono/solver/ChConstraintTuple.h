@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -121,12 +121,12 @@ class ChConstraintTuple_1vars {
 
     void Build_Cq(ChSparseMatrix& storage, int insrow) {
         if (variables->IsActive())
-            storage.PasteMatrix(&Cq, insrow, variables->GetOffset());
+            storage.PasteMatrix(Cq, insrow, variables->GetOffset());
     }
 
     void Build_CqT(ChSparseMatrix& storage, int inscol) {
         if (variables->IsActive())
-            storage.PasteTranspMatrix(&Cq, variables->GetOffset(), inscol);
+            storage.PasteTranspMatrix(Cq, variables->GetOffset(), inscol);
     }
 };
 
@@ -270,16 +270,16 @@ class ChConstraintTuple_2vars {
 
     void Build_Cq(ChSparseMatrix& storage, int insrow) {
         if (variables_1->IsActive())
-            storage.PasteMatrix(&Cq_1, insrow, variables_1->GetOffset());
+            storage.PasteMatrix(Cq_1, insrow, variables_1->GetOffset());
         if (variables_2->IsActive())
-            storage.PasteMatrix(&Cq_2, insrow, variables_2->GetOffset());
+            storage.PasteMatrix(Cq_2, insrow, variables_2->GetOffset());
     }
 
     void Build_CqT(ChSparseMatrix& storage, int inscol) {
         if (variables_1->IsActive())
-            storage.PasteTranspMatrix(&Cq_1, variables_1->GetOffset(), inscol);
+            storage.PasteTranspMatrix(Cq_1, variables_1->GetOffset(), inscol);
         if (variables_2->IsActive())
-            storage.PasteTranspMatrix(&Cq_2, variables_2->GetOffset(), inscol);
+            storage.PasteTranspMatrix(Cq_2, variables_2->GetOffset(), inscol);
     }
 };
 
@@ -465,20 +465,20 @@ class ChConstraintTuple_3vars {
 
     void Build_Cq(ChSparseMatrix& storage, int insrow) {
         if (variables_1->IsActive())
-            storage.PasteMatrix(&Cq_1, insrow, variables_1->GetOffset());
+            storage.PasteMatrix(Cq_1, insrow, variables_1->GetOffset());
         if (variables_2->IsActive())
-            storage.PasteMatrix(&Cq_2, insrow, variables_2->GetOffset());
+            storage.PasteMatrix(Cq_2, insrow, variables_2->GetOffset());
         if (variables_3->IsActive())
-            storage.PasteMatrix(&Cq_3, insrow, variables_3->GetOffset());
+            storage.PasteMatrix(Cq_3, insrow, variables_3->GetOffset());
     }
 
     void Build_CqT(ChSparseMatrix& storage, int inscol) {
         if (variables_1->IsActive())
-            storage.PasteTranspMatrix(&Cq_1, variables_1->GetOffset(), inscol);
+            storage.PasteTranspMatrix(Cq_1, variables_1->GetOffset(), inscol);
         if (variables_2->IsActive())
-            storage.PasteTranspMatrix(&Cq_2, variables_2->GetOffset(), inscol);
+            storage.PasteTranspMatrix(Cq_2, variables_2->GetOffset(), inscol);
         if (variables_3->IsActive())
-            storage.PasteTranspMatrix(&Cq_3, variables_3->GetOffset(), inscol);
+            storage.PasteTranspMatrix(Cq_3, variables_3->GetOffset(), inscol);
     }
 };
 
@@ -707,24 +707,24 @@ class ChConstraintTuple_4vars {
 
     void Build_Cq(ChSparseMatrix& storage, int insrow) {
         if (variables_1->IsActive())
-            storage.PasteMatrix(&Cq_1, insrow, variables_1->GetOffset());
+            storage.PasteMatrix(Cq_1, insrow, variables_1->GetOffset());
         if (variables_2->IsActive())
-            storage.PasteMatrix(&Cq_2, insrow, variables_2->GetOffset());
+            storage.PasteMatrix(Cq_2, insrow, variables_2->GetOffset());
         if (variables_3->IsActive())
-            storage.PasteMatrix(&Cq_3, insrow, variables_3->GetOffset());
+            storage.PasteMatrix(Cq_3, insrow, variables_3->GetOffset());
         if (variables_4->IsActive())
-            storage.PasteMatrix(&Cq_4, insrow, variables_4->GetOffset());
+            storage.PasteMatrix(Cq_4, insrow, variables_4->GetOffset());
     }
 
     void Build_CqT(ChSparseMatrix& storage, int inscol) {
         if (variables_1->IsActive())
-            storage.PasteTranspMatrix(&Cq_1, variables_1->GetOffset(), inscol);
+            storage.PasteTranspMatrix(Cq_1, variables_1->GetOffset(), inscol);
         if (variables_2->IsActive())
-            storage.PasteTranspMatrix(&Cq_2, variables_2->GetOffset(), inscol);
+            storage.PasteTranspMatrix(Cq_2, variables_2->GetOffset(), inscol);
         if (variables_3->IsActive())
-            storage.PasteTranspMatrix(&Cq_3, variables_3->GetOffset(), inscol);
+            storage.PasteTranspMatrix(Cq_3, variables_3->GetOffset(), inscol);
         if (variables_4->IsActive())
-            storage.PasteTranspMatrix(&Cq_4, variables_4->GetOffset(), inscol);
+            storage.PasteTranspMatrix(Cq_4, variables_4->GetOffset(), inscol);
     }
 };
 
@@ -736,6 +736,7 @@ class ChVariableTupleCarrier_1vars {
   public:
     typedef ChConstraintTuple_1vars<ChVariableTupleCarrier_1vars<N1> > type_constraint_tuple;
     static const int nvars1 = N1;
+    ////virtual ~ChVariableTupleCarrier_1vars() {}
     virtual ChVariables* GetVariables1() = 0;
 };
 
@@ -745,6 +746,7 @@ class ChVariableTupleCarrier_2vars {
     typedef ChConstraintTuple_3vars<ChVariableTupleCarrier_2vars<N1, N2> > type_constraint_tuple;
     static int const nvars1 = N1;
     static int const nvars2 = N2;
+    virtual ~ChVariableTupleCarrier_2vars() {}
     virtual ChVariables* GetVariables1() = 0;
     virtual ChVariables* GetVariables2() = 0;
 };
@@ -756,6 +758,7 @@ class ChVariableTupleCarrier_3vars {
     static int const nvars1 = N1;
     static int const nvars2 = N2;
     static int const nvars3 = N3;
+    virtual ~ChVariableTupleCarrier_3vars() {}
     virtual ChVariables* GetVariables1() = 0;
     virtual ChVariables* GetVariables2() = 0;
     virtual ChVariables* GetVariables3() = 0;
@@ -769,6 +772,7 @@ class ChVariableTupleCarrier_4vars {
     static int const nvars2 = N2;
     static int const nvars3 = N3;
     static int const nvars4 = N4;
+    virtual ~ChVariableTupleCarrier_4vars() {}
     virtual ChVariables* GetVariables1() = 0;
     virtual ChVariables* GetVariables2() = 0;
     virtual ChVariables* GetVariables3() = 0;

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2016 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -21,7 +21,7 @@
 
 #include <cuda_runtime_api.h>
 #include <cuda.h>
-#include <stdio.h>
+#include <cstdio>
 #include <cassert>
 #include <vector>
 //

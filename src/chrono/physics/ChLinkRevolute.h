@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -28,7 +28,6 @@ namespace chrono {
 /// are always parallel.
 
 class ChApi ChLinkRevolute : public ChLink {
-    CH_RTTI(ChLinkRevolute, ChLink);
 
   public:
     ChLinkRevolute();
@@ -38,14 +37,11 @@ class ChApi ChLinkRevolute : public ChLink {
     /// "Virtual" copy constructor (covariant return type).
     virtual ChLinkRevolute* Clone() const override { return new ChLinkRevolute(*this); }
 
-    /// Get the type of this joint.
-    virtual int GetType() const override { return LNK_REVOLUTE; }
-
     /// Get the number of (bilateral) constraints introduced by this joint.
-    virtual int GetDOC_c() { return 5; }
+    virtual int GetDOC_c() override { return 5; }
 
     /// Get the link coordinate system, expressed relative to Body2.
-    virtual ChCoordsys<> GetLinkRelativeCoords() { return m_frame2.GetCoord(); }
+    virtual ChCoordsys<> GetLinkRelativeCoords() override { return m_frame2.GetCoord(); }
 
     /// Get the joint frame on Body1, expressed in Body1 coordinate system.
     const ChFrame<>& GetFrame1Rel() const { return m_frame1; }
@@ -157,6 +153,8 @@ class ChApi ChLinkRevolute : public ChLink {
     // Lagrange multipliers
     double m_multipliers[5];
 };
+
+CH_CLASS_VERSION(ChLinkRevolute,0)
 
 }  // end namespace chrono
 

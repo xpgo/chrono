@@ -1,3 +1,23 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar
+// =============================================================================
+//
+// This file contains the base class used for all parallel iterative solvers.
+// All of the functions are defined here, with the implementation of each solver
+// in it's specific cpp file.
+//
+// =============================================================================
+
 #include "chrono_parallel/solver/ChSolverParallel.h"
 
 using namespace chrono;
@@ -43,7 +63,7 @@ real ChSolverParallel::LargestEigenValue(ChShurProduct& ShurProduct, DynamicVect
         ShurProduct(eigen_vec, temp);
         eigen_vec = 1.0 / lambda * temp;
     }
-    real lambda_old;
+    real lambda_old = 0;
 
     for (int i = 0; i < data_manager->settings.solver.max_power_iteration; i++) {
         ShurProduct(eigen_vec, temp);

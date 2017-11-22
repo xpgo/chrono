@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,6 +19,7 @@
 #include <cstdio>
 
 #include "chrono_vehicle/wheeled_vehicle/suspension/HendricksonPRIMAXX.h"
+#include "chrono_vehicle/utils/ChUtilsJSON.h"
 
 #include "chrono_thirdparty/rapidjson/filereadstream.h"
 
@@ -26,16 +27,6 @@ using namespace rapidjson;
 
 namespace chrono {
 namespace vehicle {
-
-// -----------------------------------------------------------------------------
-// This utility function returns a ChVector from the specified JSON array
-// -----------------------------------------------------------------------------
-static ChVector<> loadVector(const Value& a) {
-    assert(a.IsArray());
-    assert(a.Size() == 3);
-
-    return ChVector<>(a[0u].GetDouble(), a[1u].GetDouble(), a[2u].GetDouble());
-}
 
 // -----------------------------------------------------------------------------
 // Construct a double wishbone suspension using data from the specified JSON
@@ -50,7 +41,7 @@ HendricksonPRIMAXX::HendricksonPRIMAXX(const std::string& filename) : ChHendrick
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     Create(d);
 
@@ -83,8 +74,8 @@ void HendricksonPRIMAXX::Create(const rapidjson::Document& d) {
     assert(d["Spindle"].IsObject());
 
     m_spindleMass = d["Spindle"]["Mass"].GetDouble();
-    m_points[SPINDLE] = loadVector(d["Spindle"]["COM"]);
-    m_spindleInertia = loadVector(d["Spindle"]["Inertia"]);
+    m_points[SPINDLE] = LoadVectorJSON(d["Spindle"]["COM"]);
+    m_spindleInertia = LoadVectorJSON(d["Spindle"]["Inertia"]);
     m_spindleRadius = d["Spindle"]["Radius"].GetDouble();
     m_spindleWidth = d["Spindle"]["Width"].GetDouble();
 

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -33,9 +33,8 @@ namespace fea {
 /// of ChNodeFEAxyzD class, and a ChBodyFrame (frame).
 /// The D direction of the ChNodeFEAxyzD is enforced to stay parallel
 /// to a given direction associated to the ChBodyFrame.
+
 class ChApiFea ChLinkDirFrame : public ChLinkBase {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChLinkDirFrame, ChLinkBase);
 
   private:
     ChVector<> m_react;
@@ -75,17 +74,17 @@ class ChApiFea ChLinkDirFrame : public ChLinkBase {
     // STATE FUNCTIONS
     //
 
-    virtual void IntStateGatherReactions(const unsigned int off_L, ChVectorDynamic<>& L);
-    virtual void IntStateScatterReactions(const unsigned int off_L, const ChVectorDynamic<>& L);
+    virtual void IntStateGatherReactions(const unsigned int off_L, ChVectorDynamic<>& L) override;
+    virtual void IntStateScatterReactions(const unsigned int off_L, const ChVectorDynamic<>& L) override;
     virtual void IntLoadResidual_CqL(const unsigned int off_L,
                                      ChVectorDynamic<>& R,
                                      const ChVectorDynamic<>& L,
-                                     const double c);
+                                     const double c) override;
     virtual void IntLoadConstraint_C(const unsigned int off,
                                      ChVectorDynamic<>& Qc,
                                      const double c,
                                      bool do_clamp,
-                                     double recovery_clamp);
+                                     double recovery_clamp) override;
     virtual void IntToDescriptor(const unsigned int off_v,
                                  const ChStateDelta& v,
                                  const ChVectorDynamic<>& R,
@@ -100,17 +99,17 @@ class ChApiFea ChLinkDirFrame : public ChLinkBase {
     // Override/implement system functions of ChPhysicsItem
     // (to assemble/manage data for system solver)
 
-    virtual void InjectConstraints(ChSystemDescriptor& mdescriptor);
-    virtual void ConstraintsBiReset();
-    virtual void ConstraintsBiLoad_C(double factor = 1., double recovery_clamp = 0.1, bool do_clamp = false);
-    virtual void ConstraintsBiLoad_Ct(double factor = 1.);
-    virtual void ConstraintsLoadJacobians();
-    virtual void ConstraintsFetch_react(double factor = 1.);
+    virtual void InjectConstraints(ChSystemDescriptor& mdescriptor) override;
+    virtual void ConstraintsBiReset() override;
+    virtual void ConstraintsBiLoad_C(double factor = 1., double recovery_clamp = 0.1, bool do_clamp = false) override;
+    virtual void ConstraintsBiLoad_Ct(double factor = 1.) override;
+    virtual void ConstraintsLoadJacobians() override;
+    virtual void ConstraintsFetch_react(double factor = 1.) override;
 
     // Other functions
 
     // Get the link coordinate system, expressed in the absolute frame.
-    virtual ChCoordsys<> GetLinkAbsoluteCoords();
+    virtual ChCoordsys<> GetLinkAbsoluteCoords() override;
 
     /// Initialize this constraint, given the node and body frame to join.
     /// The constrained direction is the actual direction of the node (unless
@@ -149,7 +148,7 @@ class ChApiFea ChLinkDirFrame : public ChLinkBase {
     //
 
     /// Update all auxiliary data of the gear transmission at given time
-    virtual void Update(double mytime, bool update_assets = true);
+    virtual void Update(double mytime, bool update_assets = true) override;
 
     //
     // STREAMING

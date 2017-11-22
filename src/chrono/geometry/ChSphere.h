@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -23,8 +23,6 @@ namespace geometry {
 /// A spherical geometric object for collisions and visualization.
 
 class ChApi ChSphere : public ChGeometry {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChSphere, ChGeometry);
 
   public:
     ChVector<> center;  ///< sphere center
@@ -58,7 +56,7 @@ class ChApi ChSphere : public ChGeometry {
 
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChSphere>();
         // serialize parent class
         ChGeometry::ArchiveOUT(marchive);
         // serialize all member data:
@@ -79,6 +77,9 @@ class ChApi ChSphere : public ChGeometry {
 };
 
 }  // end namespace geometry
+
+CH_CLASS_VERSION(geometry::ChSphere,0)
+
 }  // end namespace chrono
 
 #endif

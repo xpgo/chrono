@@ -1,36 +1,22 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010-2011 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHREALTIMESTEP_H
 #define CHREALTIMESTEP_H
 
-//////////////////////////////////////////////////
-//
-//   ChRealtimeStep.h
-//
-//   Class for a timer which measure the time spent
-//   in VR or game-like simulation loops, and suggests
-//   a dt integration step for the physical simulation
-//   for the next step.
-//
-//   HEADER file for CHRONO,
-//	 Multibody dynamics engine
-//
-// ------------------------------------------------
-//             http://www.projectchrono.org
-// ------------------------------------------------
-///////////////////////////////////////////////////
-
-#include "ChTimer.h"
-#include "ChMath.h"
+#include "chrono/core/ChTimer.h"
+#include "chrono/core/ChMath.h"
 
 namespace chrono {
 
@@ -43,7 +29,7 @@ namespace chrono {
 /// simulation, that is the simulated time should
 /// match the real time. The suggested step may
 /// be non-constant because the overhead of the
-/// simulaiton loop may vary because of varying
+/// simulation loop may vary because of varying
 /// overhead in visualization, collision or simulation.
 
 class ChRealtimeStepTimer : public ChTimer<double> {
@@ -54,7 +40,7 @@ class ChRealtimeStepTimer : public ChTimer<double> {
 
     /// Call this function INSIDE the simulation loop, just ONCE
     /// per loop, to get the suggested time for the next integration
-    /// time step. If the the ChRealtimeStepTimer measured that
+    /// time step. If the ChRealtimeStepTimer measured that
     /// previous simulation step required few real-time, it will
     /// suggest a corresponding small value for advancing the simulated
     /// time, and viceversa will give higher values (up to a maximum
@@ -80,6 +66,6 @@ class ChRealtimeStepTimer : public ChTimer<double> {
     }
 };
 
-}  // END_OF_NAMESPACE____
+}  // end namespace chrono
 
-#endif  // END of ChTimer.h
+#endif

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChLinkMask> a_registration_ChLinkMask;
+CH_FACTORY_REGISTER(ChLinkMask)
 
 ChLinkMask::ChLinkMask() : nconstr(1) {
     constraints.resize(1);
@@ -72,14 +72,14 @@ void ChLinkMask::SetTwoBodiesVariables(ChVariables* var1, ChVariables* var2) {
         constraints[i]->SetVariables(var1, var2);
 }
 
-int ChLinkMask::IsEqual(ChLinkMask& mask2) {
+bool ChLinkMask::IsEqual(ChLinkMask& mask2) {
     if (nconstr != mask2.nconstr)
-        return FALSE;
+        return false;
     for (int j = 0; j < nconstr; j++) {
         if (!(Constr_N(j) == mask2.Constr_N(j)))
-            return FALSE;
+            return false;
     }
-    return TRUE;
+    return true;
 }
 
 bool ChLinkMask::IsUnilateral(int i) {
@@ -147,7 +147,7 @@ int ChLinkMask::SetActiveRedundantByArray(int* mvector, int mcount) {
     return mcount;
 }
 
-// set lock =ON for costraints which were disabled because redundant
+// set lock =ON for constraints which were disabled because redundant
 int ChLinkMask::RestoreRedundant() {
     int tot = 0;
     for (int j = 0; j < nconstr; j++) {
@@ -199,7 +199,7 @@ void ChLinkMask::ArchiveIN(ChArchiveIn& marchive) {
 
 // Register into the object factory, to enable run-time
 // dynamic creation and persistence
-ChClassRegister<ChLinkMaskLF> a_registration_ChLinkMaskLF;
+CH_FACTORY_REGISTER(ChLinkMaskLF)
 
 ChLinkMaskLF::ChLinkMaskLF() {
     ResetNconstr(7);  // the LF formulation uses 7 constraint flags

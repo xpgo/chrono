@@ -1,14 +1,14 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010-2012 Alessandro Tasora
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
 
 #include "chrono_irrlicht/ChBodySceneNode.h"
 
@@ -21,13 +21,8 @@ using namespace irr::scene;
 // Initialize static variables
 int ChBodySceneNode::body_identifier = 0;
 
-// Constructors
-ChBodySceneNode::ChBodySceneNode(ChSystem* msystem,
-                                 IAnimatedMesh* mesh,
-                                 ISceneNode* parent,
-                                 ISceneManager* mgr,
-                                 s32 id)
-    : scene::ISceneNode(parent, mgr, id), ChronoControlled(true) {
+ChBodySceneNode::ChBodySceneNode(ChSystem* msystem, IAnimatedMesh* mesh, ISceneNode* parent, ISceneManager* mgr, s32 id)
+    : ISceneNode(parent, mgr, id), ChronoControlled(true) {
     assert(msystem);
 
 #ifdef _DEBUG
@@ -62,7 +57,7 @@ ChBodySceneNode::ChBodySceneNode(ChSystem* msystem,
                                  ISceneManager* mgr,
                                  s32 id,
                                  const ChVector<>& offset)
-    : scene::ISceneNode(parent, mgr, id), ChronoControlled(true) {
+    : ISceneNode(parent, mgr, id), ChronoControlled(true) {
     assert(msystem);
 
 #ifdef _DEBUG
@@ -73,7 +68,7 @@ ChBodySceneNode::ChBodySceneNode(ChSystem* msystem,
 
     if (mesh)
         child_mesh = mgr->addAnimatedMeshSceneNode(mesh, this, -1,
-                                                   core::vector3df(-(f32)offset.x, -(f32)offset.y, -(f32)offset.z));
+                                                   core::vector3df(-(f32)offset.x(), -(f32)offset.y(), -(f32)offset.z()));
 
     if (child_mesh)
         child_mesh->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
@@ -86,7 +81,7 @@ ChBodySceneNode::ChBodySceneNode(ChSystem* msystem,
     msystem->AddBody(GetBody());
 }
 
-/// Destructor.
+// Destructor.
 ChBodySceneNode::~ChBodySceneNode() {
     // Automatically remove from the Chrono::Engine system, if currently inserted
     // in a system.
@@ -162,9 +157,9 @@ void ChBodySceneNode::OnAnimate(u32 timeMs) {
             irrMat[9] = (irr::f32)chMat.GetElementN(5);
             irrMat[10] = (irr::f32)chMat.GetElementN(8);
 
-            irrMat[12] = (irr::f32)GetBody()->GetFrame_REF_to_abs().GetPos().x;
-            irrMat[13] = (irr::f32)GetBody()->GetFrame_REF_to_abs().GetPos().y;
-            irrMat[14] = (irr::f32)GetBody()->GetFrame_REF_to_abs().GetPos().z;
+            irrMat[12] = (irr::f32)GetBody()->GetFrame_REF_to_abs().GetPos().x();
+            irrMat[13] = (irr::f32)GetBody()->GetFrame_REF_to_abs().GetPos().y();
+            irrMat[14] = (irr::f32)GetBody()->GetFrame_REF_to_abs().GetPos().z();
 
             // Clear the last column to 0 and set low-right corner to 1 as in
             // Denavitt-Hartemberg matrices, transposed.

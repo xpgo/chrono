@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -18,7 +18,7 @@ namespace chrono {
 namespace geometry {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChLinePath> a_registration_ChLinePath;
+CH_FACTORY_REGISTER(ChLinePath)
 
 ChLinePath::ChLinePath(const ChLinePath& source) : ChLine(source) {
     lines = source.lines;
@@ -34,7 +34,7 @@ double ChLinePath::Length(int sampling) const {
     return tot;
 }
 
-void ChLinePath::Evaluate(ChVector<>& pos, const double parU, const double parV, const double parW) const {
+void ChLinePath::Evaluate(ChVector<>& pos, const double parU) const {
     if (lines.size() == 0)
         return;
 
@@ -60,7 +60,7 @@ void ChLinePath::Evaluate(ChVector<>& pos, const double parU, const double parV,
         uA = end_times[i - 1];
 
     double local_U = (u - uA) / durations[i];
-    lines[i]->Evaluate(pos, local_U, 0, 0);
+    lines[i]->Evaluate(pos, local_U);
 }
 
 void ChLinePath::SetSubLineDurationN(size_t n, double mduration) {
@@ -83,7 +83,7 @@ void ChLinePath::AddSubLine(std::shared_ptr<ChLine> mline, double duration) {
 }
 
 void ChLinePath::AddSubLine(ChLine& mline, double duration) {
-    std::shared_ptr<ChLine> pline(mline.Clone());
+    std::shared_ptr<ChLine> pline((ChLine*)mline.Clone());
     AddSubLine(pline, duration);
 }
 
@@ -96,7 +96,7 @@ void ChLinePath::InsertSubLine(size_t n, std::shared_ptr<ChLine> mline, double d
 }
 
 void ChLinePath::InsertSubLine(size_t n, ChLine& mline, double duration) {
-    std::shared_ptr<ChLine> pline(mline.Clone());
+    std::shared_ptr<ChLine> pline((ChLine*)mline.Clone());
     InsertSubLine(n, pline, duration);
 }
 

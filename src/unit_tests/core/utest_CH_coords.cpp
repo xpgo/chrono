@@ -1,38 +1,26 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010 Alessandro Tasora
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
+// Demo on how to use Chrono coordinate transformations
+// =============================================================================
 
-///////////////////////////////////////////////////
-//
-//   Demo on how to use Chrono coordinate
-//   transformations
-//
-//	 CHRONO
-//   ------
-//   Multibody dinamics engine
-//
-// ------------------------------------------------
-//             http://www.projectchrono.org
-// ------------------------------------------------
-///////////////////////////////////////////////////
+#include <cmath>
 
-#include <math.h>
-
-#include "core/ChLog.h"
-#include "core/ChTransform.h"
-#include "core/ChFrame.h"
-#include "core/ChFrameMoving.h"
-#include "core/ChTimer.h"
-#include "physics/ChMarker.h"
-#include "physics/ChBody.h"
+#include "chrono/core/ChLog.h"
+#include "chrono/core/ChTransform.h"
+#include "chrono/core/ChFrame.h"
+#include "chrono/core/ChFrameMoving.h"
+#include "chrono/core/ChTimer.h"
+#include "chrono/physics/ChMarker.h"
+#include "chrono/physics/ChBody.h"
 
 using namespace chrono;
 
@@ -51,11 +39,11 @@ int main(int argc, char* argv[]) {
     ChVector<> mvect2;  // resulting (transformed) vectors will go here
     ChVector<> mvect3;
 
-    // Define a  POINT  to be transformed, exèressed in
+    // Define a  POINT  to be transformed, expressed in
     // local frame coordinate.
     ChVector<> mvect1(2, 3, 4);
 
-    // Define a vector representin the TRASLATION of the frame
+    // Define a vector representing the TRASLATION of the frame
     // respect to absolute (world) coordinates.
     ChVector<> vtraslA(5, 6, 7);
 

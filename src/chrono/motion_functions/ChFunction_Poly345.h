@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -25,7 +25,6 @@ namespace chrono {
 ///   - end = duration of motion,
 
 class ChApi ChFunction_Poly345 : public ChFunction {
-    CH_RTTI(ChFunction_Poly345, ChFunction);
 
   private:
     double h;
@@ -56,7 +55,7 @@ class ChApi ChFunction_Poly345 : public ChFunction {
     double Get_end() const { return end; }
     double Get_h() const { return h; }
 
-    virtual double Get_Ca_pos() const { return 5.8; }
+    virtual double Get_Ca_pos() const override { return 5.8; }
     virtual double Get_Ca_neg() const override { return 5.8; }
     virtual double Get_Cv() const override { return 1.9; }
 
@@ -68,7 +67,7 @@ class ChApi ChFunction_Poly345 : public ChFunction {
     /// Method to allow serialization of transient data to archives.
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChFunction_Poly345>();
         // serialize parent class
         ChFunction::ArchiveOUT(marchive);
         // serialize all member data:
@@ -79,7 +78,7 @@ class ChApi ChFunction_Poly345 : public ChFunction {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChFunction_Poly345>();
         // deserialize parent class
         ChFunction::ArchiveIN(marchive);
         // stream in all member data:
@@ -87,6 +86,8 @@ class ChApi ChFunction_Poly345 : public ChFunction {
         marchive >> CHNVP(end);
     }
 };
+
+CH_CLASS_VERSION(ChFunction_Poly345,0)
 
 }  // end namespace chrono
 

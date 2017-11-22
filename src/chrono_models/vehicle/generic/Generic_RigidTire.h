@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -27,6 +27,10 @@ namespace chrono {
 namespace vehicle {
 namespace generic {
 
+/// @addtogroup vehicle_models_generic
+/// @{
+
+/// Rigid tire model for the generic vehicle.
 class CH_MODELS_API Generic_RigidTire : public ChRigidTire {
   public:
     Generic_RigidTire(const std::string& name);
@@ -35,11 +39,17 @@ class CH_MODELS_API Generic_RigidTire : public ChRigidTire {
 
     virtual double GetRadius() const override { return m_radius; }
     virtual double GetWidth() const override { return m_width; }
+    virtual double GetMass() const override { return m_mass; }
+    virtual ChVector<> GetInertia() const override { return m_inertia; }
 
   private:
     static const double m_radius;
     static const double m_width;
+    static const double m_mass;
+    static const ChVector<> m_inertia;
 };
+
+/// @} vehicle_models_generic
 
 }  // end namespace generic
 }  // end namespace vehicle

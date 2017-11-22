@@ -1,14 +1,16 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-// File authors: Alessandro Tasora
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHELEMENTSPRING_H
 #define CHELEMENTSPRING_H
@@ -27,7 +29,7 @@ namespace fea {
 /// be set with non-zero point mass.
 class ChApiFea ChElementSpring : public ChElementGeneric {
   protected:
-      std::vector<std::shared_ptr<ChNodeFEAxyz> > nodes;
+    std::vector<std::shared_ptr<ChNodeFEAxyz> > nodes;
     double spring_k;
     double damper_r;
 
@@ -39,7 +41,7 @@ class ChApiFea ChElementSpring : public ChElementGeneric {
     virtual int GetNdofs() override { return 2 * 3; }
     virtual int GetNodeNdofs(int n) override { return 3; }
 
-    virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
+    virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) override { return nodes[n]; }
 
     virtual void SetNodes(std::shared_ptr<ChNodeFEAxyz> nodeA, std::shared_ptr<ChNodeFEAxyz> nodeB) {
         nodes[0] = nodeA;
@@ -57,7 +59,7 @@ class ChApiFea ChElementSpring : public ChElementGeneric {
     /// Fills the D vector (column matrix) with the current
     /// field values at the nodes of the element, with proper ordering.
     /// If the D vector has not the size of this->GetNdofs(), it will be resized.
-    virtual void GetStateBlock(ChMatrixDynamic<>& mD) {
+    virtual void GetStateBlock(ChMatrixDynamic<>& mD) override {
         mD.Reset(this->GetNdofs(), 1);
         mD.PasteVector(this->nodes[0]->GetPos(), 0, 0);
         mD.PasteVector(this->nodes[1]->GetPos(), 3, 0);
@@ -66,7 +68,7 @@ class ChApiFea ChElementSpring : public ChElementGeneric {
     /// Sets H as the global stiffness matrix K, scaled  by Kfactor. Optionally, also
     /// superimposes global damping matrix R, scaled by Rfactor, and global mass matrix M multiplied by Mfactor.
     /// (For the spring matrix there is no need to corotate local matrices: we already know a closed form expression.)
-    virtual void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor = 0, double Mfactor = 0) {
+    virtual void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor = 0, double Mfactor = 0) override {
         assert((H.GetRows() == 6) && (H.GetColumns() == 6));
 
         // compute stiffness matrix (this is already the explicit
@@ -82,11 +84,11 @@ class ChApiFea ChElementSpring : public ChElementGeneric {
         // note that stiffness and damping matrices are the same, so join stuff here
         double commonfactor = this->spring_k * Kfactor + this->damper_r * Rfactor;
         submatr.MatrScale(commonfactor);
-        H.PasteMatrix(&submatr, 0, 0);
-        H.PasteMatrix(&submatr, 3, 3);
+        H.PasteMatrix(submatr, 0, 0);
+        H.PasteMatrix(submatr, 3, 3);
         submatr.MatrNeg();
-        H.PasteMatrix(&submatr, 0, 3);
-        H.PasteMatrix(&submatr, 3, 0);
+        H.PasteMatrix(submatr, 0, 3);
+        H.PasteMatrix(submatr, 3, 0);
 
         // finally, do nothing about mass matrix because this element is mass-less
     }
@@ -94,7 +96,7 @@ class ChApiFea ChElementSpring : public ChElementGeneric {
     /// Computes the internal forces (ex. the actual position of
     /// nodes is not in relaxed reference position) and set values
     /// in the Fi vector.
-    virtual void ComputeInternalForces(ChMatrixDynamic<>& Fi) {
+    virtual void ComputeInternalForces(ChMatrixDynamic<>& Fi) override {
         assert((Fi.GetRows() == 6) && (Fi.GetColumns() == 1));
 
         ChVector<> dir = (nodes[1]->GetPos() - nodes[0]->GetPos()).GetNormalized();
@@ -134,7 +136,7 @@ class ChApiFea ChElementSpring : public ChElementGeneric {
 
 /// @} fea_elements
 
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace fea
+}  // end namespace chrono
 
 #endif

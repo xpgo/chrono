@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,10 +19,11 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChShaftsPlanetary> a_registration_ChShaftsPlanetary;
+CH_FACTORY_REGISTER(ChShaftsPlanetary)
 
 ChShaftsPlanetary::ChShaftsPlanetary()
-    : r1(1), r2(1), r3(1), torque_react(0), shaft1(NULL), shaft2(NULL), shaft3(NULL) {}
+    : r1(1), r2(1), r3(1), torque_react(0), shaft1(NULL), shaft2(NULL), shaft3(NULL), avoid_phase_drift(true),
+    phase1(0), phase2(0), phase3(0) {}
 
 ChShaftsPlanetary::ChShaftsPlanetary(const ChShaftsPlanetary& other) : ChPhysicsItem(other) {
     r1 = other.r1;
@@ -33,6 +34,11 @@ ChShaftsPlanetary::ChShaftsPlanetary(const ChShaftsPlanetary& other) : ChPhysics
     shaft1 = NULL;
     shaft2 = NULL;
     shaft3 = NULL;
+
+    avoid_phase_drift = other.avoid_phase_drift;
+    phase1 = other.phase1;
+    phase2 = other.phase2;
+    phase3 = other.phase3;
 }
 
 bool ChShaftsPlanetary::Initialize(std::shared_ptr<ChShaft> mshaft1,  // first  shaft to join (carrier wheel)
@@ -51,6 +57,10 @@ bool ChShaftsPlanetary::Initialize(std::shared_ptr<ChShaft> mshaft1,  // first  
     shaft1 = mm1;
     shaft2 = mm2;
     shaft3 = mm3;
+
+    phase1 = shaft1->GetPos();
+    phase2 = shaft2->GetPos();
+    phase3 = shaft3->GetPos();
 
     constraint.SetVariables(&mm1->Variables(), &mm2->Variables(), &mm3->Variables());
 
@@ -83,7 +93,11 @@ void ChShaftsPlanetary::IntLoadConstraint_C(const unsigned int off_L,  // offset
                                             bool do_clamp,             // apply clamping to c*C?
                                             double recovery_clamp      // value for min/max clamping of c*C
                                             ) {
-    double res = 0;  // no residual anyway! allow drifting...
+    double res = this->r1 * (this->shaft1->GetPos() - this->phase1) +
+                 this->r2 * (this->shaft2->GetPos() - this->phase2) +
+                 this->r3 * (this->shaft3->GetPos() - this->phase3);  
+    if (!this->avoid_phase_drift)
+        res = 0;
 
     double cnstr_violation = c * res;
 
@@ -165,7 +179,7 @@ void ChShaftsPlanetary::ConstraintsFetch_react(double factor) {
 
 void ChShaftsPlanetary::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChShaftsPlanetary>();
 
     // serialize parent class
     ChPhysicsItem::ArchiveOUT(marchive);
@@ -174,6 +188,10 @@ void ChShaftsPlanetary::ArchiveOUT(ChArchiveOut& marchive) {
     marchive << CHNVP(r1);
     marchive << CHNVP(r2);
     marchive << CHNVP(r3);
+    marchive << CHNVP(avoid_phase_drift);
+    marchive << CHNVP(phase1);
+    marchive << CHNVP(phase2);
+    marchive << CHNVP(phase3);
     // marchive << CHNVP(shaft1); //***TODO*** serialize with shared ptr
     // marchive << CHNVP(shaft2); //***TODO*** serialize with shared ptr
     // marchive << CHNVP(shaft3); //***TODO*** serialize with shared ptr
@@ -182,7 +200,7 @@ void ChShaftsPlanetary::ArchiveOUT(ChArchiveOut& marchive) {
 /// Method to allow de serialization of transient data from archives.
 void ChShaftsPlanetary::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChShaftsPlanetary>();
 
     // deserialize parent class:
     ChPhysicsItem::ArchiveIN(marchive);
@@ -191,6 +209,10 @@ void ChShaftsPlanetary::ArchiveIN(ChArchiveIn& marchive) {
     marchive >> CHNVP(r1);
     marchive >> CHNVP(r2);
     marchive >> CHNVP(r3);
+    marchive >> CHNVP(avoid_phase_drift);
+    marchive >> CHNVP(phase1);
+    marchive >> CHNVP(phase2);
+    marchive >> CHNVP(phase3);
     // marchive >> CHNVP(shaft1); //***TODO*** serialize with shared ptr
     // marchive >> CHNVP(shaft2); //***TODO*** serialize with shared ptr
     // marchive >> CHNVP(shaft3); //***TODO*** serialize with shared ptr

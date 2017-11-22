@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -68,12 +68,12 @@ void ChTrackAssembly::Initialize(std::shared_ptr<ChBodyAuxRef> chassis,  // hand
 
     // Initialize the suspension subsystems
     for (size_t i = 0; i < m_suspensions.size(); ++i) {
-        m_suspensions[i]->Initialize(chassis, location + GetRoadWhelAssemblyLocation(i));
+        m_suspensions[i]->Initialize(chassis, location + GetRoadWhelAssemblyLocation(static_cast<int>(i)));
     }
 
     // Initialize the roller subsystems
     for (size_t i = 0; i < m_rollers.size(); ++i) {
-        m_rollers[i]->Initialize(chassis, location + GetRollerLocation(i));
+        m_rollers[i]->Initialize(chassis, location + GetRollerLocation(static_cast<int>(i)));
     }
 
     // Assemble the track. This positions all track shoes around the sprocket,
@@ -109,6 +109,12 @@ void ChTrackAssembly::SetRoadWheelAssemblyVisualizationType(VisualizationType vi
     }
 }
 
+void ChTrackAssembly::SetRoadWheelVisualizationType(VisualizationType vis) {
+    for (size_t i = 0; i < m_suspensions.size(); ++i) {
+        m_suspensions[i]->GetRoadWheel()->SetVisualizationType(vis);
+    }
+}
+
 void ChTrackAssembly::SetRollerVisualizationType(VisualizationType vis) {
     for (size_t i = 0; i < m_rollers.size(); ++i) {
         m_rollers[i]->SetVisualizationType(vis);
@@ -139,7 +145,7 @@ double ChTrackAssembly::GetMass() const {
 // -----------------------------------------------------------------------------
 // Update the state of this track assembly at the current time.
 // -----------------------------------------------------------------------------
-void ChTrackAssembly::Synchronize(double time, double braking, const TrackShoeForces& shoe_forces) {
+void ChTrackAssembly::Synchronize(double time, double braking, const TerrainForces& shoe_forces) {
     // Apply track shoe forces
     for (size_t i = 0; i < GetNumTrackShoes(); ++i) {
         GetTrackShoe(i)->m_shoe->Empty_forces_accumulators();

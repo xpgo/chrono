@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -30,7 +30,6 @@ namespace chrono {
 /// the more advanced ChLinkLinActuator.
 
 class ChApi ChLinkDistance : public ChLink {
-    CH_RTTI(ChLinkDistance, ChLink);
 
   protected:
     double distance;           ////< the imposed distance
@@ -46,8 +45,6 @@ class ChApi ChLinkDistance : public ChLink {
 
     /// "Virtual" copy constructor (covariant return type).
     virtual ChLinkDistance* Clone() const override { return new ChLinkDistance(*this); }
-
-    virtual int GetType() const override { return LNK_GEOMETRICDISTANCE; }
 
     /// Initialize this constraint, given the two bodies to be connected, the
     /// positions of the two anchor endpoints of the distance (each expressed
@@ -150,6 +147,9 @@ class ChApi ChLinkDistance : public ChLink {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLinkDistance,0)
+
 
 }  // end namespace chrono
 

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,18 +15,16 @@
 #ifndef CHC_BOX_H
 #define CHC_BOX_H
 
-#include <math.h>
+#include <cmath>
 
-#include "chrono/geometry/ChGeometry.h"
+#include "chrono/geometry/ChVolume.h"
 
 namespace chrono {
 namespace geometry {
 
 /// A box geometric object for collisions and visualization.
 
-class ChApi ChBox : public ChGeometry {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChBox, ChGeometry);
+class ChApi ChBox : public ChVolume {
 
   public:
     ChMatrix33<> Rot;  ///< box rotation
@@ -42,7 +40,7 @@ class ChApi ChBox : public ChGeometry {
     /// "Virtual" copy constructor (covariant return type).
     virtual ChBox* Clone() const override { return new ChBox(*this); }
 
-    virtual GeometryType GetClassType() const override { return BOX; }
+    virtual ChGeometry::GeometryType GetClassType() const override { return BOX; }
 
     virtual void GetBoundingBox(double& xmin,
                                 double& xmax,
@@ -61,8 +59,9 @@ class ChApi ChBox : public ChGeometry {
     /// Evaluate position in cube volume
     virtual void Evaluate(ChVector<>& pos,
                           const double parU,
-                          const double parV = 0.,
-                          const double parW = 0.) const override;
+                          const double parV,
+                          const double parW) const override;
+    
 
     /// This is a solid
     virtual int GetManifoldDimension() const override { return 3; }
@@ -97,36 +96,39 @@ class ChApi ChBox : public ChGeometry {
     ChVector<> GetPn(int ipoint) const;
 
     /// Get the volume (assuming no scaling in Rot matrix)
-    double GetVolume() const { return Size.x * Size.y * Size.z * 8.0; }
+    double GetVolume() const { return Size.x() * Size.y() * Size.z() * 8.0; }
 
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChBox>();
         // serialize parent class
-        ChGeometry::ArchiveOUT(marchive);
+        ChVolume::ArchiveOUT(marchive);
         // serialize all member data:
         marchive << CHNVP(Pos);
         marchive << CHNVP(Rot);
         ChVector<> Lengths = GetLengths();
-        marchive << CHNVP(Lengths);  // avoid storing 'Size', i.e. half lenths, because less intuitive
+        marchive << CHNVP(Lengths);  // avoid storing 'Size', i.e. half lengths, because less intuitive
     }
 
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChBox>();
         // deserialize parent class
-        ChGeometry::ArchiveIN(marchive);
+        ChVolume::ArchiveIN(marchive);
         // stream in all member data:
         marchive >> CHNVP(Pos);
         marchive >> CHNVP(Rot);
         ChVector<> Lengths;
-        marchive >> CHNVP(Lengths);  // avoid storing 'Size', i.e. half lenths, because less intuitive
+        marchive >> CHNVP(Lengths);  // avoid storing 'Size', i.e. half lengths, because less intuitive
         SetLengths(Lengths);
     }
 };
 
 }  // end namespace geometry
+
+CH_CLASS_VERSION(geometry::ChBox,0)
+
 }  // end namespace chrono
 
 #endif

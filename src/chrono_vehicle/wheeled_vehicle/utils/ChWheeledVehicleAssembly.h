@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -29,13 +29,6 @@
 
 #include "chrono_vehicle/wheeled_vehicle/vehicle/WheeledVehicle.h"
 #include "chrono_vehicle/powertrain/SimplePowertrain.h"
-
-/**
-    @addtogroup vehicle_wheeled
-    @{
-        @defgroup vehicle_wheeled_utils Utility classes
-    @}
-*/
 
 namespace chrono {
 namespace vehicle {
@@ -133,7 +126,7 @@ class CH_VEHICLE_API ChWheeledVehicleAssembly {
   private:
     std::shared_ptr<WheeledVehicle> m_vehicle;
     std::shared_ptr<SimplePowertrain> m_powertrain;
-    TireForces m_tire_forces;
+    TerrainForces m_tire_forces;
     ChDriverInputsCallback* m_driver_cb;
     ChTireContactCallback* m_tire_cb;
     ChChassisContactCallback* m_chassis_cb;

@@ -17,9 +17,9 @@ if __name__ == '__main__':
 
 
 # Load the Chrono::Engine unit and the postprocessing unit!!!
-import ChronoEngine_PYTHON_core as chrono
-import ChronoEngine_PYTHON_postprocess as postprocess
-import ChronoEngine_PYTHON_irrlicht as chronoirr
+import ChronoEngine_python_core as chrono
+import ChronoEngine_python_postprocess as postprocess
+import ChronoEngine_python_irrlicht as chronoirr
 
 
 # We will create two directories for saving some files, we need this:
@@ -33,7 +33,7 @@ import math
 #  Create the simulation system and add items
 #
 
-my_system = chrono.ChSystem()
+my_system = chrono.ChSystemNSC()
 
 
 # Set the default outward/inward shape margins for collision detection,
@@ -45,7 +45,7 @@ chrono.ChCollisionModel.SetDefaultSuggestedMargin(0.001)
 # might want to use SetMaxItersSolverSpeed to set the number of iterations
 # per timestep, etc.
 
-#my_system.SetSolverType(chrono.ChSystem.SOLVER_BARZILAIBORWEIN) # precise, more slow
+#my_system.SetSolverType(chrono.ChSolver.Type_BARZILAIBORWEIN) # precise, more slow
 my_system.SetMaxItersSolverSpeed(70)
 
 
@@ -53,7 +53,7 @@ my_system.SetMaxItersSolverSpeed(70)
 # Create a contact material (surface property)to share between all objects.
 # The rolling and spinning parameters are optional - if enabled they double
 # the computational time.
-brick_material = chrono.ChMaterialSurface()
+brick_material = chrono.ChMaterialSurfaceNSC()
 brick_material.SetFriction(0.5)
 brick_material.SetDampingF(0.2)
 brick_material.SetCompliance (0.0000001)
@@ -171,12 +171,10 @@ my_system.Add(link_shaker)
 
 # ..create the function for imposed x horizontal motion, etc.
 mfunY = chrono.ChFunction_Sine(0,1.5,0.001)  # phase, frequency, amplitude
-mfunY.thisown=0      # because the link will take care of deletion!
 link_shaker.SetMotion_Y(mfunY)
 
 # ..create the function for imposed y vertical motion, etc.
 mfunZ = chrono.ChFunction_Sine(0,1.5,0.12)  # phase, frequency, amplitude
-mfunZ.thisown=0      # because the link will take care of deletion!
 link_shaker.SetMotion_Z(mfunZ)
 
 # Note that you could use other types of ChFunction_ objects, or create

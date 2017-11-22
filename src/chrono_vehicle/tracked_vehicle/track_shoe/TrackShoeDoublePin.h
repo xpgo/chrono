@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -38,7 +38,7 @@ class CH_VEHICLE_API TrackShoeDoublePin : public ChTrackShoeDoublePin {
     TrackShoeDoublePin(const rapidjson::Document& d);
     ~TrackShoeDoublePin() {}
 
-    virtual GuidePinType GetType() const override { return GuidePinType::CENTRAL_PIN; }
+    virtual GuidePinType GetType() const final override { return GuidePinType::CENTRAL_PIN; }
 
     /// Return the height of the track shoe.
     virtual double GetHeight() const override { return m_shoe_height; }

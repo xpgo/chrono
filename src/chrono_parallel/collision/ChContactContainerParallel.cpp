@@ -1,9 +1,23 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar
+// =============================================================================
+
 #include "chrono_parallel/collision/ChContactContainerParallel.h"
 
-#include "physics/ChSystem.h"
-#include "physics/ChBody.h"
-#include "physics/ChParticlesClones.h"
-#include "collision/ChCModelBullet.h"
+#include "chrono/physics/ChSystem.h"
+#include "chrono/physics/ChBody.h"
+#include "chrono/physics/ChParticlesClones.h"
+#include "chrono/collision/ChCModelBullet.h"
 
 namespace chrono {
 
@@ -16,7 +30,7 @@ ChContactContainerParallel::ChContactContainerParallel(ChParallelDataManager* dc
 }
 
 ChContactContainerParallel::ChContactContainerParallel(const ChContactContainerParallel& other)
-    : ChContactContainerBase(other) {
+    : ChContactContainer(other) {
     //// TODO
 }
 
@@ -77,9 +91,9 @@ void ChContactContainerParallel::AddContact(const collision::ChCollisionInfo& mc
         // }
         // n_added_6_6++;
 
-        data_manager->host_data.norm_rigid_rigid.push_back(real3(mcontact.vN.x, mcontact.vN.y, mcontact.vN.z));
-        data_manager->host_data.cpta_rigid_rigid.push_back(real3(mcontact.vpA.x, mcontact.vpA.y, mcontact.vpA.z));
-        data_manager->host_data.cptb_rigid_rigid.push_back(real3(mcontact.vpB.x, mcontact.vpB.y, mcontact.vpB.z));
+        data_manager->host_data.norm_rigid_rigid.push_back(real3(mcontact.vN.x(), mcontact.vN.y(), mcontact.vN.z()));
+        data_manager->host_data.cpta_rigid_rigid.push_back(real3(mcontact.vpA.x(), mcontact.vpA.y(), mcontact.vpA.z()));
+        data_manager->host_data.cptb_rigid_rigid.push_back(real3(mcontact.vpB.x(), mcontact.vpB.y(), mcontact.vpB.z()));
         data_manager->host_data.dpth_rigid_rigid.push_back(mcontact.distance);
         data_manager->host_data.bids_rigid_rigid.push_back(
             vec2(((ChBody*)(mcontact.modelA->GetPhysicsItem()))->GetId(),
@@ -88,4 +102,40 @@ void ChContactContainerParallel::AddContact(const collision::ChCollisionInfo& mc
     }
 }
 
-}  // END_OF_NAMESPACE____
+static inline chrono::ChVector<> ToChVector(const real3& a) {
+    return chrono::ChVector<>(a.x, a.y, a.z);
+}
+
+void ChContactContainerParallel::ReportAllContacts(ReportContactCallback* callback) {
+    // Readibility
+    auto& ptA = data_manager->host_data.cpta_rigid_rigid;
+    auto& ptB = data_manager->host_data.cptb_rigid_rigid;
+    auto& nrm = data_manager->host_data.norm_rigid_rigid;
+    auto& depth = data_manager->host_data.dpth_rigid_rigid;
+    auto& bids = data_manager->host_data.bids_rigid_rigid;
+
+    // Grab the list of bodies.
+    // NOTE: we assume that bodies were added in the order of their IDs!
+    auto bodylist = *GetSystem()->Get_bodylist();
+
+    // No reaction forces or torques reported!
+    ChVector<> zero(0, 0, 0);
+
+    // Contact plane
+    ChVector<> plane_x, plane_y, plane_z;
+    ChMatrix33<> contact_plane;
+
+    for (uint i = 0; i < data_manager->num_rigid_contacts; i++) {
+        // Contact plane coordinate system (normal in x direction)
+        XdirToDxDyDz(ToChVector(nrm[i]), VECT_Y, plane_x, plane_y, plane_z);
+        contact_plane.Set_A_axis(plane_x, plane_y, plane_z);
+
+        // Invoke callback function
+        bool proceed = callback->OnReportContact(ToChVector(ptA[i]), ToChVector(ptB[i]), contact_plane, depth[i], zero,
+                                                 zero, bodylist[bids[i].x].get(), bodylist[bids[i].y].get());
+        if (!proceed)
+            break;
+    }
+}
+
+}  // end namespace chrono

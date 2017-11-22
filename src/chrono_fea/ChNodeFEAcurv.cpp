@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -12,7 +12,7 @@
 // Authors: Radu Serban
 // =============================================================================
 // Generic finite element node with 9 degrees of freedom representing curvature
-// (2nd derivatives of the poosition vector)
+// (2nd derivatives of the position vector)
 // =============================================================================
 
 #include "chrono_fea/ChNodeFEAcurv.h"
@@ -160,12 +160,12 @@ void ChNodeFEAcurv::NodeIntLoadResidual_Mv(const unsigned int off,
 }
 
 void ChNodeFEAcurv::NodeIntToDescriptor(const unsigned int off_v, const ChStateDelta& v, const ChVectorDynamic<>& R) {
-    m_variables->Get_qb().PasteClippedMatrix(&v, off_v, 0, 9, 1, 0, 0);
-    m_variables->Get_fb().PasteClippedMatrix(&R, off_v, 0, 9, 1, 0, 0);
+    m_variables->Get_qb().PasteClippedMatrix(v, off_v, 0, 9, 1, 0, 0);
+    m_variables->Get_fb().PasteClippedMatrix(R, off_v, 0, 9, 1, 0, 0);
 }
 
 void ChNodeFEAcurv::NodeIntFromDescriptor(const unsigned int off_v, ChStateDelta& v) {
-    v.PasteMatrix(&m_variables->Get_qb(), off_v, 0);
+    v.PasteMatrix(m_variables->Get_qb(), off_v, 0);
 }
 
 // -----------------------------------------------------------------------------
@@ -221,7 +221,7 @@ void ChNodeFEAcurv::VariablesQbIncrementPosition(double step) {
 
 void ChNodeFEAcurv::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChNodeFEAcurv>();
     // serialize parent class
     ChNodeFEAbase::ArchiveOUT(marchive);
 
@@ -239,7 +239,7 @@ void ChNodeFEAcurv::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChNodeFEAcurv::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChNodeFEAcurv>();
     // deserialize parent class
     ChNodeFEAbase::ArchiveIN(marchive);
 

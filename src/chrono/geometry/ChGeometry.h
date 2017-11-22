@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -30,8 +30,6 @@ namespace geometry {
 
 /// Base class for geometric objects used for collisions and visualization.
 class ChApi ChGeometry {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI_ROOT(ChGeometry);
 
   public:
     /// Enumeration of geometric objects
@@ -86,7 +84,7 @@ class ChApi ChGeometry {
     }
 
     /// Enlarge a previous existing bounding box.
-    /// Usually it does not need to be overriden: base function uses GetBoundingBox()
+    /// Usually it does not need to be overridden: base function uses GetBoundingBox()
     /// If Rot is not null, the bounding box axes are considered rotated.
     virtual void InflateBoundingBox(double& xmin,
                                     double& xmax,
@@ -99,30 +97,14 @@ class ChApi ChGeometry {
     /// Returns the radius of the sphere which can enclose the geometry
     virtual double Size() const;
 
-    /// Evaluates a point on a geometry, given parametric coordinates,
-    /// if possible. Parameters  U,V,W should be usually in 0..1 range.
-    /// For a line, only U parameter is needed, for a surface also V.
-    /// Computed value goes into the 'pos' reference.
-    /// It should be overriden by inherited classes.
-    virtual void Evaluate(ChVector<>& pos, const double parU, const double parV = 0., const double parW = 0.) const {
-        pos = VNULL;
-    }
 
-    /// Evaluates a tangent versor on a geometry, given parametric coordinates,
-    /// if possible. Parameters  U,V,W should be usually in 0..1 range.
-    /// For a line, only U parameter is needed, for a surface also V.
-    /// Computed value goes into the 'pos' reference.
-    /// It could be overriden by inherited classes if a precise solution is
-    /// known (otherwise it defaults to numerical BDF using the Evaluate()
-    /// function.
-    virtual void Derive(ChVector<>& dir, const double parU, const double parV = 0., const double parW = 0.) const;
 
     /// Compute center of mass
-    /// It should be overriden by inherited classes
+    /// It should be overridden by inherited classes
     virtual ChVector<> Baricenter() const { return VNULL; }
 
     /// Compute the 3x3 covariance matrix (only the diagonal and upper part)
-    /// It should be overriden by inherited classes
+    /// It should be overridden by inherited classes
     // TODO: obsolete (unused)
     virtual void CovarianceMatrix(ChMatrix33<>& C) const { C.Reset(); }
 
@@ -138,19 +120,22 @@ class ChApi ChGeometry {
 
     virtual void ArchiveOUT(ChArchiveOut& marchive) {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChGeometry>();
     }
 
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChGeometry>();
     }
 };
 
 /// @} chrono_geometry
 
 }  // end namespace geometry
+
+CH_CLASS_VERSION(geometry::ChGeometry,0)
+
 }  // end namespace chrono
 
 #endif

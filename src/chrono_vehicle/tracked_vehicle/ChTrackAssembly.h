@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -89,7 +89,7 @@ class CH_VEHICLE_API ChTrackAssembly : public ChPart {
     /// The returned location is that of the shoe body in the track shoe subsystem.
     const ChVector<>& GetTrackShoePos(size_t id) const { return GetTrackShoe(id)->m_shoe->GetPos(); }
 
-    /// Get the orientation of the the specified track shoe.
+    /// Get the orientation of the specified track shoe.
     /// The track shoe body orientation is returned as a quaternion representing a
     /// rotation with respect to the global reference frame. This is the orientation of
     /// the shoe body in the track shoe subsystem.
@@ -100,7 +100,7 @@ class CH_VEHICLE_API ChTrackAssembly : public ChPart {
     /// reference frame.
     const ChVector<>& GetTrackShoeLinVel(size_t id) const { return GetTrackShoe(id)->m_shoe->GetPos_dt(); }
 
-    /// Get the angular velocity of the the specified track shoe.
+    /// Get the angular velocity of the specified track shoe.
     /// Return the angular velocity of the shoe body frame, expressed in the global
     /// reference frame.
     ChVector<> GetTrackShoeAngVel(size_t id) const { return GetTrackShoe(id)->m_shoe->GetWvel_par(); }
@@ -154,6 +154,9 @@ class CH_VEHICLE_API ChTrackAssembly : public ChPart {
     /// Set visualization type for the suspension subsystems.
     void SetRoadWheelAssemblyVisualizationType(VisualizationType vis);
 
+    /// Set visualization type for the road-wheel subsystems.
+    void SetRoadWheelVisualizationType(VisualizationType vis);
+
     /// Set visualization type for the roller subsystems.
     void SetRollerVisualizationType(VisualizationType vis);
 
@@ -161,10 +164,10 @@ class CH_VEHICLE_API ChTrackAssembly : public ChPart {
     void SetTrackShoeVisualizationType(VisualizationType vis);
 
     /// Update the state of this track assembly at the current time.
-    void Synchronize(double time,                        ///< [in] current time
-                     double braking,                     ///< [in] braking driver input
-                     const TrackShoeForces& shoe_forces  ///< [in] vector of tire force structures
-                     );
+    void Synchronize(double time,                      ///< [in] current time
+                     double braking,                   ///< [in] braking driver input
+                     const TerrainForces& shoe_forces  ///< [in] vector of tire force structures
+    );
 
     /// Log current constraint violations.
     void LogConstraintViolations();

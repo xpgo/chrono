@@ -1,29 +1,28 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-
-//
+// =============================================================================
 //   Demo code (advanced), about
 //
 //     - using the SCM semi-empirical model for deformable soil
 //     - using a deformable tire  
+// =============================================================================
 
 #include "chrono/geometry/ChTriangleMeshConnected.h"
 #include "chrono/solver/ChSolverMINRES.h"
 #include "chrono/physics/ChLoadContainer.h"
-#include "chrono/physics/ChSystem.h"
-#include "chrono/physics/ChSystemDEM.h"
+#include "chrono/physics/ChSystemSMC.h"
 
 #include "chrono_irrlicht/ChIrrApp.h"
 #include "chrono_vehicle/ChVehicleModelData.h"
-#include "chrono_vehicle/terrain/DeformableTerrain.h"
+#include "chrono_vehicle/terrain/SCMDeformableTerrain.h"
 #include "chrono_vehicle/wheeled_vehicle/tire/ReissnerTire.h"
 #include "chrono_mkl/ChSolverMKL.h"
 
@@ -34,6 +33,8 @@ using namespace chrono::vehicle;
 using namespace irr;
 
 int main(int argc, char* argv[]) {
+    GetLog() << "Copyright (c) 2017 projectchrono.org\nChrono version: " << CHRONO_VERSION << "\n\n";
+
     // Global parameter for tire:
     double tire_rad = 0.5;
     double tire_vel_z0 = -3;
@@ -42,7 +43,7 @@ int main(int argc, char* argv[]) {
     double tire_w0 = tire_vel_z0/tire_rad;
 
     // Create a Chrono::Engine physical system
-    ChSystemDEM my_system;
+    ChSystemSMC my_system;
 
     // Create the Irrlicht visualization (open the Irrlicht device,
     // bind a simple user interface, etc. etc.)
@@ -100,7 +101,7 @@ int main(int argc, char* argv[]) {
     //
     
     // Create the 'deformable terrain' object
-    vehicle::DeformableTerrain mterrain(&my_system);
+    vehicle::SCMDeformableTerrain mterrain(&my_system);
 
     // Optionally, displace/tilt/rotate the terrain reference plane:
     mterrain.SetPlane(ChCoordsys<>(ChVector<>(0, 0, 0.3)));
@@ -117,7 +118,7 @@ int main(int argc, char* argv[]) {
                                     0,   // Mohr cohesive limit (Pa)
                                     30,  // Mohr friction limit (degrees)
                                     0.01,// Janosi shear coefficient (m)
-                                    5e7, // Elastic stiffness (Pa/m), before plastic yeld, must be > Kphi
+                                    5e7, // Elastic stiffness (Pa/m), before plastic yield, must be > Kphi
                                     2e4  // Damping (Pa s/m), proportional to negative vertical speed (optional)
                                     );
     mterrain.SetBulldozingFlow(true);    // inflate soil at the border of the rut
@@ -132,14 +133,14 @@ int main(int argc, char* argv[]) {
 
     // Set some visualization parameters: either with a texture, or with falsecolor plot, etc.
     //mterrain.SetTexture(vehicle::GetDataFile("terrain/textures/grass.jpg"), 16, 16);
-    //mterrain.SetPlotType(vehicle::DeformableTerrain::PLOT_PRESSURE, 0, 30000.2);
-    mterrain.SetPlotType(vehicle::DeformableTerrain::PLOT_PRESSURE_YELD, 0, 30000.2);
-    //mterrain.SetPlotType(vehicle::DeformableTerrain::PLOT_SINKAGE, 0, 0.15);
-    //mterrain.SetPlotType(vehicle::DeformableTerrain::PLOT_SINKAGE_PLASTIC, 0, 0.15);
-    //mterrain.SetPlotType(vehicle::DeformableTerrain::PLOT_SINKAGE_ELASTIC, 0, 0.05);
-    //mterrain.SetPlotType(vehicle::DeformableTerrain::PLOT_STEP_PLASTIC_FLOW, 0, 0.0001);
-    //mterrain.SetPlotType(vehicle::DeformableTerrain::PLOT_ISLAND_ID, 0, 8);
-    //mterrain.SetPlotType(vehicle::DeformableTerrain::PLOT_IS_TOUCHED, 0, 8);
+    //mterrain.SetPlotType(vehicle::SCMDeformableTerrain::PLOT_PRESSURE, 0, 30000.2);
+    mterrain.SetPlotType(vehicle::SCMDeformableTerrain::PLOT_PRESSURE_YELD, 0, 30000.2);
+    //mterrain.SetPlotType(vehicle::SCMDeformableTerrain::PLOT_SINKAGE, 0, 0.15);
+    //mterrain.SetPlotType(vehicle::SCMDeformableTerrain::PLOT_SINKAGE_PLASTIC, 0, 0.15);
+    //mterrain.SetPlotType(vehicle::SCMDeformableTerrain::PLOT_SINKAGE_ELASTIC, 0, 0.05);
+    //mterrain.SetPlotType(vehicle::SCMDeformableTerrain::PLOT_STEP_PLASTIC_FLOW, 0, 0.0001);
+    //mterrain.SetPlotType(vehicle::SCMDeformableTerrain::PLOT_ISLAND_ID, 0, 8);
+    //mterrain.SetPlotType(vehicle::SCMDeformableTerrain::PLOT_IS_TOUCHED, 0, 8);
     mterrain.GetMesh()->SetWireframe(true);
     
 
@@ -163,16 +164,13 @@ int main(int argc, char* argv[]) {
 
     // change the solver to MKL: 
     GetLog() << "Using MKL solver\n";
-    ChSolverMKL<>* mkl_solver_stab = new ChSolverMKL<>;
-    ChSolverMKL<>* mkl_solver_speed = new ChSolverMKL<>;
-    my_system.ChangeSolverStab(mkl_solver_stab);
-    my_system.ChangeSolverSpeed(mkl_solver_speed);
-    mkl_solver_speed->SetSparsityPatternLock(true);
-    mkl_solver_stab->SetSparsityPatternLock(true);
+    auto mkl_solver = std::make_shared<ChSolverMKL<>>();
+    mkl_solver->SetSparsityPatternLock(true);
+    my_system.SetSolver(mkl_solver);
     
     
     // Change the timestepper to HHT: 
-    my_system.SetIntegrationType(ChSystem::INT_HHT);
+    my_system.SetTimestepperType(ChTimestepper::Type::HHT);
     auto integrator = std::static_pointer_cast<ChTimestepperHHT>(my_system.GetTimestepper());
     integrator->SetAlpha(-0.2);
     integrator->SetMaxiters(8);
@@ -194,7 +192,7 @@ int main(int argc, char* argv[]) {
 
         application.DoStep();
 
-        ChIrrTools::drawColorbar(0,30000, "Pressure yeld [Pa]", application.GetDevice(),  1180);
+        ChIrrTools::drawColorbar(0,30000, "Pressure yield [Pa]", application.GetDevice(),  1180);
 
         application.EndScene();
     }

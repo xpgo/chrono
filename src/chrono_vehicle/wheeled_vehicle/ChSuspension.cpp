@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -23,13 +23,13 @@
 namespace chrono {
 namespace vehicle {
 
-ChSuspension::ChSuspension(const std::string& name) : ChPart(name) {}
+ChSuspension::ChSuspension(const std::string& name) : ChPart(name), m_steering_index(-1) {}
 
 void ChSuspension::ApplyAxleTorque(VehicleSide side, double torque) {
     m_axle[side]->SetAppliedTorque(torque);
 }
 
-void ChSuspension::Synchronize(VehicleSide side, const TireForce& tire_force) {
+void ChSuspension::Synchronize(VehicleSide side, const TerrainForce& tire_force) {
     m_spindle[side]->Empty_forces_accumulators();
     m_spindle[side]->Accumulate_force(tire_force.force, tire_force.point, false);
     m_spindle[side]->Accumulate_torque(tire_force.moment, false);

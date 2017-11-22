@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -139,7 +139,7 @@ void ChLinkLimit::SetPolar_Max(ChFunction* m_funct) {
 
 void ChLinkLimit::ArchiveOUT(ChArchiveOut& marchive) {
     // class version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChLinkLimit>();
     // serialize parent class too
 
     // stream out all member data
@@ -166,7 +166,7 @@ void ChLinkLimit::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChLinkLimit::ArchiveIN(ChArchiveIn& marchive) {
     // class version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChLinkLimit>();
     // deserialize parent class too
 
     // stream in all member data

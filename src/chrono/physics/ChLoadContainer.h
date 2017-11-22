@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -25,8 +25,6 @@ namespace chrono {
 /// add them to this container, then  the container is added to a ChSystem.
 
 class ChApi ChLoadContainer : public ChPhysicsItem {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChLoadContainer, ChPhysicsItem);
 
   private:
     std::vector<std::shared_ptr<ChLoadBase> > loadlist;
@@ -75,6 +73,8 @@ class ChApi ChLoadContainer : public ChPhysicsItem {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLoadContainer,0)
 
 }  // end namespace chrono
 

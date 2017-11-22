@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,7 +19,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChShaftsTorsionSpring> a_registration_ChShaftsTorsionSpring;
+CH_FACTORY_REGISTER(ChShaftsTorsionSpring)
 
 ChShaftsTorsionSpring::ChShaftsTorsionSpring() : stiffness(0), damping(0) {}
 
@@ -39,7 +39,7 @@ double ChShaftsTorsionSpring::ComputeTorque() {
 
 void ChShaftsTorsionSpring::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChShaftsTorsionSpring>();
 
     // serialize parent class
     ChShaftsTorqueBase::ArchiveOUT(marchive);
@@ -52,7 +52,7 @@ void ChShaftsTorsionSpring::ArchiveOUT(ChArchiveOut& marchive) {
 /// Method to allow de serialization of transient data from archives.
 void ChShaftsTorsionSpring::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChShaftsTorsionSpring>();
 
     // deserialize parent class:
     ChShaftsTorqueBase::ArchiveIN(marchive);

@@ -45,10 +45,10 @@
 // Include C++ headers this way...
 
 %{
+#include <typeindex>
 #include <cstddef>
-#include <stddef.h>
-#include "core/ChApiCE.h"
-#include "physics/ChBody.h"
+#include "chrono/core/ChApiCE.h"
+#include "chrono/physics/ChBody.h"
 
 using namespace chrono;
 using namespace chrono::collision;
@@ -102,10 +102,31 @@ using namespace chrono::geometry;
 %shared_ptr(chrono::ChTexture)
 %shared_ptr(chrono::ChCamera) 
 
+%shared_ptr(chrono::ChFunction)  
+%shared_ptr(chrono::ChFunction_Const)
+%shared_ptr(chrono::ChFunction_ConstAcc)
+%shared_ptr(chrono::ChFunction_Derive)
+%shared_ptr(chrono::ChFunction_Fillet3)
+%shared_ptr(chrono::ChFunction_Integrate)
+%shared_ptr(chrono::ChFunction_Mirror)
+%shared_ptr(chrono::ChFunction_Mocap)
+%shared_ptr(chrono::ChFunction_Noise)
+%shared_ptr(chrono::ChFunction_Operation)
+%shared_ptr(chrono::ChFunction_Oscilloscope)
+%shared_ptr(chrono::ChFunction_Poly)
+%shared_ptr(chrono::ChFunction_Poly345)
+%shared_ptr(chrono::ChFunction_Ramp)
+%shared_ptr(chrono::ChFunction_Recorder)
+%shared_ptr(chrono::ChFunction_Repeat)
+%shared_ptr(chrono::ChFunction_Sequence)
+%shared_ptr(chrono::ChFunction_Sigma)
+%shared_ptr(chrono::ChFunction_Sine)
+
 %shared_ptr(chrono::ChObj)
+%shared_ptr(chrono::collision::ChCollisionModel)
 %shared_ptr(chrono::ChPhysicsItem)
+%shared_ptr(chrono::ChMaterialSurfaceNSC)
 %shared_ptr(chrono::ChMaterialSurface)
-%shared_ptr(chrono::ChMaterialSurfaceBase)
 %shared_ptr(chrono::ChBodyFrame)
 %shared_ptr(chrono::ChMarker)
 %shared_ptr(chrono::ChForce)
@@ -117,9 +138,29 @@ using namespace chrono::geometry;
 %shared_ptr(chrono::ChIndexedParticles)
 %shared_ptr(chrono::ChParticlesClones)
 %shared_ptr(chrono::ChAssembly)
+%shared_ptr(chrono::ChTimestepper)
+%shared_ptr(chrono::ChTimestepperIorder)
+%shared_ptr(chrono::ChTimestepperIIorder)
+%shared_ptr(chrono::ChTimestepperEulerExpl)
+%shared_ptr(chrono::ChTimestepperEulerExplIIorder)
+%shared_ptr(chrono::ChTimestepperEulerSemiImplicit)
+%shared_ptr(chrono::ChTimestepperRungeKuttaExpl)
+%shared_ptr(chrono::ChTimestepperHeun)
+%shared_ptr(chrono::ChTimestepperLeapfrog)
+%shared_ptr(chrono::ChTimestepperEulerImplicit)
+%shared_ptr(chrono::ChTimestepperEulerImplicitLinearized)
+%shared_ptr(chrono::ChTimestepperEulerImplicitProjected)
+%shared_ptr(chrono::ChTimestepperTrapezoidalLinearized)
+%shared_ptr(chrono::ChTimestepperTrapezoidalLinearized2)
+%shared_ptr(chrono::ChTimestepperTrapezoidal)
+%shared_ptr(chrono::ChTimestepperNewmark)
+%shared_ptr(chrono::ChImplicitIterativeTimestepper)
+%shared_ptr(chrono::ChImplicitTimestepper)
+%shared_ptr(chrono::ChSolver)
 %shared_ptr(chrono::ChSystem)
-%shared_ptr(chrono::ChContactContainerBase)
-%shared_ptr(chrono::ChProximityContainerBase)
+%shared_ptr(chrono::ChSystemNSC)
+%shared_ptr(chrono::ChContactContainer)
+%shared_ptr(chrono::ChProximityContainer)
 
 %shared_ptr(chrono::ChLinkBase)
 %shared_ptr(chrono::ChLink)
@@ -163,6 +204,8 @@ using namespace chrono::geometry;
 
 %shared_ptr(chrono::ChShaft)
 %shared_ptr(chrono::ChShaftsBody)
+%shared_ptr(chrono::ChShaftsBodyTranslation)
+%shared_ptr(chrono::ChShaftsMotorBase)
 %shared_ptr(chrono::ChShaftsClutch)
 %shared_ptr(chrono::ChShaftsCouple)
 %shared_ptr(chrono::ChShaftsGear)
@@ -194,7 +237,8 @@ using namespace chrono::geometry;
 
 //  core/  classes
 %include "ChException.i"
-%include "ChArchive.i"
+%include "ChClassFactory.i"
+//%include "ChArchive.i"
 %include "ChVector.i" 
 #define Vector ChVector<double>
 %include "ChQuaternion.i"
@@ -234,15 +278,11 @@ using namespace chrono::geometry;
 %include "ChTexture.i"
 %include "ChCamera.i"
 
-  // enable _automatic_ downcasting from ChAsset to derived classes (shared pointers versions)
-%downcast_output_sharedptr(chrono::ChAsset, chrono::ChVisualization, chrono::ChObjShapeFile, chrono::ChBoxShape, chrono::ChSphereShape, chrono::ChCylinderShape, chrono::ChTexture, chrono::ChAssetLevel, chrono::ChCamera, chrono::ChColorAsset)
-
 // physics/  classes
 %include "ChObject.i"
 %include "ChPhysicsItem.i"
-%include "ChMaterialSurfaceBase.i"
 %include "ChMaterialSurface.i"
-%include "ChMaterialCouple.i"
+%include "ChMaterialSurfaceNSC.i"
 %include "ChBodyFrame.i"
 %include "ChMarker.i"
 %include "ChForce.i"
@@ -252,9 +292,12 @@ using namespace chrono::geometry;
 %include "ChIndexedParticles.i"
 %include "ChParticlesClones.i"
 %include "ChAssembly.i"
+%include "../chrono/timestepper/ChTimestepper.h"
+%include "../chrono/solver/ChSolver.h"
 %include "ChSystem.i"
-%include "ChContactContainerBase.i"
-%include "ChProximityContainerBase.i"
+%include "ChSystemNSC.i"
+%include "ChContactContainer.i"
+%include "ChProximityContainer.i"
 %include "ChLinkBase.i"
 %include "ChLink.i"
 %include "ChLinkMarkers.i"
@@ -306,6 +349,9 @@ using namespace chrono::geometry;
 //  myvis = chrono.CastToChVisualizationShared(myasset)
 //  print ('Could be cast to visualization object?', !myvis.IsNull())
 
+// enable _automatic_ downcasting from ChAsset to derived classes (shared pointers versions)
+%downcast_output_sharedptr(chrono::ChAsset, chrono::ChVisualization, chrono::ChObjShapeFile, chrono::ChBoxShape, chrono::ChSphereShape, chrono::ChCylinderShape, chrono::ChTexture, chrono::ChAssetLevel, chrono::ChCamera, chrono::ChColorAsset)
+
 %DefChSharedPtrDynamicDowncast(ChAsset,ChVisualization)
 %DefChSharedPtrDynamicDowncast(ChAsset,ChObjShapeFile)
 %DefChSharedPtrDynamicDowncast(ChAsset,ChBoxShape)
@@ -355,6 +401,25 @@ using namespace chrono::geometry;
 %DefChSharedPtrDynamicDowncast(ChPhysicsItem, ChLinkPulley)
 %DefChSharedPtrDynamicDowncast(ChPhysicsItem, ChLinkScrew)
 %DefChSharedPtrDynamicDowncast(ChPhysicsItem, ChLinkSpring)
+
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Const)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_ConstAcc)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Derive)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Fillet3)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Integrate)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Mirror)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Mocap)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Noise)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Operation)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Oscilloscope)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Poly)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Poly345)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Ramp)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Recorder)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Repeat)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Sequence)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Sigma)
+%DefChSharedPtrDynamicDowncast(ChFunction, ChFunction_Sine)
 
 %DefChSharedPtrDynamicDowncast(ChPhysicsItem, ChShaft)
 %DefChSharedPtrDynamicDowncast(ChPhysicsItem, ChShaftsBody)

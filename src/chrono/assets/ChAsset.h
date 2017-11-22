@@ -1,34 +1,22 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2012 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHASSET_H
 #define CHASSET_H
 
-///////////////////////////////////////////////////
-//
-//   ChAsset.h
-//
-//   Classes for adding user data (such as rendering
-//   shapes, reference to files) to physical items
-//
-//   HEADER file for CHRONO,
-//	 Multibody dynamics engine
-//
-// ------------------------------------------------
-//             http://www.projectchrono.org
-// ------------------------------------------------
-///////////////////////////////////////////////////
-
-#include "core/ChCoordsys.h"
-#include "serialization/ChArchive.h"
+#include "chrono/core/ChCoordsys.h"
+#include "chrono/serialization/ChArchive.h"
 
 namespace chrono {
 
@@ -44,8 +32,6 @@ class ChPhysicsItem;
 /// User can inherit his classes for custom assets from
 /// this class.
 class ChApi ChAsset {
-    // Chrono RTTI, needed for serialization
-    CH_RTTI_ROOT(ChAsset);
 
   protected:
     //
@@ -77,19 +63,22 @@ class ChApi ChAsset {
     virtual void ArchiveOUT(ChArchiveOut& marchive)
     {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChAsset>();
     }
 
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) 
     {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChAsset>();
     }
 };
 
+CH_CLASS_VERSION(ChAsset,0)
+
+
 /// @} chrono_assets
 
-}  // END_OF_NAMESPACE____
+}  // end namespace chrono
 
 #endif

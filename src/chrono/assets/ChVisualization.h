@@ -1,20 +1,21 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2012 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
 
 #ifndef CHVISUALIZATION_H
 #define CHVISUALIZATION_H
 
-#include "assets/ChAsset.h"
-#include "assets/ChColor.h"
-#include "core/ChMath.h"
+#include "chrono/assets/ChAsset.h"
+#include "chrono/assets/ChColor.h"
+#include "chrono/core/ChMath.h"
 
 namespace chrono {
 
@@ -23,8 +24,6 @@ namespace chrono {
 /// It contains basic information about position, color, and visibility.
 
 class ChApi ChVisualization : public ChAsset {
-    // Chrono RTTI, needed for serialization
-    CH_RTTI(ChVisualization, ChAsset);
 
   public:
     virtual ~ChVisualization() {}
@@ -65,7 +64,7 @@ class ChApi ChVisualization : public ChAsset {
     virtual void ArchiveOUT(ChArchiveOut& marchive)
     {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChVisualization>();
         // serialize parent class
         ChAsset::ArchiveOUT(marchive);
         // serialize all member data:
@@ -80,7 +79,7 @@ class ChApi ChVisualization : public ChAsset {
     virtual void ArchiveIN(ChArchiveIn& marchive) 
     {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChVisualization>();
         // deserialize parent class
         ChAsset::ArchiveIN(marchive);
         // stream in all member data:
@@ -92,6 +91,8 @@ class ChApi ChVisualization : public ChAsset {
     }
 };
 
-}  // END_OF_NAMESPACE____
+CH_CLASS_VERSION(ChVisualization,0)
+
+}  // end namespace chrono
 
 #endif

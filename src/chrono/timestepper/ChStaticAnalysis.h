@@ -1,23 +1,25 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
 
 #ifndef CHSTATICANALYSIS_H
 #define CHSTATICANALYSIS_H
 
-#include <stdlib.h>
-#include "core/ChApiCE.h"
-#include "core/ChMath.h"
-#include "core/ChVectorDynamic.h"
-#include "timestepper/ChState.h"
-#include "timestepper/ChIntegrable.h"
+#include <cstdlib>
+
+#include "chrono/core/ChApiCE.h"
+#include "chrono/core/ChMath.h"
+#include "chrono/core/ChVectorDynamic.h"
+#include "chrono/timestepper/ChState.h"
+#include "chrono/timestepper/ChIntegrable.h"
 
 namespace chrono {
 
@@ -240,5 +242,6 @@ class ChStaticNonLinearAnalysis : public ChStaticAnalysis {
     double GetTolerance() { return tolerance; }
 };
 
-}  // END_OF_NAMESPACE____
+}  // end namespace chrono
+
 #endif

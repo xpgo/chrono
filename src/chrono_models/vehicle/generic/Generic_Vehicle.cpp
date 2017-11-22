@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -38,6 +38,7 @@
 #include "chrono_models/vehicle/generic/Generic_Wheel.h"
 #include "chrono_models/vehicle/generic/Generic_RackPinion.h"
 #include "chrono_models/vehicle/generic/Generic_Driveline2WD.h"
+#include "chrono_models/vehicle/generic/Generic_SimpleDriveline.h"
 #include "chrono_models/vehicle/generic/Generic_BrakeSimple.h"
 
 namespace chrono {
@@ -48,8 +49,8 @@ namespace generic {
 // -----------------------------------------------------------------------------
 Generic_Vehicle::Generic_Vehicle(const bool fixed,
                                  SuspensionType suspType,
-                                 ChMaterialSurfaceBase::ContactMethod contactMethod)
-    : ChWheeledVehicle(contactMethod), m_suspType(suspType) {
+                                 ChMaterialSurface::ContactMethod contactMethod)
+    : ChWheeledVehicle("GenericWV", contactMethod), m_suspType(suspType) {
     // -------------------------------------------
     // Create the chassis subsystem
     // -------------------------------------------
@@ -83,6 +84,8 @@ Generic_Vehicle::Generic_Vehicle(const bool fixed,
             m_suspensions[0] = std::make_shared<Generic_MacPhersonStrut>("Front suspension");
             m_suspensions[1] = std::make_shared<Generic_MacPhersonStrut>("Rear suspension");
             break;
+        default:
+            break;
     }
 
     // --------------------------------
@@ -111,7 +114,8 @@ Generic_Vehicle::Generic_Vehicle(const bool fixed,
     // --------------------
     // Create the driveline
     // --------------------
-    m_driveline = std::make_shared<Generic_Driveline2WD>("Driveline");
+    //m_driveline = std::make_shared<Generic_Driveline2WD>("Driveline");
+    m_driveline = std::make_shared<Generic_SimpleDriveline>("Driveline");
 
     // -----------------
     // Create the brakes
@@ -148,15 +152,16 @@ void Generic_Vehicle::Initialize(const ChCoordsys<>& chassisPos, double chassisF
         case SuspensionType::MACPHERSON_STRUT:
             offset = ChVector<>(1.25, 0, 0.03);
             break;
+        default:
+            break;
     }
     m_steerings[0]->Initialize(m_chassis->GetBody(), offset, ChQuaternion<>(1, 0, 0, 0));
 
-    // Initialize the suspension subsystems (specify the suspension subsystems'
-    // frames relative to the chassis reference frame).
-    m_suspensions[0]->Initialize(m_chassis->GetBody(), ChVector<>(1.6914, 0, 0), m_steerings[0]->GetSteeringLink());
-    m_suspensions[1]->Initialize(m_chassis->GetBody(), ChVector<>(-1.6865, 0, 0), m_chassis->GetBody());
+    // Initialize the suspension subsystems.
+    m_suspensions[0]->Initialize(m_chassis->GetBody(), ChVector<>(1.6914, 0, 0), m_steerings[0]->GetSteeringLink(), 0);
+    m_suspensions[1]->Initialize(m_chassis->GetBody(), ChVector<>(-1.6865, 0, 0), m_chassis->GetBody(), -1);
 
-    // Initialize the antiroll bar subsystem.
+    // Initialize the anti-roll bar subsystem.
     ////if (m_antirollbars.size() == 1) {
     ////  m_antirollbars[0]->Initialize(m_chassis,
     ////                               ChVector<>(1.3, 0, 0.0),
@@ -334,6 +339,8 @@ void Generic_Vehicle::LogHardpointLocations() {
             GetLog() << "\n---- REAR suspension hardpoint locations (RIGHT side)\n";
             std::static_pointer_cast<ChMacPhersonStrut>(m_suspensions[1])
                 ->LogHardpointLocations(ChVector<>(0, 0, 0), true);
+            break;
+        default:
             break;
     }
 

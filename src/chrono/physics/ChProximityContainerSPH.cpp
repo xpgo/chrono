@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -26,14 +26,14 @@ using namespace collision;
 using namespace geometry;
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChProximityContainerSPH> a_registration_ChProximityContainerSPH;
+CH_FACTORY_REGISTER(ChProximityContainerSPH)
 
 ChProximityContainerSPH::ChProximityContainerSPH() : n_added(0) {
     lastproximity = proximitylist.begin();
 }
 
 ChProximityContainerSPH::ChProximityContainerSPH(const ChProximityContainerSPH& other)
-    : ChProximityContainerBase(other) {
+    : ChProximityContainer(other) {
     n_added = other.n_added;
     proximitylist = other.proximitylist;
     lastproximity = proximitylist.begin();
@@ -92,7 +92,7 @@ void ChProximityContainerSPH::AddProximity(collision::ChCollisionModel* modA, co
     // Launch the proximity callback, if implemented by the user
 
     if (this->add_proximity_callback) {
-        this->add_proximity_callback->ProximityCallback(*modA, *modB);
+        this->add_proximity_callback->OnAddProximity(*modA, *modB);
     }
 
     // %%%%%%% Create and add a ChProximitySPH object
@@ -112,10 +112,10 @@ void ChProximityContainerSPH::AddProximity(collision::ChCollisionModel* modA, co
     n_added++;
 }
 
-void ChProximityContainerSPH::ReportAllProximities(ChReportProximityCallback* mcallback) {
+void ChProximityContainerSPH::ReportAllProximities(ReportProximityCallback* mcallback) {
     std::list<ChProximitySPH*>::iterator iterproximity = proximitylist.begin();
     while (iterproximity != proximitylist.end()) {
-        bool proceed = mcallback->ReportProximityCallback((*iterproximity)->GetModelA(), (*iterproximity)->GetModelB());
+        bool proceed = mcallback->OnReportProximity((*iterproximity)->GetModelA(), (*iterproximity)->GetModelB());
         if (!proceed)
             break;
         ++iterproximity;
@@ -214,18 +214,18 @@ void ChProximityContainerSPH::AccumulateStep2() {
 
 void ChProximityContainerSPH::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChProximityContainerSPH>();
     // serialize parent class
-    ChProximityContainerBase::ArchiveOUT(marchive);
+    ChProximityContainer::ArchiveOUT(marchive);
     // serialize all member data:
 }
 
 /// Method to allow de serialization of transient data from archives.
 void ChProximityContainerSPH::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChProximityContainerSPH>();
     // deserialize parent class
-    ChProximityContainerBase::ArchiveIN(marchive);
+    ChProximityContainer::ArchiveIN(marchive);
     // stream in all member data:
 }
 

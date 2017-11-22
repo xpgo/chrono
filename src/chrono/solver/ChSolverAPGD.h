@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,21 +19,15 @@
 
 namespace chrono {
 
-/// An iterative solver based on Nesterov's Projected Gradient Descent.
-/// The problem is described as
-///
-///    | M -Cq'|*|q|- | f|= |0| ,   c>=0, l>=0, l*c=0;
-///    | Cq  0 | |l|  |-b|  |c|
-///
-/// or similar CCP problem.
+/// An iterative solver based on Nesterov's Projected Gradient Descent.\n
+/// See ChSystemDescriptor for more information about the problem formulation and the data structures
+/// passed to the solver.
 
 class ChApi ChSolverAPGD : public ChIterativeSolver {
-    // Chrono RTTI, needed for serialization
-    CH_RTTI(ChSolverAPGD, ChIterativeSolver);
 
   protected:
-    double residual;
-    int nc;
+    double residual = 0;
+    int nc = 0;
     ChMatrixDynamic<> gamma_hat, gammaNew, g, y, gamma, yNew, r, tmp;
 
   public:
@@ -44,6 +38,8 @@ class ChApi ChSolverAPGD : public ChIterativeSolver {
         : ChIterativeSolver(mmax_iters, mwarm_start, mtolerance, 0.0001) {}
 
     virtual ~ChSolverAPGD() {}
+
+    virtual Type GetType() const override { return Type::APGD; }
 
     /// Performs the solution of the problem.
     virtual double Solve(ChSystemDescriptor& sysd) override;

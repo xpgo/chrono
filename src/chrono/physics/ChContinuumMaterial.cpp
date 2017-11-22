@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -24,11 +24,11 @@ ChContinuumMaterial::ChContinuumMaterial(const ChContinuumMaterial& other) {
 }
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChContinuumMaterial> a_registration_ChContinuumMaterial;
+CH_FACTORY_REGISTER(ChContinuumMaterial)
 
 void ChContinuumMaterial::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChContinuumMaterial>();
     // serialize parent class
     // serialize all member data:
     marchive << CHNVP(density, "density");
@@ -36,7 +36,7 @@ void ChContinuumMaterial::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChContinuumMaterial::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChContinuumMaterial>();
     // deserialize parent class
     // stream in all member data:
     marchive >> CHNVP(density, "density");
@@ -45,7 +45,7 @@ void ChContinuumMaterial::ArchiveIN(ChArchiveIn& marchive) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChContinuumElastic> a_registration_ChContinuumElastic;
+CH_FACTORY_REGISTER(ChContinuumElastic)
 
 ChContinuumElastic::ChContinuumElastic(double myoung, double mpoisson, double mdensity)
     : ChContinuumMaterial(mdensity) {
@@ -128,7 +128,7 @@ void ChContinuumElastic::ComputeElasticStrain(ChStrainTensor<>& mstrain, const C
 
 void ChContinuumElastic::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChContinuumElastic>();
     // serialize parent class
     ChContinuumMaterial::ArchiveOUT(marchive);
     // serialize all member data:
@@ -140,7 +140,7 @@ void ChContinuumElastic::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChContinuumElastic::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChContinuumElastic>();
     // deserialize parent class
     ChContinuumMaterial::ArchiveIN(marchive);
     // stream in all member data:
@@ -155,7 +155,7 @@ void ChContinuumElastic::ArchiveIN(ChArchiveIn& marchive) {
 
 void ChContinuumElastoplastic::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChContinuumElastoplastic>();
     // serialize parent class
     ChContinuumElastic::ArchiveOUT(marchive);
     // serialize all member data:
@@ -163,7 +163,7 @@ void ChContinuumElastoplastic::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChContinuumElastoplastic::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChContinuumElastoplastic>();
     // deserialize parent class
     ChContinuumElastic::ArchiveIN(marchive);
     // stream in all member data:
@@ -172,7 +172,7 @@ void ChContinuumElastoplastic::ArchiveIN(ChArchiveIn& marchive) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChContinuumPlasticVonMises> a_registration_ChContinuumPlasticVonMises;
+CH_FACTORY_REGISTER(ChContinuumPlasticVonMises)
 
 ChContinuumPlasticVonMises::ChContinuumPlasticVonMises(double myoung,
                                                        double mpoisson,
@@ -226,7 +226,7 @@ void ChContinuumPlasticVonMises::ComputePlasticStrainFlow(ChStrainTensor<>& mpla
 
 void ChContinuumPlasticVonMises::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChContinuumPlasticVonMises>();
     // serialize parent class
     ChContinuumElastoplastic::ArchiveOUT(marchive);
     // serialize all member data:
@@ -237,7 +237,7 @@ void ChContinuumPlasticVonMises::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChContinuumPlasticVonMises::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChContinuumPlasticVonMises>();
     // deserialize parent class
     ChContinuumElastoplastic::ArchiveIN(marchive);
     // stream in all member data:
@@ -249,7 +249,7 @@ void ChContinuumPlasticVonMises::ArchiveIN(ChArchiveIn& marchive) {
 // -----------------------------------------------------------------------------
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChContinuumDruckerPrager> a_registration_ChContinuumDruckerPrager;
+CH_FACTORY_REGISTER(ChContinuumDruckerPrager)
 
 ChContinuumDruckerPrager::ChContinuumDruckerPrager(double myoung,
                                                    double mpoisson,
@@ -305,7 +305,7 @@ void ChContinuumDruckerPrager::ComputeReturnMapping(ChStrainTensor<>& mplasticst
                 this->elastic_yeld >
             0) {
             // Case: tentative stress is in polar cone; a singular region where the gradient of
-            // the yeld function (or flow potential) is not defined. Just project to vertex.
+            // the yield function (or flow potential) is not defined. Just project to vertex.
             ChStressTensor<> vertexstress;
             double vertcoord = this->elastic_yeld / (3 * this->alpha);
             vertexstress.XX() = vertcoord;
@@ -315,8 +315,8 @@ void ChContinuumDruckerPrager::ComputeReturnMapping(ChStrainTensor<>& mplasticst
             this->ComputeElasticStrain(vertexstrain, vertexstress);
             mplasticstrainflow.MatrSub(guesselstrain, vertexstrain);
         } else {
-            // Case: tentative stress is out of the yeld cone.
-            // Just project using the yeld (or flow potential) gradient.
+            // Case: tentative stress is out of the yield cone.
+            // Just project using the yield (or flow potential) gradient.
             ChStrainTensor<> dFdS;
             ChStrainTensor<> dGdS;
             double devsq = sqrt(mstress.GetInvariant_J2());
@@ -386,7 +386,7 @@ void ChContinuumDruckerPrager::ComputePlasticStrainFlow(ChStrainTensor<>& mplast
 
 void ChContinuumDruckerPrager::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChContinuumDruckerPrager>();
     // serialize parent class
     ChContinuumElastoplastic::ArchiveOUT(marchive);
     // serialize all member data:
@@ -400,7 +400,7 @@ void ChContinuumDruckerPrager::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChContinuumDruckerPrager::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChContinuumDruckerPrager>();
     // deserialize parent class
     ChContinuumElastoplastic::ArchiveIN(marchive);
     // stream in all member data:

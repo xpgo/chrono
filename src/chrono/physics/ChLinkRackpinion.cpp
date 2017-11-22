@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChLinkRackpinion> a_registration_ChLinkRackpinion;
+CH_FACTORY_REGISTER(ChLinkRackpinion)
 
 ChLinkRackpinion::ChLinkRackpinion()
     : ChLinkMateGeneric(true, false, false, false, false, false),
@@ -132,7 +132,7 @@ void ChLinkRackpinion::UpdateTime(double mytime) {
     abs_contact.ConcatenatePostTransformation(mrotframe);  // or: abs_contact *= mrotframe;
 
     // rotate link frame on its Z because of alpha
-    if (this->react_force.x < 0)
+    if (this->react_force.x() < 0)
         mrot.Set_A_Rxyz(ChVector<>(0, 0, this->alpha));
     else
         mrot.Set_A_Rxyz(ChVector<>(0, 0, -this->alpha));
@@ -146,7 +146,7 @@ void ChLinkRackpinion::UpdateTime(double mytime) {
 
 void ChLinkRackpinion::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChLinkRackpinion>();
 
     // serialize parent class
     ChLinkMateGeneric::ArchiveOUT(marchive);
@@ -165,7 +165,7 @@ void ChLinkRackpinion::ArchiveOUT(ChArchiveOut& marchive) {
 /// Method to allow de serialization of transient data from archives.
 void ChLinkRackpinion::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChLinkRackpinion>();
 
     // deserialize parent class
     ChLinkMateGeneric::ArchiveIN(marchive);

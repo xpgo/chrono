@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -12,10 +12,10 @@
 // Authors: Alessandro Tasora, Radu Serban
 // =============================================================================
 
-#include <float.h>
-#include <math.h>
+#include <cfloat>
+#include <cmath>
 #include <memory.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <iostream>
 
 #include "chrono/physics/ChGlobal.h"
@@ -24,7 +24,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegisterABSTRACT<ChObj> a_registration_ChObj;
+//CH_FACTORY_REGISTER(ChObj)  // NO! Abstract class!
 
 ChObj::ChObj() : ChTime(0) {
     identifier = GetUniqueIntID();
@@ -38,7 +38,7 @@ ChObj::ChObj(const ChObj& other) {
 }
 
 void ChObj::ArchiveOUT(ChArchiveOut& marchive) {
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChObj>();
 
     // stream out all member data
     marchive << CHNVP(name);
@@ -47,7 +47,7 @@ void ChObj::ArchiveOUT(ChArchiveOut& marchive) {
 }
 
 void ChObj::ArchiveIN(ChArchiveIn& marchive) {
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChObj>();
 
     // stream out all member data
     marchive >> CHNVP(name);

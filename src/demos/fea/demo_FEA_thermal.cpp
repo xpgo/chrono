@@ -1,22 +1,22 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 //
-//   Demo code about
+// FEA visualization using Irrlicht
 //
-//     - FEA visualization using Irrlicht
+// =============================================================================
 
-// Include some headers used by this tutorial...
-
-#include "chrono/physics/ChSystem.h"
+#include "chrono/physics/ChSystemNSC.h"
 #include "chrono/solver/ChSolverMINRES.h"
 
 #include "chrono_fea/ChElementSpring.h"
@@ -45,8 +45,10 @@ using namespace chrono::irrlicht;
 using namespace irr;
 
 int main(int argc, char* argv[]) {
+    GetLog() << "Copyright (c) 2017 projectchrono.org\nChrono version: " << CHRONO_VERSION << "\n\n";
+
     // Create a Chrono::Engine physical system
-    ChSystem my_system;
+    ChSystemNSC my_system;
 
     // Create the Irrlicht visualization (open the Irrlicht device,
     // bind a simple user interface, etc. etc.)
@@ -73,7 +75,7 @@ int main(int argc, char* argv[]) {
     // Add some TETAHEDRONS:
     //
 
-    // Load a .node file and a .ele  file from disk, defining a complicate tetahedron mesh.
+    // Load a .node file and a .ele  file from disk, defining a complicate tetrahedron mesh.
     // This is much easier than creating all nodes and elements via C++ programming.
     // You can generate these files using the TetGen tool.
     try {
@@ -109,7 +111,7 @@ int main(int argc, char* argv[]) {
     // Impose field on the base points:
     for (unsigned int inode = 0; inode < my_mesh->GetNnodes(); ++inode) {
         if (auto mnode = std::dynamic_pointer_cast<ChNodeFEAxyzP>(my_mesh->GetNode(inode))) {
-            if (mnode->GetPos().y < 0.01) {
+            if (mnode->GetPos().y() < 0.01) {
                 mnode->SetFixed(true);
                 mnode->SetP(10);  // field: temperature [K]
             }
@@ -122,9 +124,9 @@ int main(int argc, char* argv[]) {
     // ==Asset== attach a visualization of the FEM mesh.
     // This will automatically update a triangle mesh (a ChTriangleMeshShape
     // asset that is internally managed) by setting  proper
-    // coordinates and vertex colours as in the FEM elements.
+    // coordinates and vertex colors as in the FEM elements.
     // Such triangle mesh can be rendered by Irrlicht or POVray or whatever
-    // postprocessor that can handle a coloured ChTriangleMeshShape).
+    // postprocessor that can handle a colored ChTriangleMeshShape).
     // Do not forget AddAsset() at the end!
 
     // This will paint the colored mesh with temperature scale (E_PLOT_NODE_P is the scalar field of the Poisson
@@ -170,17 +172,18 @@ int main(int argc, char* argv[]) {
     // THE SOFT-REAL-TIME CYCLE
     //
 
-    my_system.SetSolverType(
-        ChSystem::SOLVER_MINRES);      // <- NEEDED because other solvers can't handle stiffness matrices
-    my_system.SetSolverWarmStarting(false);  // this helps a lot to speedup convergence in this class of problems
+    // Use MINRES solver because other solvers cannot handle stiffness matrices.
+    // For improved convergence, use warm starting.
+    my_system.SetSolverType(ChSolver::Type::MINRES);
+    my_system.SetSolverWarmStarting(false);
     my_system.SetMaxItersSolverSpeed(160);
-    my_system.SetIntegrationType(chrono::ChSystem::INT_EULER_IMPLICIT_LINEARIZED);  // fast, less precise
+    my_system.SetTimestepperType(ChTimestepper::Type::EULER_IMPLICIT_LINEARIZED);  // fast, less precise
 
     // Note: if you are interested only in a single LINEAR STATIC solution
     // (not a transient thermal solution, but rather the steady-state solution),
     // at this point you can uncomment the following line:
     //
-    //	 my_system.DoStaticLinear();
+    //  my_system.DoStaticLinear();
     //
     // Also, in the following while() loop, remove  application.DoStep();
     // so you can spin the 3D view and look at the solution.
@@ -200,8 +203,8 @@ int main(int argc, char* argv[]) {
     // Print some node temperatures..
     for (unsigned int inode = 0; inode < my_mesh->GetNnodes(); ++inode) {
         if (auto mnode = std::dynamic_pointer_cast<ChNodeFEAxyzP>(my_mesh->GetNode(inode))) {
-            if (mnode->GetPos().x < 0.01) {
-                GetLog() << "Node at y=" << mnode->GetPos().y << " has T=" << mnode->GetP() << "\n";
+            if (mnode->GetPos().x() < 0.01) {
+                GetLog() << "Node at y=" << mnode->GetPos().y() << " has T=" << mnode->GetP() << "\n";
             }
         }
     }

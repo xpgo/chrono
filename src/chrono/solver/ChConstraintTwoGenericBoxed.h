@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -31,7 +31,6 @@ namespace chrono {
 /// must set at least the c_i and b_i values, and jacobians.
 
 class ChApi ChConstraintTwoGenericBoxed : public ChConstraintTwoGeneric {
-    CH_RTTI(ChConstraintTwoGenericBoxed, ChConstraintTwoGeneric)
 
   protected:
     double l_min;
@@ -74,13 +73,11 @@ class ChApi ChConstraintTwoGenericBoxed : public ChConstraintTwoGeneric {
     /// violation of the constraint, considering inequalities, etc.
     virtual double Violation(double mc_i) override;
 
-    /// Method to allow deserializing a persistent binary archive (ex: a file)
-    /// into transient data.
-    virtual void StreamIN(ChStreamInBinary& mstream);
+    /// Method to allow serialization of transient data to archives.
+    virtual void ArchiveOUT(ChArchiveOut& marchive);
 
-    /// Method to allow serializing transient data into a persistent
-    /// binary archive (ex: a file).
-    virtual void StreamOUT(ChStreamOutBinary& mstream);
+    /// Method to allow de serialization of transient data from archives.
+    virtual void ArchiveIN(ChArchiveIn& marchive);
 };
 
 }  // end namespace chrono

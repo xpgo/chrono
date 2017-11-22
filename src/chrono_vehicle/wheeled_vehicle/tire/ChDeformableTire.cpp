@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -63,7 +63,7 @@ void ChDeformableTire::SetContactMaterialCoefficients(float kn, float gn, float 
 void ChDeformableTire::Initialize(std::shared_ptr<ChBody> wheel, VehicleSide side) {
     ChTire::Initialize(wheel, side);
 
-    ChSystemDEM* system = dynamic_cast<ChSystemDEM*>(wheel->GetSystem());
+    ChSystemSMC* system = dynamic_cast<ChSystemSMC*>(wheel->GetSystem());
     assert(system);
 
     // Create the tire mesh
@@ -88,7 +88,7 @@ void ChDeformableTire::Initialize(std::shared_ptr<ChBody> wheel, VehicleSide sid
     }
 
     // Create the contact material
-    m_contact_mat = std::make_shared<ChMaterialSurfaceDEM>();
+    m_contact_mat = std::make_shared<ChMaterialSurfaceSMC>();
     m_contact_mat->SetFriction(m_friction);
     m_contact_mat->SetRestitution(m_restitution);
     m_contact_mat->SetYoungModulus(m_young_modulus);
@@ -139,7 +139,7 @@ std::shared_ptr<ChContactSurface> ChDeformableTire::GetContactSurface() const {
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-double ChDeformableTire::GetMass() const {
+double ChDeformableTire::GetTireMass() const {
     double mass;
     ChVector<> com;
     ChMatrix33<> inertia;
@@ -150,27 +150,25 @@ double ChDeformableTire::GetMass() const {
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-TireForce ChDeformableTire::GetTireForce(bool cosim) const {
-    TireForce tire_force;
+TerrainForce ChDeformableTire::GetTireForce() const {
+    auto body_frame = m_connections[0]->GetConstrainedBodyFrame();
+    TerrainForce tire_force;
+    tire_force.point = body_frame->GetPos();
     tire_force.force = ChVector<>(0, 0, 0);
-    tire_force.point = ChVector<>(0, 0, 0);
+    tire_force.moment = ChVector<>(0, 0, 0);
+    return tire_force;
+}
+
+TerrainForce ChDeformableTire::ReportTireForce(ChTerrain* terrain) const {
+    auto body_frame = m_connections[0]->GetConstrainedBodyFrame();
+    TerrainForce tire_force;
+    tire_force.point = body_frame->GetPos();
+    tire_force.force = ChVector<>(0, 0, 0);
     tire_force.moment = ChVector<>(0, 0, 0);
 
-    // If the tire is simulated together with the associated vehicle, return zero
-    // force and moment. In this case, the tire forces are implicitly applied to
-    // the wheel body through the tire-wheel connections.
-    // Also return zero forces if the tire is not connected to the wheel.
-    if (!cosim || m_connections.size() == 0) {
-        return tire_force;
-    }
-
-    // If the tire is co-simulated, calculate and return the resultant of all reaction
-    // forces and torques in the tire-wheel connections as applied to the wheel body
-    // center of mass.  These encapsulate the tire-terrain interaction forces and the
-    // inertia of the tire itself.
-    auto body_frame = m_connections[0]->GetConstrainedBodyFrame();
-    tire_force.point = body_frame->GetPos();
-
+    // Calculate and return the resultant of all reaction forces and torques in the
+    // tire-wheel connections, as applied at the wheel body center of mass.
+    // These encapsulate the tire-terrain interaction forces and the inertia of the tire itself.
     ChVector<> force;
     ChVector<> moment;
     for (size_t ic = 0; ic < m_connections.size(); ic++) {

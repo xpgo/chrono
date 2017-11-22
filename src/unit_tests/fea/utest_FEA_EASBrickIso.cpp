@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -18,14 +18,14 @@
 // composed of brick elements. It serves to validate the elastic, isotropic,
 // large deformation internal forces and the element inertia.
 //
-// This element is a regular 8-noded trilinear brick element with enhanced assumed
+// This element is a regular 8-nodes trilinear brick element with enhanced assumed
 // strain that alleviates locking. More information on the validation of this element
 // may be found in Chrono's documentation. This simulation uses an external force
 // that builds up with time using a smooth cosine function. The user may increase
 // the number of brick elements to achieve convergence.
 // =============================================================================
 #include "chrono/core/ChFileutils.h"
-#include "chrono/physics/ChSystem.h"
+#include "chrono/physics/ChSystemNSC.h"
 #include "chrono/solver/ChSolverMINRES.h"
 #include "chrono/utils/ChUtilsInputOutput.h"
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     // --------------------------
     // Create the physical system
     // --------------------------
-    ChSystem my_system;
+    ChSystemNSC my_system;
 
     GetLog() << "-----------------------------------------------------------\n";
     GetLog() << "     Brick Element Unit Test \n";
@@ -226,14 +226,13 @@ int main(int argc, char* argv[]) {
     my_system.Add(my_mesh);
 
     // Perform a dynamic time integration:
-    my_system.SetSolverType(
-        ChSystem::SOLVER_MINRES);  // <- NEEDED because other solvers can't handle stiffness matrices
-    ChSolverMINRES* msolver = (ChSolverMINRES*)my_system.GetSolverSpeed();
+    my_system.SetSolverType(ChSolver::Type::MINRES);
+    auto msolver = std::static_pointer_cast<ChSolverMINRES>(my_system.GetSolver());
     msolver->SetDiagonalPreconditioning(true);
     my_system.SetMaxItersSolverSpeed(10000);
     my_system.SetTolForce(1e-09);
 
-    my_system.SetIntegrationType(ChSystem::INT_HHT);
+    my_system.SetTimestepperType(ChTimestepper::Type::HHT);
     auto mystepper = std::static_pointer_cast<ChTimestepperHHT>(my_system.GetTimestepper());
     mystepper->SetAlpha(-0.2);
     mystepper->SetMaxiters(10000);
@@ -268,9 +267,9 @@ int main(int argc, char* argv[]) {
                 nodetip->SetForce(ChVector<>(0, 0, -50));
             }
             my_system.DoStepDynamics(step_size);
-            out << my_system.GetChTime() << nodetip->GetPos().z << nodetip->GetForce().z << std::endl;
-            GetLog() << "time = " << my_system.GetChTime() << "\t" << nodetip->GetPos().z << "\t"
-                     << nodetip->GetForce().z << "\n";
+            out << my_system.GetChTime() << nodetip->GetPos().z() << nodetip->GetForce().z() << std::endl;
+            GetLog() << "time = " << my_system.GetChTime() << "\t" << nodetip->GetPos().z() << "\t"
+                     << nodetip->GetForce().z() << "\n";
         }
         // Write results to output file.
         out.write_to_file("../TEST_Brick/tip_position.txt");
@@ -289,8 +288,8 @@ int main(int argc, char* argv[]) {
                 nodetip->SetForce(ChVector<>(0, 0, -50));
             }
             my_system.DoStepDynamics(step_size);
-            AbsVal = abs(nodetip->GetPos().z - FileInputMat[stepNo][1]);
-            GetLog() << "time = " << my_system.GetChTime() << "\t" << nodetip->GetPos().z << "\n";
+            AbsVal = std::abs(nodetip->GetPos().z() - FileInputMat[stepNo][1]);
+            GetLog() << "time = " << my_system.GetChTime() << "\t" << nodetip->GetPos().z() << "\n";
             if (AbsVal > precision) {
                 std::cout << "Unit test check failed \n";
                 return 1;

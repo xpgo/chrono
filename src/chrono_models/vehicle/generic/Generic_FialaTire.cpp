@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -30,6 +30,9 @@ namespace generic {
 
 const double Generic_FialaTire::m_normalStiffness = 310000;
 const double Generic_FialaTire::m_normalDamping = 3100;
+
+const double Generic_FialaTire::m_mass = 35.0;
+const ChVector<> Generic_FialaTire::m_inertia(3.0, 6.0, 3.0);
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------

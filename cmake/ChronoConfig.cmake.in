@@ -36,6 +36,13 @@
 # is set to true (ON) or false (OFF):
 # CHRONO_[COMPONENT]_FOUND
 # 
+# Other variables:
+# CHRONO_SSE_FOUND
+#       set to true is SSE support is available
+#       CHRONO_CXX_FLAGS includes all required flags
+# CHRONO_AVX_FOUND
+#       set to true is AVX support is available
+#       CHRONO_CXX_FLAGS includes all required flags
 #===============================================================================
 
 if (CHRONO_CONFIG_INCLUDED)
@@ -67,6 +74,9 @@ list(APPEND CHRONO_DLL_NAMES "ChronoEngine.dll")
 set(CHRONO_DATA_DIR "@CH_DATA_DIR@")
 set(CHRONO_VEHICLE_DATA_DIR "@CH_DATA_DIR@vehicle/")
 set(CHRONO_FSI_DATA_DIR "@CH_DATA_DIR@fsi/")
+
+set(CHRONO_SSE_FOUND "@SSE_FOUND@")
+set(CHRONO_AVX_FOUND "@AVX_FOUND@")
 
 #-------------------------------------------------------------------------------
 # Local variables specifying which Chrono modules are enabled
@@ -131,6 +141,12 @@ foreach(COMPONENT ${Chrono_FIND_COMPONENTS})
       list(APPEND CHRONO_LIB_NAMES "ChronoEngine_parallel")
       list(APPEND CHRONO_DLL_NAMES "ChronoEngine_parallel.dll")
 
+      # Chrono::Parallel depends on Chrono::FEA if it was enabled
+      if(Chrono_HAS_fea)
+         list(APPEND CHRONO_LIB_NAMES "ChronoEngine_fea")
+         list(APPEND CHRONO_DLL_NAMES "ChronoEngine_fea.dll")
+      endif()
+
     elseif(${COMPONENT_UPPER} MATCHES "OPENGL")
 
       list(APPEND CHRONO_INCLUDE_DIRS "@CH_OPENGL_INCLUDES@")
@@ -143,6 +159,9 @@ foreach(COMPONENT ${Chrono_FIND_COMPONENTS})
       list(APPEND CHRONO_DLLS "@GLFW_DLL@")
 
     elseif(${COMPONENT_UPPER} MATCHES "IRRLICHT")
+
+      set(CHRONO_CXX_FLAGS "${CHRONO_CXX_FLAGS} @CH_IRRLICHT_CXX_FLAGS@")
+      set(CHRONO_C_FLAGS "${CHRONO_C_FLAGS} @CH_IRRLICHT_C_FLAGS@")
 
       list(APPEND CHRONO_INCLUDE_DIRS "@CH_IRRLICHTINC@")
       list(APPEND CHRONO_LIB_NAMES "ChronoEngine_irrlicht")
@@ -174,18 +193,31 @@ foreach(COMPONENT ${Chrono_FIND_COMPONENTS})
       list(APPEND CHRONO_LIB_NAMES "ChronoEngine_fea")
       list(APPEND CHRONO_DLL_NAMES "ChronoEngine_fea.dll")
 
+    elseif(${COMPONENT_UPPER} MATCHES "MKL")
+
+      list(APPEND CHRONO_INCLUDE_DIRS "@CH_MKL_INCLUDES@")
+      list(APPEND CHRONO_LINKER_FLAGS "@CH_MKL_LINK_FLAGS@")
+      list(APPEND CHRONO_LIB_NAMES "ChronoEngine_mkl")
+      list(APPEND CHRONO_DLL_NAMES "ChronoEngine_mkl.dll")
+
     elseif(${COMPONENT_UPPER} MATCHES "POSTPROCESS")
 
       list(APPEND CHRONO_LIB_NAMES "ChronoEngine_postprocess")
       list(APPEND CHRONO_DLL_NAMES "ChronoEngine_postprocess.dll")
 
-	elseif(${COMPONENT_UPPER} MATCHES "CASCADE")
+    elseif(${COMPONENT_UPPER} MATCHES "CASCADE")
 
-      list(APPEND CHRONO_INCLUDE_DIRS "@CH_CASCADEINC@")
+      list(APPEND CHRONO_INCLUDE_DIRS "@CH_CASCADE_INCLUDES@")
       list(APPEND CHRONO_LIB_NAMES "ChronoEngine_cascade")
-	  list(APPEND CHRONO_LIBRARIES "@CH_CASCADELIBS@")
+      list(APPEND CHRONO_LIBRARIES "@CH_CASCADE_LIBS@")
       list(APPEND CHRONO_DLL_NAMES "ChronoEngine_cascade.dll")
 	  
+	  elseif(${COMPONENT_UPPER} MATCHES "COSIMULATION")
+	
+      list(APPEND CHRONO_LIBRARIES "@CH_SOCKET_LIB@")
+      list(APPEND CHRONO_LIB_NAMES "ChronoEngine_cosimulation")
+      list(APPEND CHRONO_DLL_NAMES "ChronoEngine_cosimulation.dll")
+
     elseif(${COMPONENT_UPPER} MATCHES "PYTHON")
 
       list(APPEND CHRONO_INCLUDE_DIRS "@CH_PYTHONINC@")
@@ -196,6 +228,13 @@ foreach(COMPONENT ${Chrono_FIND_COMPONENTS})
       if(${Chrono_HAS_irrlicht})
         list(APPEND CHRONO_LIB_NAMES "_ChronoEngine_python_irrlicht")
       endif()
+
+    elseif(${COMPONENT_UPPER} MATCHES "MATLAB")
+
+      list(APPEND CHRONO_INCLUDE_DIRS "@CH_MATLABINC@")
+      list(APPEND CHRONO_LIB_NAMES "ChronoEngine_matlab")
+      list(APPEND CHRONO_LIBRARIES "@CH_MATLABLIB@")
+      list(APPEND CHRONO_DLL_NAMES "ChronoEngine_matlab.dll")
 
     endif()
 
@@ -267,7 +306,7 @@ message(STATUS "   CHRONO_DLL_NAMES         (Chrono DLL names): ${CHRONO_DLL_NAM
 message(STATUS "   CHRONO_DLLS              (Chrono DLLs): ${CHRONO_DLLS}")
 message(STATUS "   CHRONO_DATA_DIR          (Path to Chrono data folder): ${CHRONO_DATA_DIR}")
 message(STATUS "   CHRONO_VEHICLE_DATA_DIR  (Path to Chrono::Vehicle data folder): ${CHRONO_VEHICLE_DATA_DIR}")
-message(STATUS "   CHRONO_FSI_DATA_DIR  	  (Path to Chrono::fsi data folder): ${CHRONO_FSI_DATA_DIR}")
+message(STATUS "   CHRONO_FSI_DATA_DIR      (Path to Chrono::fsi data folder): ${CHRONO_FSI_DATA_DIR}")
 
 #===============================================================================
 # Provide a CMake function which adds a custom command (COPY_DLLS), invoked
@@ -315,7 +354,9 @@ function(add_DLL_copy_command DLL_LIST)
         )
     endforeach()
 
-    message("Attention: Only RELEASE DLLs are copied automatically.")
-    message("           You must manually copy the DLLs for other configurations.")
+    message("Attention: the COPY_DLLS routine will first look for Chrono libraries under the /bin and /lib64 subfolders of @CH_BINARY_DIR@")
+	message("           If not found, it will look under /bin/Release and /lib64/Release subfolder, so copying the Release version of Chrono.")
+	message("           Check the few lines above to make sure which dlls are copied!")
+	message("           In both cases please mind that you SHOULD NOT mix libraries and/or executables compiled with different build configurations (e.g. Release and Debug)!")
 
 endfunction()

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -18,7 +18,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegisterABSTRACT<ChLinkBase> a_registration_ChLinkBase;
+//CH_FACTORY_REGISTER(ChLinkBase)   // NO! Abstract class!
 
 ChLinkBase::ChLinkBase(const ChLinkBase& other) : ChPhysicsItem(other) {
     disabled = other.disabled;
@@ -28,7 +28,7 @@ ChLinkBase::ChLinkBase(const ChLinkBase& other) : ChPhysicsItem(other) {
 
 void ChLinkBase::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChLinkBase>();
 
     // serialize parent class
     ChPhysicsItem::ArchiveOUT(marchive);
@@ -41,7 +41,7 @@ void ChLinkBase::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChLinkBase::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChLinkBase>();
 
     // deserialize parent class
     ChPhysicsItem::ArchiveIN(marchive);

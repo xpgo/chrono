@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -20,7 +20,7 @@ namespace chrono {
 namespace fea {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChLinkPointFrame> a_registration_ChLinkPointFrame;
+CH_FACTORY_REGISTER(ChLinkPointFrame)
 
 ChLinkPointFrame::ChLinkPointFrame() : m_react(VNULL), m_csys(CSYSNORM) {}
 
@@ -79,24 +79,24 @@ ChMatrixNM<double, 3, 1> ChLinkPointFrame::GetC() const {
     ChMatrix33<> Arw(m_csys.rot >> m_body->GetRot());
     ChVector<> res = Arw.MatrT_x_Vect(m_node->GetPos() - m_body->TransformPointLocalToParent(m_csys.pos));
     ChMatrixNM<double, 3, 1> C;
-    C(0, 0) = res.x;
-    C(1, 0) = res.y;
-    C(2, 0) = res.z;
+    C(0, 0) = res.x();
+    C(1, 0) = res.y();
+    C(2, 0) = res.z();
     return C;
 }
 
 //// STATE BOOKKEEPING FUNCTIONS
 
 void ChLinkPointFrame::IntStateGatherReactions(const unsigned int off_L, ChVectorDynamic<>& L) {
-    L(off_L + 0) = m_react.x;
-    L(off_L + 1) = m_react.y;
-    L(off_L + 2) = m_react.z;
+    L(off_L + 0) = m_react.x();
+    L(off_L + 1) = m_react.y();
+    L(off_L + 2) = m_react.z();
 }
 
 void ChLinkPointFrame::IntStateScatterReactions(const unsigned int off_L, const ChVectorDynamic<>& L) {
-    m_react.x = L(off_L + 0);
-    m_react.y = L(off_L + 1);
-    m_react.z = L(off_L + 2);
+    m_react.x() = L(off_L + 0);
+    m_react.y() = L(off_L + 1);
+    m_react.z() = L(off_L + 2);
 }
 
 void ChLinkPointFrame::IntLoadResidual_CqL(const unsigned int off_L,    // offset in L multipliers
@@ -127,13 +127,13 @@ void ChLinkPointFrame::IntLoadConstraint_C(const unsigned int off_L,  // offset 
     ChVector<> cres = res * c;
 
     if (do_clamp) {
-        cres.x = ChMin(ChMax(cres.x, -recovery_clamp), recovery_clamp);
-        cres.y = ChMin(ChMax(cres.y, -recovery_clamp), recovery_clamp);
-        cres.z = ChMin(ChMax(cres.z, -recovery_clamp), recovery_clamp);
+        cres.x() = ChMin(ChMax(cres.x(), -recovery_clamp), recovery_clamp);
+        cres.y() = ChMin(ChMax(cres.y(), -recovery_clamp), recovery_clamp);
+        cres.z() = ChMin(ChMax(cres.z(), -recovery_clamp), recovery_clamp);
     }
-    Qc(off_L + 0) += cres.x;
-    Qc(off_L + 1) += cres.y;
-    Qc(off_L + 2) += cres.z;
+    Qc(off_L + 0) += cres.x();
+    Qc(off_L + 1) += cres.y();
+    Qc(off_L + 2) += cres.z();
 }
 
 void ChLinkPointFrame::IntToDescriptor(const unsigned int off_v,
@@ -194,9 +194,9 @@ void ChLinkPointFrame::ConstraintsBiLoad_C(double factor, double recovery_clamp,
 
     ChVector<> res = Arw.MatrT_x_Vect(m_node->GetPos() - m_body->TransformPointLocalToParent(m_csys.pos));
 
-    constraint1.Set_b_i(constraint1.Get_b_i() + factor * res.x);
-    constraint2.Set_b_i(constraint2.Get_b_i() + factor * res.y);
-    constraint3.Set_b_i(constraint3.Get_b_i() + factor * res.z);
+    constraint1.Set_b_i(constraint1.Get_b_i() + factor * res.x());
+    constraint2.Set_b_i(constraint2.Get_b_i() + factor * res.y());
+    constraint3.Set_b_i(constraint3.Get_b_i() + factor * res.z());
 }
 
 void ChLinkPointFrame::ConstraintsBiLoad_Ct(double factor) {
@@ -224,23 +224,23 @@ void ChLinkPointFrame::ConstraintsLoadJacobians() {
     ChMatrix33<> Jrb;
     Jrb.MatrTMultiply(Aro, atilde);
 
-    constraint1.Get_Cq_a()->PasteClippedMatrix(&Jxn, 0, 0, 1, 3, 0, 0);
-    constraint2.Get_Cq_a()->PasteClippedMatrix(&Jxn, 1, 0, 1, 3, 0, 0);
-    constraint3.Get_Cq_a()->PasteClippedMatrix(&Jxn, 2, 0, 1, 3, 0, 0);
+    constraint1.Get_Cq_a()->PasteClippedMatrix(Jxn, 0, 0, 1, 3, 0, 0);
+    constraint2.Get_Cq_a()->PasteClippedMatrix(Jxn, 1, 0, 1, 3, 0, 0);
+    constraint3.Get_Cq_a()->PasteClippedMatrix(Jxn, 2, 0, 1, 3, 0, 0);
 
-    constraint1.Get_Cq_b()->PasteClippedMatrix(&Jxb, 0, 0, 1, 3, 0, 0);
-    constraint2.Get_Cq_b()->PasteClippedMatrix(&Jxb, 1, 0, 1, 3, 0, 0);
-    constraint3.Get_Cq_b()->PasteClippedMatrix(&Jxb, 2, 0, 1, 3, 0, 0);
-    constraint1.Get_Cq_b()->PasteClippedMatrix(&Jrb, 0, 0, 1, 3, 0, 3);
-    constraint2.Get_Cq_b()->PasteClippedMatrix(&Jrb, 1, 0, 1, 3, 0, 3);
-    constraint3.Get_Cq_b()->PasteClippedMatrix(&Jrb, 2, 0, 1, 3, 0, 3);
+    constraint1.Get_Cq_b()->PasteClippedMatrix(Jxb, 0, 0, 1, 3, 0, 0);
+    constraint2.Get_Cq_b()->PasteClippedMatrix(Jxb, 1, 0, 1, 3, 0, 0);
+    constraint3.Get_Cq_b()->PasteClippedMatrix(Jxb, 2, 0, 1, 3, 0, 0);
+    constraint1.Get_Cq_b()->PasteClippedMatrix(Jrb, 0, 0, 1, 3, 0, 3);
+    constraint2.Get_Cq_b()->PasteClippedMatrix(Jrb, 1, 0, 1, 3, 0, 3);
+    constraint3.Get_Cq_b()->PasteClippedMatrix(Jrb, 2, 0, 1, 3, 0, 3);
 }
 
 void ChLinkPointFrame::ConstraintsFetch_react(double factor) {
     // From constraints to react vector:
-    m_react.x = constraint1.Get_l_i() * factor;
-    m_react.y = constraint2.Get_l_i() * factor;
-    m_react.z = constraint3.Get_l_i() * factor;
+    m_react.x() = constraint1.Get_l_i() * factor;
+    m_react.y() = constraint2.Get_l_i() * factor;
+    m_react.z() = constraint3.Get_l_i() * factor;
 }
 
 // FILE I/O

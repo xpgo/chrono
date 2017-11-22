@@ -11,39 +11,41 @@
 // =============================================================================
 // Authors: Alessandro Tasora, Hammad Mazhar
 // =============================================================================
+//
 // Based on the regular bullet collision system, some modifications made to
 // store contacts in the parallel data structures
+//
 // =============================================================================
 
 #pragma once
 
-#include "core/ChApiCE.h"
+#include "chrono/core/ChApiCE.h"
 
-#include "physics/ChBody.h"
-#include "physics/ChProximityContainerBase.h"
-#include "physics/ChContactContainerBase.h"
+#include "chrono/physics/ChBody.h"
+#include "chrono/physics/ChProximityContainer.h"
+#include "chrono/physics/ChContactContainer.h"
 
-#include "collision/ChCCollisionSystem.h"
-#include "collision/ChCModelBullet.h"
-#include "collision/bullet/btBulletCollisionCommon.h"
-#include "collision/gimpact/GIMPACT/Bullet/btGImpactCollisionAlgorithm.h"
+#include "chrono/collision/ChCCollisionSystem.h"
+#include "chrono/collision/ChCModelBullet.h"
+#include "chrono/collision/bullet/btBulletCollisionCommon.h"
+#include "chrono/collision/gimpact/GIMPACT/Bullet/btGImpactCollisionAlgorithm.h"
 
-#include "LinearMath/btPoolAllocator.h"
+#include "chrono/collision/bullet/LinearMath/btPoolAllocator.h"
 
 #include "chrono_parallel/ChParallelDefines.h"
-
 
 namespace chrono {
 
 class ChSystemParallel;  // forward declaration
 class ChParallelDataManager;
+
 namespace collision {
 
-///
+/// @addtogroup parallel_collision
+/// @{
+
 /// Class for collision engine based on the spatial subdivision method.
 /// Contains both the broadphase and the narrow phase methods.
-///
-
 class CH_PARALLEL_API ChCollisionSystemBulletParallel : public ChCollisionSystem {
   public:
     ChCollisionSystemBulletParallel(ChParallelDataManager* dc,
@@ -73,21 +75,21 @@ class CH_PARALLEL_API ChCollisionSystemBulletParallel : public ChCollisionSystem
 
     /// After the Run() has completed, you can call this function to
     /// fill a 'contact container', that is an object inherited from class
-    /// ChContactContainerBase. For instance ChSystem, after each Run()
+    /// ChContactContainer. For instance ChSystem, after each Run()
     /// collision detection, calls this method multiple times for all contact containers in the system,
     /// The basic behavior of the implementation is the following: collision system
     /// will call in sequence the functions BeginAddContact(), AddContact() (x n times),
     /// EndAddContact() of the contact container.
-    virtual void ReportContacts(ChContactContainerBase* mcontactcontainer);
+    virtual void ReportContacts(ChContactContainer* mcontactcontainer);
 
     /// After the Run() has completed, you can call this function to
     /// fill a 'proximity container' (container of narrow phase pairs), that is
-    /// an object inherited from class ChProximityContainerBase. For instance ChSystem, after each Run()
+    /// an object inherited from class ChProximityContainer. For instance ChSystem, after each Run()
     /// collision detection, calls this method multiple times for all proximity containers in the system,
     /// The basic behavior of the implementation is  the following: collision system
     /// will call in sequence the functions BeginAddProximities(), AddProximity() (x n times),
     /// EndAddProximities() of the proximity container.
-    virtual void ReportProximities(ChProximityContainerBase* mproximitycontainer) {}
+    virtual void ReportProximities(ChProximityContainer* mproximitycontainer) {}
 
     /// Perform a raycast (ray-hit test with the collision models).
     virtual bool RayHit(const ChVector<>& from, const ChVector<>& to, ChRayhitResult& mresult) { return false; }
@@ -105,6 +107,8 @@ class CH_PARALLEL_API ChCollisionSystemBulletParallel : public ChCollisionSystem
 
     unsigned int counter;
 };
+
+/// @} parallel_colision
 
 }  // end namespace collision
 }  // end namespace chrono

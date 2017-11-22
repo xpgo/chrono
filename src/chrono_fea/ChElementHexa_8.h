@@ -1,14 +1,16 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-// File authors: Andrea Favali
+// =============================================================================
+// Authors: Andrea Favali
+// =============================================================================
 
 #ifndef CHELEMENTHEXA8_H
 #define CHELEMENTHEXA8_H
@@ -43,7 +45,7 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron, public ChLoadableUV
     virtual int GetNdofs() override { return 8 * 3; }
     virtual int GetNodeNdofs(int n) override { return 3; }
 
-    virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) { return nodes[n]; }
+    virtual std::shared_ptr<ChNodeFEAbase> GetNodeN(int n) override { return nodes[n]; }
 
     virtual void SetNodes(std::shared_ptr<ChNodeFEAxyz> nodeA,
                           std::shared_ptr<ChNodeFEAxyz> nodeB,
@@ -88,27 +90,26 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron, public ChLoadableUV
     //
 
     /// Fills the N shape function matrix with the
-	/// values of shape functions at z0,z1,z2 parametric coordinates, where
+    /// values of shape functions at z0,z1,z2 parametric coordinates, where
     /// each zi is in [-1...+1] range.
-	/// It stores the Ni(z0,z1,z2) values in a 1 row, 8 columns matrix.
-	virtual void ShapeFunctions(ChMatrix<>& N, double z0, double z1, double z2)
-				{
-                    double sc = 1./8.;
-					N(0) = sc*(1-z0)*(1-z1)*(1-z2);
-                    N(1) = sc*(1+z0)*(1-z1)*(1-z2);
-                    N(2) = sc*(1+z0)*(1+z1)*(1-z2);
-                    N(3) = sc*(1-z0)*(1+z1)*(1-z2);
-                    N(4) = sc*(1-z0)*(1-z1)*(1+z2);
-                    N(5) = sc*(1+z0)*(1-z1)*(1+z2);
-                    N(6) = sc*(1+z0)*(1+z1)*(1+z2);
-                    N(7) = sc*(1-z0)*(1+z1)*(1+z2);
-				};
+    /// It stores the Ni(z0,z1,z2) values in a 1 row, 8 columns matrix.
+    virtual void ShapeFunctions(ChMatrix<>& N, double z0, double z1, double z2) {
+        double sc = 1. / 8.;
+        N(0) = sc * (1 - z0) * (1 - z1) * (1 - z2);
+        N(1) = sc * (1 + z0) * (1 - z1) * (1 - z2);
+        N(2) = sc * (1 + z0) * (1 + z1) * (1 - z2);
+        N(3) = sc * (1 - z0) * (1 + z1) * (1 - z2);
+        N(4) = sc * (1 - z0) * (1 - z1) * (1 + z2);
+        N(5) = sc * (1 + z0) * (1 - z1) * (1 + z2);
+        N(6) = sc * (1 + z0) * (1 + z1) * (1 + z2);
+        N(7) = sc * (1 - z0) * (1 + z1) * (1 + z2);
+    };
 
     /// Fills the D vector (displacement) column matrix with the current
     /// field values at the nodes of the element, with proper ordering.
     /// If the D vector has not the size of this->GetNdofs(), it will be resized.
     /// For corotational elements, field is assumed in local reference!
-    virtual void GetStateBlock(ChMatrixDynamic<>& mD) {
+    virtual void GetStateBlock(ChMatrixDynamic<>& mD) override {
         mD.Reset(this->GetNdofs(), 1);
 
         for (int i = 0; i < GetNnodes(); i++)
@@ -121,59 +122,59 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron, public ChLoadableUV
     virtual void ComputeJacobian(ChMatrixDynamic<>& Jacobian, ChMatrixDynamic<>& J1, ChVector<> coord) {
         ChMatrixDynamic<> J2(8, 3);
 
-        J1.SetElement(0, 0, -(1 - coord.y) * (1 - coord.z) / 8);
-        J1.SetElement(0, 1, +(1 - coord.y) * (1 - coord.z) / 8);
-        J1.SetElement(0, 2, +(1 + coord.y) * (1 - coord.z) / 8);
-        J1.SetElement(0, 3, -(1 + coord.y) * (1 - coord.z) / 8);
-        J1.SetElement(0, 4, -(1 - coord.y) * (1 + coord.z) / 8);
-        J1.SetElement(0, 5, +(1 - coord.y) * (1 + coord.z) / 8);
-        J1.SetElement(0, 6, +(1 + coord.y) * (1 + coord.z) / 8);
-        J1.SetElement(0, 7, -(1 + coord.y) * (1 + coord.z) / 8);
+        J1.SetElement(0, 0, -(1 - coord.y()) * (1 - coord.z()) / 8);
+        J1.SetElement(0, 1, +(1 - coord.y()) * (1 - coord.z()) / 8);
+        J1.SetElement(0, 2, +(1 + coord.y()) * (1 - coord.z()) / 8);
+        J1.SetElement(0, 3, -(1 + coord.y()) * (1 - coord.z()) / 8);
+        J1.SetElement(0, 4, -(1 - coord.y()) * (1 + coord.z()) / 8);
+        J1.SetElement(0, 5, +(1 - coord.y()) * (1 + coord.z()) / 8);
+        J1.SetElement(0, 6, +(1 + coord.y()) * (1 + coord.z()) / 8);
+        J1.SetElement(0, 7, -(1 + coord.y()) * (1 + coord.z()) / 8);
 
-        J1.SetElement(1, 0, -(1 - coord.x) * (1 - coord.z) / 8);
-        J1.SetElement(1, 1, -(1 + coord.x) * (1 - coord.z) / 8);
-        J1.SetElement(1, 2, +(1 + coord.x) * (1 - coord.z) / 8);
-        J1.SetElement(1, 3, +(1 - coord.x) * (1 - coord.z) / 8);
-        J1.SetElement(1, 4, -(1 - coord.x) * (1 + coord.z) / 8);
-        J1.SetElement(1, 5, -(1 + coord.x) * (1 + coord.z) / 8);
-        J1.SetElement(1, 6, +(1 + coord.x) * (1 + coord.z) / 8);
-        J1.SetElement(1, 7, +(1 - coord.x) * (1 + coord.z) / 8);
+        J1.SetElement(1, 0, -(1 - coord.x()) * (1 - coord.z()) / 8);
+        J1.SetElement(1, 1, -(1 + coord.x()) * (1 - coord.z()) / 8);
+        J1.SetElement(1, 2, +(1 + coord.x()) * (1 - coord.z()) / 8);
+        J1.SetElement(1, 3, +(1 - coord.x()) * (1 - coord.z()) / 8);
+        J1.SetElement(1, 4, -(1 - coord.x()) * (1 + coord.z()) / 8);
+        J1.SetElement(1, 5, -(1 + coord.x()) * (1 + coord.z()) / 8);
+        J1.SetElement(1, 6, +(1 + coord.x()) * (1 + coord.z()) / 8);
+        J1.SetElement(1, 7, +(1 - coord.x()) * (1 + coord.z()) / 8);
 
-        J1.SetElement(2, 0, -(1 - coord.x) * (1 - coord.y) / 8);
-        J1.SetElement(2, 1, -(1 + coord.x) * (1 - coord.y) / 8);
-        J1.SetElement(2, 2, -(1 + coord.x) * (1 + coord.y) / 8);
-        J1.SetElement(2, 3, -(1 - coord.x) * (1 + coord.y) / 8);
-        J1.SetElement(2, 4, +(1 - coord.x) * (1 - coord.y) / 8);
-        J1.SetElement(2, 5, +(1 + coord.x) * (1 - coord.y) / 8);
-        J1.SetElement(2, 6, +(1 + coord.x) * (1 + coord.y) / 8);
-        J1.SetElement(2, 7, +(1 - coord.x) * (1 + coord.y) / 8);
+        J1.SetElement(2, 0, -(1 - coord.x()) * (1 - coord.y()) / 8);
+        J1.SetElement(2, 1, -(1 + coord.x()) * (1 - coord.y()) / 8);
+        J1.SetElement(2, 2, -(1 + coord.x()) * (1 + coord.y()) / 8);
+        J1.SetElement(2, 3, -(1 - coord.x()) * (1 + coord.y()) / 8);
+        J1.SetElement(2, 4, +(1 - coord.x()) * (1 - coord.y()) / 8);
+        J1.SetElement(2, 5, +(1 + coord.x()) * (1 - coord.y()) / 8);
+        J1.SetElement(2, 6, +(1 + coord.x()) * (1 + coord.y()) / 8);
+        J1.SetElement(2, 7, +(1 - coord.x()) * (1 + coord.y()) / 8);
 
-        J2.SetElement(0, 0, nodes[0]->GetX0().x);
-        J2.SetElement(1, 0, nodes[1]->GetX0().x);
-        J2.SetElement(2, 0, nodes[2]->GetX0().x);
-        J2.SetElement(3, 0, nodes[3]->GetX0().x);
-        J2.SetElement(4, 0, nodes[4]->GetX0().x);
-        J2.SetElement(5, 0, nodes[5]->GetX0().x);
-        J2.SetElement(6, 0, nodes[6]->GetX0().x);
-        J2.SetElement(7, 0, nodes[7]->GetX0().x);
+        J2.SetElement(0, 0, nodes[0]->GetX0().x());
+        J2.SetElement(1, 0, nodes[1]->GetX0().x());
+        J2.SetElement(2, 0, nodes[2]->GetX0().x());
+        J2.SetElement(3, 0, nodes[3]->GetX0().x());
+        J2.SetElement(4, 0, nodes[4]->GetX0().x());
+        J2.SetElement(5, 0, nodes[5]->GetX0().x());
+        J2.SetElement(6, 0, nodes[6]->GetX0().x());
+        J2.SetElement(7, 0, nodes[7]->GetX0().x());
 
-        J2.SetElement(0, 1, nodes[0]->GetX0().y);
-        J2.SetElement(1, 1, nodes[1]->GetX0().y);
-        J2.SetElement(2, 1, nodes[2]->GetX0().y);
-        J2.SetElement(3, 1, nodes[3]->GetX0().y);
-        J2.SetElement(4, 1, nodes[4]->GetX0().y);
-        J2.SetElement(5, 1, nodes[5]->GetX0().y);
-        J2.SetElement(6, 1, nodes[6]->GetX0().y);
-        J2.SetElement(7, 1, nodes[7]->GetX0().y);
+        J2.SetElement(0, 1, nodes[0]->GetX0().y());
+        J2.SetElement(1, 1, nodes[1]->GetX0().y());
+        J2.SetElement(2, 1, nodes[2]->GetX0().y());
+        J2.SetElement(3, 1, nodes[3]->GetX0().y());
+        J2.SetElement(4, 1, nodes[4]->GetX0().y());
+        J2.SetElement(5, 1, nodes[5]->GetX0().y());
+        J2.SetElement(6, 1, nodes[6]->GetX0().y());
+        J2.SetElement(7, 1, nodes[7]->GetX0().y());
 
-        J2.SetElement(0, 2, nodes[0]->GetX0().z);
-        J2.SetElement(1, 2, nodes[1]->GetX0().z);
-        J2.SetElement(2, 2, nodes[2]->GetX0().z);
-        J2.SetElement(3, 2, nodes[3]->GetX0().z);
-        J2.SetElement(4, 2, nodes[4]->GetX0().z);
-        J2.SetElement(5, 2, nodes[5]->GetX0().z);
-        J2.SetElement(6, 2, nodes[6]->GetX0().z);
-        J2.SetElement(7, 2, nodes[7]->GetX0().z);
+        J2.SetElement(0, 2, nodes[0]->GetX0().z());
+        J2.SetElement(1, 2, nodes[1]->GetX0().z());
+        J2.SetElement(2, 2, nodes[2]->GetX0().z());
+        J2.SetElement(3, 2, nodes[3]->GetX0().z());
+        J2.SetElement(4, 2, nodes[4]->GetX0().z());
+        J2.SetElement(5, 2, nodes[5]->GetX0().z());
+        J2.SetElement(6, 2, nodes[6]->GetX0().z());
+        J2.SetElement(7, 2, nodes[7]->GetX0().z());
 
         Jacobian.MatrMultiply(J1, J2);
     }
@@ -278,8 +279,8 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron, public ChLoadableUV
     /// Computes the matrix of partial derivatives and puts data in "GaussPt".
     ///	Stores the determinant of the jacobian in "JacobianDet".
     virtual void ComputeMatrB(ChGaussPoint* GaussPt, double& JacobianDet) {
-        this->ComputeMatrB(*(GaussPt->MatrB), (*GaussPt).GetLocalCoordinates().x, (*GaussPt).GetLocalCoordinates().y,
-                           (*GaussPt).GetLocalCoordinates().z, JacobianDet);
+        this->ComputeMatrB(*(GaussPt->MatrB), (*GaussPt).GetLocalCoordinates().x(), (*GaussPt).GetLocalCoordinates().y(),
+                           (*GaussPt).GetLocalCoordinates().z(), JacobianDet);
     }
 
     /// Computes the global STIFFNESS MATRIX of the element:
@@ -310,7 +311,7 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron, public ChLoadableUV
     virtual void SetupInitial(ChSystem* system) override { ComputeStiffnessMatrix(); }
 
     // compute large rotation of element for corotational approach
-    virtual void UpdateRotation() {
+    virtual void UpdateRotation() override {
         ChVector<> avgX1;
         avgX1 = this->nodes[0]->GetX0() + this->nodes[1]->GetX0() + this->nodes[2]->GetX0() + this->nodes[3]->GetX0();
         ChVector<> avgX2;
@@ -364,7 +365,7 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron, public ChLoadableUV
 
     /// Sets H as the global stiffness matrix K, scaled  by Kfactor. Optionally, also
     /// superimposes global damping matrix R, scaled by Rfactor, and global mass matrix M multiplied by Mfactor.
-    virtual void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor = 0, double Mfactor = 0) {
+    virtual void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor = 0, double Mfactor = 0) override {
         assert((H.GetRows() == GetNdofs()) && (H.GetColumns() == GetNdofs()));
 
         // warp the local stiffness matrix K in order to obtain global
@@ -380,7 +381,7 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron, public ChLoadableUV
 
         CKCt.MatrScale(mkfactor);
 
-        H.PasteMatrix(&CKCt, 0, 0);
+        H.PasteMatrix(CKCt, 0, 0);
 
         // For M mass matrix:
         if (Mfactor) {
@@ -396,7 +397,7 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron, public ChLoadableUV
     /// Computes the internal forces (ex. the actual position of
     /// nodes is not in relaxed reference position) and set values
     /// in the Fi vector.
-    virtual void ComputeInternalForces(ChMatrixDynamic<>& Fi) {
+    virtual void ComputeInternalForces(ChMatrixDynamic<>& Fi) override {
         assert((Fi.GetRows() == GetNdofs()) && (Fi.GetColumns() == 1));
 
         // set up vector of nodal displacements (in local element system) u_l = R*p - p0
@@ -446,108 +447,115 @@ class ChApiFea ChElementHexa_8 : public ChElementHexahedron, public ChLoadableUV
 
     //
     // Functions for ChLoadable interface
-    //  
+    //
 
-            /// Gets the number of DOFs affected by this element (position part)
-    virtual int LoadableGet_ndof_x() {return 8*3;}
-        
-        /// Gets the number of DOFs affected by this element (speed part)
-    virtual int LoadableGet_ndof_w() {return 8*3;}
+    /// Gets the number of DOFs affected by this element (position part)
+    virtual int LoadableGet_ndof_x() override { return 8 * 3; }
 
-        /// Gets all the DOFs packed in a single vector (position part)
-    virtual void LoadableGetStateBlock_x(int block_offset, ChVectorDynamic<>& mD) {
-        mD.PasteVector    (this->nodes[0]->GetPos(), block_offset,  0);
-        mD.PasteVector    (this->nodes[1]->GetPos(), block_offset+3,  0);
-        mD.PasteVector    (this->nodes[2]->GetPos(), block_offset+6,  0);
-        mD.PasteVector    (this->nodes[3]->GetPos(), block_offset+9,  0);
-        mD.PasteVector    (this->nodes[4]->GetPos(), block_offset+12,  0);
-        mD.PasteVector    (this->nodes[5]->GetPos(), block_offset+15,  0);
-        mD.PasteVector    (this->nodes[6]->GetPos(), block_offset+18,  0);
-        mD.PasteVector    (this->nodes[7]->GetPos(), block_offset+21,  0);
+    /// Gets the number of DOFs affected by this element (speed part)
+    virtual int LoadableGet_ndof_w() override { return 8 * 3; }
+
+    /// Gets all the DOFs packed in a single vector (position part)
+    virtual void LoadableGetStateBlock_x(int block_offset, ChState& mD) override {
+        mD.PasteVector(this->nodes[0]->GetPos(), block_offset, 0);
+        mD.PasteVector(this->nodes[1]->GetPos(), block_offset + 3, 0);
+        mD.PasteVector(this->nodes[2]->GetPos(), block_offset + 6, 0);
+        mD.PasteVector(this->nodes[3]->GetPos(), block_offset + 9, 0);
+        mD.PasteVector(this->nodes[4]->GetPos(), block_offset + 12, 0);
+        mD.PasteVector(this->nodes[5]->GetPos(), block_offset + 15, 0);
+        mD.PasteVector(this->nodes[6]->GetPos(), block_offset + 18, 0);
+        mD.PasteVector(this->nodes[7]->GetPos(), block_offset + 21, 0);
     }
 
-        /// Gets all the DOFs packed in a single vector (speed part)
-    virtual void LoadableGetStateBlock_w(int block_offset, ChVectorDynamic<>& mD) {
-        mD.PasteVector(this->nodes[0]->GetPos_dt(),   block_offset,  0);
-        mD.PasteVector(this->nodes[1]->GetPos_dt(),   block_offset+3,  0);
-        mD.PasteVector(this->nodes[2]->GetPos_dt(),   block_offset+6,  0);
-        mD.PasteVector(this->nodes[3]->GetPos_dt(),   block_offset+9,  0);
-        mD.PasteVector(this->nodes[4]->GetPos_dt(),   block_offset+12,  0);
-        mD.PasteVector(this->nodes[5]->GetPos_dt(),   block_offset+15,  0);
-        mD.PasteVector(this->nodes[6]->GetPos_dt(),   block_offset+18,  0);
-        mD.PasteVector(this->nodes[7]->GetPos_dt(),   block_offset+21,  0);
+    /// Gets all the DOFs packed in a single vector (speed part)
+    virtual void LoadableGetStateBlock_w(int block_offset, ChStateDelta& mD) override {
+        mD.PasteVector(this->nodes[0]->GetPos_dt(), block_offset, 0);
+        mD.PasteVector(this->nodes[1]->GetPos_dt(), block_offset + 3, 0);
+        mD.PasteVector(this->nodes[2]->GetPos_dt(), block_offset + 6, 0);
+        mD.PasteVector(this->nodes[3]->GetPos_dt(), block_offset + 9, 0);
+        mD.PasteVector(this->nodes[4]->GetPos_dt(), block_offset + 12, 0);
+        mD.PasteVector(this->nodes[5]->GetPos_dt(), block_offset + 15, 0);
+        mD.PasteVector(this->nodes[6]->GetPos_dt(), block_offset + 18, 0);
+        mD.PasteVector(this->nodes[7]->GetPos_dt(), block_offset + 21, 0);
     }
 
-        /// Number of coordinates in the interpolated field: here the {x,y,z} displacement
-    virtual int Get_field_ncoords() {return 3;}
-           
-        /// Tell the number of DOFs blocks (ex. =1 for a body, =4 for a tetrahedron, etc.)
-    virtual int GetSubBlocks() {return 8;}
+    /// Increment all DOFs using a delta.
+    virtual void LoadableStateIncrement(const unsigned int off_x, ChState& x_new, const ChState& x, const unsigned int off_v, const ChStateDelta& Dv) override {
+        for (int i=0; i<8; ++i) {
+            nodes[i]->NodeIntStateIncrement(off_x + i*3  , x_new, x, off_v  + i*3  , Dv);
+        }
+    }
 
-        /// Get the offset of the i-th sub-block of DOFs in global vector
-    virtual unsigned int GetSubBlockOffset(int nblock) { return nodes[nblock]->NodeGetOffset_w();}
+    /// Number of coordinates in the interpolated field: here the {x,y,z} displacement
+    virtual int Get_field_ncoords() override { return 3; }
 
-        /// Get the size of the i-th sub-block of DOFs in global vector
-    virtual unsigned int GetSubBlockSize(int nblock) { return 3;}
+    /// Tell the number of DOFs blocks (ex. =1 for a body, =4 for a tetrahedron, etc.)
+    virtual int GetSubBlocks() override { return 8; }
 
-        /// Get the pointers to the contained ChVariables, appending to the mvars vector.
-    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) {
-        for (int i=0; i<nodes.size(); ++i)
+    /// Get the offset of the i-th sub-block of DOFs in global vector
+    virtual unsigned int GetSubBlockOffset(int nblock) override { return nodes[nblock]->NodeGetOffset_w(); }
+
+    /// Get the size of the i-th sub-block of DOFs in global vector
+    virtual unsigned int GetSubBlockSize(int nblock) override { return 3; }
+
+    /// Get the pointers to the contained ChVariables, appending to the mvars vector.
+    virtual void LoadableGetVariables(std::vector<ChVariables*>& mvars) override {
+        for (int i = 0; i < nodes.size(); ++i)
             mvars.push_back(&this->nodes[i]->Variables());
     };
 
-        /// Evaluate N'*F , where N is some type of shape function
-        /// evaluated at U,V,W coordinates of the volume, each ranging in -1..+1
-        /// F is a load, N'*F is the resulting generalized load
-        /// Returns also det[J] with J=[dx/du,..], that might be useful in gauss quadrature.
-     virtual void ComputeNF(const double U,   ///< parametric coordinate in volume
-                     const double V,             ///< parametric coordinate in volume
-                     const double W,             ///< parametric coordinate in volume 
-                     ChVectorDynamic<>& Qi,      ///< Return result of N'*F  here, maybe with offset block_offset
-                     double& detJ,               ///< Return det[J] here
-                     const ChVectorDynamic<>& F, ///< Input F vector, size is = n.field coords.
-                     ChVectorDynamic<>* state_x, ///< if != 0, update state (pos. part) to this, then evaluate Q
-                     ChVectorDynamic<>* state_w  ///< if != 0, update state (speed part) to this, then evaluate Q
-                     ) {
-         // evaluate shape functions (in compressed vector), btw. not dependant on state
-         ChMatrixNM<double, 1,8> N;
-         this->ShapeFunctions(N, U, V, W); // note: U,V,W in -1..1 range
-         
-         detJ = this->GetVolume() / 8.0;
+    /// Evaluate N'*F , where N is some type of shape function
+    /// evaluated at U,V,W coordinates of the volume, each ranging in -1..+1
+    /// F is a load, N'*F is the resulting generalized load
+    /// Returns also det[J] with J=[dx/du,..], that might be useful in gauss quadrature.
+    virtual void ComputeNF(const double U,              ///< parametric coordinate in volume
+                           const double V,              ///< parametric coordinate in volume
+                           const double W,              ///< parametric coordinate in volume
+                           ChVectorDynamic<>& Qi,       ///< Return result of N'*F  here, maybe with offset block_offset
+                           double& detJ,                ///< Return det[J] here
+                           const ChVectorDynamic<>& F,  ///< Input F vector, size is = n.field coords.
+                           ChVectorDynamic<>* state_x,  ///< if != 0, update state (pos. part) to this, then evaluate Q
+                           ChVectorDynamic<>* state_w   ///< if != 0, update state (speed part) to this, then evaluate Q
+                           ) override {
+        // evaluate shape functions (in compressed vector), btw. not dependant on state
+        ChMatrixNM<double, 1, 8> N;
+        this->ShapeFunctions(N, U, V, W);  // note: U,V,W in -1..1 range
 
-         Qi(0) = N(0)*F(0);
-         Qi(1) = N(0)*F(1);
-         Qi(2) = N(0)*F(2);
-         Qi(3) = N(1)*F(0);
-         Qi(4) = N(1)*F(1);
-         Qi(5) = N(1)*F(2);
-         Qi(6) = N(2)*F(0);
-         Qi(7) = N(2)*F(1);
-         Qi(8) = N(2)*F(2);
-         Qi(9) = N(3)*F(0);
-         Qi(10)= N(3)*F(1);
-         Qi(11)= N(3)*F(2);
-         Qi(12)= N(4)*F(0);
-         Qi(13)= N(4)*F(1);
-         Qi(14)= N(4)*F(2);
-         Qi(15)= N(5)*F(0);
-         Qi(16)= N(5)*F(1);
-         Qi(17)= N(5)*F(2);
-         Qi(18)= N(6)*F(0);
-         Qi(19)= N(6)*F(1);
-         Qi(20)= N(6)*F(2);
-         Qi(21)= N(7)*F(0);
-         Qi(22)= N(7)*F(1);
-         Qi(23)= N(7)*F(2);
-     }
+        detJ = this->GetVolume() / 8.0;
 
-            /// This is needed so that it can be accessed by ChLoaderVolumeGravity
-     virtual double GetDensity() { return this->Material->Get_density(); } 
+        Qi(0) = N(0) * F(0);
+        Qi(1) = N(0) * F(1);
+        Qi(2) = N(0) * F(2);
+        Qi(3) = N(1) * F(0);
+        Qi(4) = N(1) * F(1);
+        Qi(5) = N(1) * F(2);
+        Qi(6) = N(2) * F(0);
+        Qi(7) = N(2) * F(1);
+        Qi(8) = N(2) * F(2);
+        Qi(9) = N(3) * F(0);
+        Qi(10) = N(3) * F(1);
+        Qi(11) = N(3) * F(2);
+        Qi(12) = N(4) * F(0);
+        Qi(13) = N(4) * F(1);
+        Qi(14) = N(4) * F(2);
+        Qi(15) = N(5) * F(0);
+        Qi(16) = N(5) * F(1);
+        Qi(17) = N(5) * F(2);
+        Qi(18) = N(6) * F(0);
+        Qi(19) = N(6) * F(1);
+        Qi(20) = N(6) * F(2);
+        Qi(21) = N(7) * F(0);
+        Qi(22) = N(7) * F(1);
+        Qi(23) = N(7) * F(2);
+    }
+
+    /// This is needed so that it can be accessed by ChLoaderVolumeGravity
+    virtual double GetDensity() override { return this->Material->Get_density(); }
 };
 
 /// @} fea_elements
 
-}  //___end of namespace fea___
-}  //___end of namespace chrono___
+}  // end namespace fea
+}  // end namespace chrono
 
 #endif

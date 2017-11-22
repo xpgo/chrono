@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -18,7 +18,7 @@ namespace chrono {
 namespace geometry {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChLinePoly> a_registration_ChLinePoly;
+CH_FACTORY_REGISTER(ChLinePoly)
 
 ChLinePoly::ChLinePoly(int mnumpoints) : degree(1) {
     points.resize(mnumpoints);
@@ -44,20 +44,20 @@ ChVector<> ChLinePoly::Get_point(size_t mnum) const {
     return points[mnum];
 }
 
-int ChLinePoly::Set_point(int mnum, ChVector<> mpoint) {
+bool ChLinePoly::Set_point(int mnum, ChVector<> mpoint) {
     if (mnum >= Get_numpoints())
-        return FALSE;
+        return false;
 
     this->points[mnum] = mpoint;
 
-    return TRUE;
+    return true;
 }
 
 //
 // Curve evaluation.
 //
 
-void ChLinePoly::Evaluate(ChVector<>& pos, const double parU, const double parV, const double parW) const {
+void ChLinePoly::Evaluate(ChVector<>& pos, const double parU) const {
     double par = parU;
     pos = VNULL;
 
@@ -93,23 +93,23 @@ double ChLinePoly::Length(int sampling) const {
 
 // Draw into the current graph viewport of a ChFile_ps file
 
-int ChLinePoly::DrawPostscript(ChFile_ps* mfle, int markpoints, int bezier_interpolate) {
-    ChPageVect mp1;
+bool ChLinePoly::DrawPostscript(ChFile_ps* mfle, int markpoints, int bezier_interpolate) {
+    ChVector2<> mp1;
     ChVector<> mv1;
 
     mfle->GrSave();
-    mfle->ClipRectangle(mfle->Get_G_p(), mfle->Get_Gs_p(), PS_SPACE_PAGE);
+    mfle->ClipRectangle(mfle->Get_G_p(), mfle->Get_Gs_p(), ChFile_ps::Space::PAGE);
     // start a line, move cursor to beginning
     mfle->StartLine();
-    mp1.x = Get_point(0).x;
-    mp1.y = Get_point(0).y;
+    mp1.x() = Get_point(0).x();
+    mp1.y() = Get_point(0).y();
     mp1 = mfle->To_page_from_graph(mp1);
     mfle->MoveTo(mp1);
     // add points into line
     for (int i = 1; i < this->Get_numpoints(); i++) {
         mv1 = Get_point(i);
-        mp1.x = mv1.x;
-        mp1.y = mv1.y;
+        mp1.x() = mv1.x();
+        mp1.y() = mv1.y();
         mp1 = mfle->To_page_from_graph(mp1);
         mfle->AddLinePoint(mp1);
     }
@@ -119,7 +119,7 @@ int ChLinePoly::DrawPostscript(ChFile_ps* mfle, int markpoints, int bezier_inter
     mfle->PaintStroke();  // draw it!
     mfle->GrRestore();    // restore old modes, with old clipping
 
-    return TRUE;
+    return true;
 }
 
 }  // end namespace geometry

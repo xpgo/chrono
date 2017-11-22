@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -13,7 +13,7 @@
 //
 // Class that inherits from ChLinkLock as a free joint. Compliances are added
 // to the relative motion between two rigid bodies. Out of the 6 possible dofs
-// available to apply compliance, only those corresponsing the bushing type
+// available to apply compliance, only those corresponding the bushing type
 // selected by the user are introduced.
 //
 // =============================================================================
@@ -24,11 +24,11 @@ namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and
 // persistence
-ChClassRegister<ChLinkBushing> a_registration_ChLinkLockBushing;
+CH_FACTORY_REGISTER(ChLinkBushing)
 
 ChLinkBushing::ChLinkBushing(bushing_joint bushing_joint_type) {
     m_bushing_joint = bushing_joint_type;
-    ChangeLinkType(LNK_FREE);  // Our bushing element will be a free joint
+    ChangeLinkType(LinkType::FREE);  // Our bushing element will be a free joint
 }
 
 ChLinkBushing::~ChLinkBushing() {}
@@ -87,7 +87,7 @@ void ChLinkBushing::Initialize(std::shared_ptr<ChBody> mbody1,
 }
 void ChLinkBushing::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChLinkBushing>();
 
     // serialize parent class
     ChLinkLock::ArchiveOUT(marchive);
@@ -105,6 +105,9 @@ void ChLinkBushing::ArchiveOUT(ChArchiveOut& marchive) {
 
 /// Method to allow de serialization of transient data from archives.
 void ChLinkBushing::ArchiveIN(ChArchiveIn& marchive) {
+    // version number
+    marchive.VersionRead<ChLinkBushing>();
+
     // deserialize parent class
     ChLinkLock::ArchiveIN(marchive);
 

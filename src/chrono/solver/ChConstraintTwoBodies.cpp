@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChConstraintTwoBodies> a_registration_ChConstraintTwoBodies;
+CH_FACTORY_REGISTER(ChConstraintTwoBodies)
 
 ChConstraintTwoBodies::ChConstraintTwoBodies(ChVariablesBody* mvariables_a, ChVariablesBody* mvariables_b) {
     SetVariables(mvariables_a, mvariables_b);
@@ -145,26 +145,26 @@ void ChConstraintTwoBodies::MultiplyTandAdd(ChMatrix<double>& result, double l) 
 
 void ChConstraintTwoBodies::Build_Cq(ChSparseMatrix& storage, int insrow) {
     if (variables_a->IsActive())
-        storage.PasteMatrix(&Cq_a, insrow, variables_a->GetOffset());
+        storage.PasteMatrix(Cq_a, insrow, variables_a->GetOffset());
     if (variables_b->IsActive())
-        storage.PasteMatrix(&Cq_b, insrow, variables_b->GetOffset());
+        storage.PasteMatrix(Cq_b, insrow, variables_b->GetOffset());
 }
 
 void ChConstraintTwoBodies::Build_CqT(ChSparseMatrix& storage, int inscol) {
     if (variables_a->IsActive())
-        storage.PasteTranspMatrix(&Cq_a, variables_a->GetOffset(), inscol);
+        storage.PasteTranspMatrix(Cq_a, variables_a->GetOffset(), inscol);
     if (variables_b->IsActive())
-        storage.PasteTranspMatrix(&Cq_b, variables_b->GetOffset(), inscol);
+        storage.PasteTranspMatrix(Cq_b, variables_b->GetOffset(), inscol);
 }
 
-void ChConstraintTwoBodies::StreamOUT(ChStreamOutBinary& mstream) {
-    // class version number
-    mstream.VersionWrite(1);
+void ChConstraintTwoBodies::ArchiveOUT(ChArchiveOut& marchive) {
+    // version number
+    marchive.VersionWrite<ChConstraintTwoBodies>();
 
-    // serialize parent class too
-    ChConstraintTwo::StreamOUT(mstream);
+    // serialize the parent class data too
+    ChConstraintTwo::ArchiveOUT(marchive);
 
-    // stream out all member data
+    // serialize all member data:
     // NOTHING INTERESTING TO SERIALIZE (the Cq jacobians are not so
     // important to waste disk space.. they may be recomputed run-time,
     // and pointers to variables must be rebound in run-time.)
@@ -172,19 +172,19 @@ void ChConstraintTwoBodies::StreamOUT(ChStreamOutBinary& mstream) {
     // mstream << Cq_b;
 }
 
-void ChConstraintTwoBodies::StreamIN(ChStreamInBinary& mstream) {
-    // class version number
-    int version = mstream.VersionRead();
+void ChConstraintTwoBodies::ArchiveIN(ChArchiveIn& marchive) {
+    // version number
+    int version = marchive.VersionRead<ChConstraintTwoBodies>();
 
-    // deserialize parent class too
-    ChConstraintTwo::StreamIN(mstream);
+    // deserialize the parent class data too
+    ChConstraintTwo::ArchiveIN(marchive);
 
-    // stream in all member data
-    // NOTHING INTERESTING TO DESERIALIZE (the Cq jacobians are not so
+    // deserialize all member data:
+    // NOTHING INTERESTING TO SERIALIZE (the Cq jacobians are not so
     // important to waste disk space.. they may be recomputed run-time,
     // and pointers to variables must be rebound in run-time.)
-    // mstream >> Cq_a;
-    // mstream >> Cq_b;
+    // mstream << Cq_a;
+    // mstream << Cq_b;
 }
 
 }  // end namespace chrono

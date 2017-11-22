@@ -1,13 +1,14 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
 
 #include <vector>
 
@@ -15,6 +16,8 @@
 #include "chrono/geometry/ChBox.h"
 #include "chrono/geometry/ChTriangleMeshSoup.h"
 #include "chrono/geometry/ChLinePath.h"
+#include "chrono/assets/ChEllipsoidShape.h"
+#include "chrono/assets/ChSurfaceShape.h"
 
 #include "chrono_irrlicht/ChIrrAssetConverter.h"
 #include "chrono_irrlicht/ChIrrTools.h"
@@ -80,8 +83,8 @@ void ChIrrAssetConverter::Bind(std::shared_ptr<ChPhysicsItem> mitem) {
 
 void ChIrrAssetConverter::BindAll() {
     ChSystem* msystem = minterface->GetSystem();
-	std::unordered_set<ChAssembly*> mtrace;
-	BindAllContentsOfAssembly(msystem, mtrace);
+    std::unordered_set<ChAssembly*> mtrace;
+    BindAllContentsOfAssembly(msystem, mtrace);
 }
 
 void ChIrrAssetConverter::Update(std::shared_ptr<ChPhysicsItem> mitem) {
@@ -91,8 +94,8 @@ void ChIrrAssetConverter::Update(std::shared_ptr<ChPhysicsItem> mitem) {
 
 void ChIrrAssetConverter::UpdateAll() {
     ChSystem* msystem = minterface->GetSystem();
-	std::unordered_set<ChAssembly*> mtrace;
-	UpdateAllContentsOfAssembly(msystem, mtrace);
+    std::unordered_set<ChAssembly*> mtrace;
+    UpdateAllContentsOfAssembly(msystem, mtrace);
 }
 
 void ChIrrAssetConverter::CleanIrrlicht(std::shared_ptr<ChPhysicsItem> mitem) {
@@ -160,7 +163,7 @@ void ChIrrAssetConverter::mflipSurfacesOnX(IMesh* mesh) const {
         }
         const u32 vertcnt = buffer->getVertexCount();
         for (u32 i = 0; i < vertcnt; i++) {
-            buffer->getPosition(i).X = -buffer->getPosition(i).X; // mirror vertex
+            buffer->getPosition(i).X = -buffer->getPosition(i).X;  // mirror vertex
             core::vector3df oldnorm = buffer->getNormal(i);
             buffer->getNormal(i).X = -oldnorm.X;  // mirrors normal on X
         }
@@ -192,13 +195,15 @@ void ChIrrAssetConverter::_recursePopulateIrrlicht(std::vector<std::shared_ptr<C
                         // mchildnode->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, false);
 
                         // Note: the Irrlicht loader of .OBJ files flips the X to correct its left-handed nature, but
-                        // this goes wrong with our assemblies and links. So we rather accept that the display is X mirrored, and we
-                        // restore the X flipping of the mesh (also the normals and triangle indexes ordering must be flipped otherwise 
+                        // this goes wrong with our assemblies and links. So we rather accept that the display is X
+                        // mirrored, and we
+                        // restore the X flipping of the mesh (also the normals and triangle indexes ordering must be
+                        // flipped otherwise
                         // back culling is not working):
-                        if (!irrmesh_already_loaded) // flag to avoid multiple flipping in shared meshes
-                            mflipSurfacesOnX(((IAnimatedMeshSceneNode*)mchildnode)->getMesh()); 
+                        if (!irrmesh_already_loaded)  // flag to avoid multiple flipping in shared meshes
+                            mflipSurfacesOnX(((IAnimatedMeshSceneNode*)mchildnode)->getMesh());
 
-                        mchildnode->setMaterialFlag(video::EMF_BACK_FACE_CULLING,true);  
+                        mchildnode->setMaterialFlag(video::EMF_BACK_FACE_CULLING, true);
                     }
                 } else if (auto mytrimesh = std::dynamic_pointer_cast<ChTriangleMeshShape>(k_asset)) {
                     CDynamicMeshBuffer* buffer =
@@ -216,6 +221,22 @@ void ChIrrAssetConverter::_recursePopulateIrrlicht(std::vector<std::shared_ptr<C
 
                     mchildnode->setMaterialFlag(video::EMF_WIREFRAME, mytrimesh->IsWireframe());
                     mchildnode->setMaterialFlag(video::EMF_BACK_FACE_CULLING, mytrimesh->IsBackfaceCull());
+                } else if (auto mysurf = std::dynamic_pointer_cast<ChSurfaceShape>(k_asset)) {
+                    CDynamicMeshBuffer* buffer =
+                        new CDynamicMeshBuffer(irr::video::EVT_STANDARD, irr::video::EIT_32BIT);
+                    //	SMeshBuffer* buffer = new SMeshBuffer();
+                    SMesh* newmesh = new SMesh;
+                    newmesh->addMeshBuffer(buffer);
+                    buffer->drop();
+
+                    ChIrrNodeProxyToAsset* mproxynode = new ChIrrNodeProxyToAsset(mysurf, mnode);
+                    ISceneNode* mchildnode = scenemanager->addMeshSceneNode(newmesh, mproxynode);
+                    newmesh->drop();
+                    mproxynode->Update();  // force syncing of triangle positions & face indexes
+                    mproxynode->drop();
+
+                    //mchildnode->setMaterialFlag(video::EMF_WIREFRAME, mysurf->IsWireframe());
+                    //mchildnode->setMaterialFlag(video::EMF_BACK_FACE_CULLING, mysurf->IsBackfaceCull());
                 } else if (auto myglyphs = std::dynamic_pointer_cast<ChGlyphs>(k_asset)) {
                     CDynamicMeshBuffer* buffer =
                         new CDynamicMeshBuffer(irr::video::EVT_STANDARD, irr::video::EIT_32BIT);
@@ -232,7 +253,8 @@ void ChIrrAssetConverter::_recursePopulateIrrlicht(std::vector<std::shared_ptr<C
 
                     // mchildnode->setMaterialFlag(video::EMF_WIREFRAME,  mytrimesh->IsWireframe() );
                     // mchildnode->setMaterialFlag(video::EMF_BACK_FACE_CULLING, mytrimesh->IsBackfaceCull() );
-                } else if (std::dynamic_pointer_cast<ChPathShape>(k_asset) || std::dynamic_pointer_cast<ChLineShape>(k_asset)) {
+                } else if (std::dynamic_pointer_cast<ChPathShape>(k_asset) ||
+                           std::dynamic_pointer_cast<ChLineShape>(k_asset)) {
                     CDynamicMeshBuffer* buffer =
                         new CDynamicMeshBuffer(irr::video::EVT_STANDARD, irr::video::EIT_32BIT);
                     SMesh* newmesh = new SMesh;
@@ -260,6 +282,21 @@ void ChIrrAssetConverter::_recursePopulateIrrlicht(std::vector<std::shared_ptr<C
 
                         double mradius = mysphere->GetSphereGeometry().rad;
                         mchildnode->setScale(core::vector3dfCH(ChVector<>(mradius, mradius, mradius)));
+                        ChIrrTools::alignIrrlichtNodeToChronoCsys(mchildnode, irrspherecoords);
+                        mchildnode->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
+                    }
+                } else if (auto myellipsoid = std::dynamic_pointer_cast<ChEllipsoidShape>(k_asset)) {
+                    if (sphereMesh) {
+                        ISceneNode* mproxynode = new ChIrrNodeProxyToAsset(myellipsoid, mnode);
+                        ISceneNode* mchildnode = scenemanager->addMeshSceneNode(sphereMesh, mproxynode);
+                        mproxynode->drop();
+
+                        // Calculate transform from node to geometry
+                        // (concatenate node - asset and asset - geometry)
+                        ChVector<> pos = myellipsoid->Pos + myellipsoid->Rot * myellipsoid->GetEllipsoidGeometry().center;
+                        ChCoordsys<> irrspherecoords(pos, myellipsoid->Rot.Get_A_quaternion());
+
+                        mchildnode->setScale(core::vector3dfCH(myellipsoid->GetEllipsoidGeometry().rad));
                         ChIrrTools::alignIrrlichtNodeToChronoCsys(mchildnode, irrspherecoords);
                         mchildnode->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
                     }
@@ -293,8 +330,7 @@ void ChIrrAssetConverter::_recursePopulateIrrlicht(std::vector<std::shared_ptr<C
                         mchildnode->setScale(irrsize);
                         mchildnode->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
                     }
-                }
-                else if (auto mybox = std::dynamic_pointer_cast<ChBoxShape>(k_asset)) {
+                } else if (auto mybox = std::dynamic_pointer_cast<ChBoxShape>(k_asset)) {
                     if (cubeMesh) {
                         ISceneNode* mproxynode = new ChIrrNodeProxyToAsset(mybox, mnode);
                         ISceneNode* mchildnode = scenemanager->addMeshSceneNode(cubeMesh, mproxynode);
@@ -390,59 +426,59 @@ void ChIrrAssetConverter::_recursePopulateIrrlicht(std::vector<std::shared_ptr<C
 }
 
 void ChIrrAssetConverter::BindAllContentsOfAssembly(ChAssembly* massy, std::unordered_set<ChAssembly*>& mtrace) {
-	// Skip to extract contents if the assembly has been already treated (to avoid circular references).
-	if (!mtrace.insert(massy).second) {
-		return;
-	}
+    // Skip to extract contents if the assembly has been already treated (to avoid circular references).
+    if (!mtrace.insert(massy).second) {
+        return;
+    }
 
-	auto myiter = massy->IterBeginBodies();
-	while (myiter != massy->IterEndBodies()) {
-		Bind(*myiter);
-		++myiter;
-	}
-	ChSystem::IteratorOtherPhysicsItems myiterB = massy->IterBeginOtherPhysicsItems();
-	while (myiterB != massy->IterEndOtherPhysicsItems()) {
-		Bind(*myiterB);
+    auto myiter = massy->IterBeginBodies();
+    while (myiter != massy->IterEndBodies()) {
+        Bind(*myiter);
+        ++myiter;
+    }
+    ChSystem::IteratorOtherPhysicsItems myiterB = massy->IterBeginOtherPhysicsItems();
+    while (myiterB != massy->IterEndOtherPhysicsItems()) {
+        Bind(*myiterB);
 
-		// If the assembly holds another assemblies, also bind their contents.
-		if (auto myassy = std::dynamic_pointer_cast<ChAssembly>(*myiterB)) {
-			BindAllContentsOfAssembly(myassy.get(), mtrace);
-		}
-		++myiterB;
-	}
-	ChSystem::IteratorLinks myiterC = massy->IterBeginLinks();
-	while (myiterC != massy->IterEndLinks()) {
-		Bind(*myiterC);
-		++myiterC;
-	}
+        // If the assembly holds another assemblies, also bind their contents.
+        if (auto myassy = std::dynamic_pointer_cast<ChAssembly>(*myiterB)) {
+            BindAllContentsOfAssembly(myassy.get(), mtrace);
+        }
+        ++myiterB;
+    }
+    ChSystem::IteratorLinks myiterC = massy->IterBeginLinks();
+    while (myiterC != massy->IterEndLinks()) {
+        Bind(*myiterC);
+        ++myiterC;
+    }
 }
 
 void ChIrrAssetConverter::UpdateAllContentsOfAssembly(ChAssembly* massy, std::unordered_set<ChAssembly*>& mtrace) {
-	// Skip to extract contents if the assembly has been already treated (to avoid circular references).
-	if (!mtrace.insert(massy).second) {
-		return;
-	}
+    // Skip to extract contents if the assembly has been already treated (to avoid circular references).
+    if (!mtrace.insert(massy).second) {
+        return;
+    }
 
-	auto myiter = massy->IterBeginBodies();
-	while (myiter != massy->IterEndBodies()) {
-		Update(*myiter);
-		++myiter;
-	}
-	ChSystem::IteratorOtherPhysicsItems myiterB = massy->IterBeginOtherPhysicsItems();
-	while (myiterB != massy->IterEndOtherPhysicsItems()) {
-		Update(*myiterB);
+    auto myiter = massy->IterBeginBodies();
+    while (myiter != massy->IterEndBodies()) {
+        Update(*myiter);
+        ++myiter;
+    }
+    ChSystem::IteratorOtherPhysicsItems myiterB = massy->IterBeginOtherPhysicsItems();
+    while (myiterB != massy->IterEndOtherPhysicsItems()) {
+        Update(*myiterB);
 
-		// If the assembly holds another assemblies, also update their contents.
-		if (auto myassy = std::dynamic_pointer_cast<ChAssembly>(*myiterB)) {
-			UpdateAllContentsOfAssembly(myassy.get(), mtrace);
-		}
-		++myiterB;
-	}
-	ChSystem::IteratorLinks myiterC = massy->IterBeginLinks();
-	while (myiterC != massy->IterEndLinks()) {
-		Update(*myiterC);
-		++myiterC;
-	}
+        // If the assembly holds another assemblies, also update their contents.
+        if (auto myassy = std::dynamic_pointer_cast<ChAssembly>(*myiterB)) {
+            UpdateAllContentsOfAssembly(myassy.get(), mtrace);
+        }
+        ++myiterB;
+    }
+    ChSystem::IteratorLinks myiterC = massy->IterBeginLinks();
+    while (myiterC != massy->IterEndLinks()) {
+        Update(*myiterC);
+        ++myiterC;
+    }
 }
 
 }  // end namespace irrlicht

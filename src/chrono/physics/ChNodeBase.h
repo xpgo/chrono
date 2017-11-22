@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,7 +15,6 @@
 #ifndef CHNODEBASE_H
 #define CHNODEBASE_H
 
-#include "chrono/core/ChRunTimeType.h"
 #include "chrono/physics/ChPhysicsItem.h"
 #include "chrono/solver/ChVariablesBodyOwnMass.h"
 
@@ -28,8 +27,6 @@ namespace chrono {
 /// of these ChNodeBase.
 
 class ChApi ChNodeBase {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI_ROOT(ChMaterialSurfaceBase);
 
   protected:
     unsigned int offset_x;  ///< offset in vector of state (position part)
@@ -136,6 +133,9 @@ class ChApi ChNodeBase {
     virtual void ArchiveOUT(ChArchiveOut& marchive);
     virtual void ArchiveIN(ChArchiveIn& marchive);
 };
+
+CH_CLASS_VERSION(ChNodeBase,0)
+
 
 }  // end namespace chrono
 

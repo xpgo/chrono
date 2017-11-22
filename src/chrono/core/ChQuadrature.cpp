@@ -1,23 +1,25 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-//
-// File author: Alessandro Tasora
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
-#include <stdlib.h>
-#include <math.h>
-#include <float.h>
-#include "ChQuadrature.h"
-#include "core/ChMatrixDynamic.h"
+#include <cstdlib>
+#include <cmath>
+#include <cfloat>
 
-using namespace chrono;
+#include "chrono/core/ChQuadrature.h"
+#include "chrono/core/ChMatrixDynamic.h"
+
+namespace chrono {
 
 void ChQuadratureTables::glege_coef(ChMatrix<>& lcoef, int N) {
     int n, i;
@@ -220,4 +222,4 @@ ChQuadratureTablesTetrahedron* ChQuadrature::GetStaticTablesTetrahedron() {
     return &static_tables_tetrahedron;
 }
 
-
+}  // end namespace chrono

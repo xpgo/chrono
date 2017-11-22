@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -23,7 +23,6 @@ namespace chrono {
 ///   y = polynomial smooth ramp
 
 class ChApi ChFunction_Sigma : public ChFunction {
-    CH_RTTI(ChFunction_Sigma, ChFunction);
 
   private:
     double amp;
@@ -61,7 +60,7 @@ class ChApi ChFunction_Sigma : public ChFunction {
     /// Method to allow serialization of transient data to archives.
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChFunction_Sigma>();
         // serialize parent class
         ChFunction::ArchiveOUT(marchive);
         // serialize all member data:
@@ -73,7 +72,7 @@ class ChApi ChFunction_Sigma : public ChFunction {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChFunction_Sigma>();
         // deserialize parent class
         ChFunction::ArchiveIN(marchive);
         // stream in all member data:
@@ -82,6 +81,8 @@ class ChApi ChFunction_Sigma : public ChFunction {
         marchive >> CHNVP(end);
     }
 };
+
+CH_CLASS_VERSION(ChFunction_Sigma,0)
 
 }  // end namespace chrono
 

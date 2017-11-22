@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChFunction_Poly345> a_registration_poly345;
+CH_FACTORY_REGISTER(ChFunction_Poly345)
 
 ChFunction_Poly345::ChFunction_Poly345(double m_h, double m_end) : h(m_h) {
     Set_end(m_end);

@@ -1,4 +1,19 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar
+// =============================================================================
+
 #include "chrono_parallel/solver/ChSolverParallel.h"
+
 using namespace chrono;
 
 ChSolverParallelAPGD::ChSolverParallelAPGD()
@@ -38,11 +53,11 @@ void ChSolverParallelAPGD::UpdateR() {
 }
 
 uint ChSolverParallelAPGD::Solve(ChShurProduct& ShurProduct,
-                         ChProjectConstraints& Project,
-                         const uint max_iter,
-                         const uint size,
-                         const DynamicVector<real>& r,
-                         DynamicVector<real>& gamma) {
+                                 ChProjectConstraints& Project,
+                                 const uint max_iter,
+                                 const uint size,
+                                 const DynamicVector<real>& r,
+                                 DynamicVector<real>& gamma) {
     if (size == 0) {
         return 0;
     }
@@ -78,13 +93,13 @@ uint ChSolverParallelAPGD::Solve(ChShurProduct& ShurProduct,
     temp = gamma - one;
     real norm_temp = Sqrt((real)(temp, temp));
     if (data_manager->settings.solver.cache_step_length == true) {
-        if (data_manager->settings.solver.solver_mode == NORMAL) {
+        if (data_manager->settings.solver.solver_mode == SolverMode::NORMAL) {
             L = data_manager->measures.solver.normal_apgd_step_length;
-        } else if (data_manager->settings.solver.solver_mode == SLIDING) {
+        } else if (data_manager->settings.solver.solver_mode == SolverMode::SLIDING) {
             L = data_manager->measures.solver.sliding_apgd_step_length;
-        } else if (data_manager->settings.solver.solver_mode == SPINNING) {
+        } else if (data_manager->settings.solver.solver_mode == SolverMode::SPINNING) {
             L = data_manager->measures.solver.spinning_apgd_step_length;
-        } else if (data_manager->settings.solver.solver_mode == BILATERAL) {
+        } else if (data_manager->settings.solver.solver_mode == SolverMode::BILATERAL) {
             L = data_manager->measures.solver.bilateral_apgd_step_length;
         } else {
             L = 1.0;
@@ -125,7 +140,7 @@ uint ChSolverParallelAPGD::Solve(ChShurProduct& ShurProduct,
     // overwritten with a vector of zero size
     gamma_hat = gamma;
 
-    for (current_iteration = 0; current_iteration < max_iter; current_iteration++) {
+    for (current_iteration = 0; current_iteration < (signed)max_iter; current_iteration++) {
         ShurProduct(y, temp);
         // ShurProduct(y, g);
         g = temp - r;
@@ -201,13 +216,13 @@ uint ChSolverParallelAPGD::Solve(ChShurProduct& ShurProduct,
             UpdateR();
         }
     }
-    if (data_manager->settings.solver.solver_mode == NORMAL) {
+    if (data_manager->settings.solver.solver_mode == SolverMode::NORMAL) {
         data_manager->measures.solver.normal_apgd_step_length = L;
-    } else if (data_manager->settings.solver.solver_mode == SLIDING) {
+    } else if (data_manager->settings.solver.solver_mode == SolverMode::SLIDING) {
         data_manager->measures.solver.sliding_apgd_step_length = L;
-    } else if (data_manager->settings.solver.solver_mode == SPINNING) {
+    } else if (data_manager->settings.solver.solver_mode == SolverMode::SPINNING) {
         data_manager->measures.solver.spinning_apgd_step_length = L;
-    } else if (data_manager->settings.solver.solver_mode == BILATERAL) {
+    } else if (data_manager->settings.solver.solver_mode == SolverMode::BILATERAL) {
         data_manager->measures.solver.bilateral_apgd_step_length = L;
     }
     gamma = gamma_hat;

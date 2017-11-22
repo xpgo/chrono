@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -33,9 +33,8 @@ namespace fea {
 /// and a ChBodyFrame (frame) object.
 /// The node position is enforced to coincide to a given position associated
 /// with the ChBodyFrame.
+
 class ChApiFea ChLinkPointFrame : public ChLinkBase {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChLinkPointFrame, ChLinkBase);
 
   private:
     ChVector<> m_react;

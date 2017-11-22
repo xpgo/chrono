@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -25,7 +25,6 @@ namespace chrono {
 /// this link constraints only the rotation.
 
 class ChApi ChLinkPulley : public ChLinkLock {
-    CH_RTTI(ChLinkPulley, ChLinkLock);
 
   protected:
     double tau;       ///< transmission coeff.
@@ -54,8 +53,6 @@ class ChApi ChLinkPulley : public ChLinkLock {
 
     /// "Virtual" copy constructor (covariant return type).
     virtual ChLinkPulley* Clone() const override { return new ChLinkPulley(*this); }
-
-    virtual int GetType() const override { return LNK_PULLEY; }
 
     /// Updates motion laws, marker positions, etc.
     virtual void UpdateTime(double mytime) override;
@@ -147,6 +144,8 @@ class ChApi ChLinkPulley : public ChLinkLock {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLinkPulley,0)
 
 }  // end namespace chrono
 

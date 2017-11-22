@@ -1,27 +1,19 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
 
-//////////////////////////////////////////////////
-//
-//   ChNlsolver.cpp
-//
-// ------------------------------------------------
-//             http://www.projectchrono.org
-// ------------------------------------------------
-///////////////////////////////////////////////////
+#include <cmath>
 
-#include <math.h>
-
-#include "physics/ChNlsolver.h"
-#include "core/ChLinearAlgebra.h"
+#include "chrono/physics/ChNlsolver.h"
+#include "chrono/core/ChLinearAlgebra.h"
 
 namespace chrono {
 
@@ -74,7 +66,7 @@ double ChNonlinearSolver::NewtonRaphson(void (*m_func)(ChMatrix<>* mx, ChMatrix<
 
     int iters = 0;
 
-    while (TRUE) {
+    while (true) {
         if (iters >= maxiters)
             break;
 
@@ -101,6 +93,4 @@ double ChNonlinearSolver::NewtonRaphson(void (*m_func)(ChMatrix<>* mx, ChMatrix<
     return residual;
 }
 
-}  // END_OF_NAMESPACE____
-
-////////
+}  // end namespace chrono

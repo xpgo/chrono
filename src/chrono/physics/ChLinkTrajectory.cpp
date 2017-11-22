@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -20,11 +20,11 @@ namespace chrono {
 using namespace geometry;
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChLinkTrajectory> a_registration_ChLinkTrajectory;
+CH_FACTORY_REGISTER(ChLinkTrajectory)
 
 ChLinkTrajectory::ChLinkTrajectory() : modulo_s(false) {
     // initializes type
-    type = LNK_TRAJECTORY;
+    type = LinkType::TRAJECTORY;
 
     // default s(t) function. User will provide better fx.
     space_fx = std::make_shared<ChFunction_Ramp>(0, 1.);
@@ -41,7 +41,7 @@ ChLinkTrajectory::ChLinkTrajectory() : modulo_s(false) {
 
 ChLinkTrajectory::ChLinkTrajectory(const ChLinkTrajectory& other) : ChLinkLock(other) {
     space_fx = std::shared_ptr<ChFunction>(other.space_fx->Clone());            // deep copy
-    trajectory_line = std::shared_ptr<ChLine>(other.trajectory_line->Clone());  // deep copy
+    trajectory_line = std::shared_ptr<ChLine>((ChLine*)other.trajectory_line->Clone());  // deep copy
 }
 
 void ChLinkTrajectory::Set_space_fx(std::shared_ptr<ChFunction> m_funct) {
@@ -107,7 +107,7 @@ void ChLinkTrajectory::Initialize(std::shared_ptr<ChBody> mbody1,
 
 void ChLinkTrajectory::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChLinkTrajectory>();
 
     // serialize parent class
     ChLinkLock::ArchiveOUT(marchive);
@@ -120,7 +120,7 @@ void ChLinkTrajectory::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChLinkTrajectory::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChLinkTrajectory>();
 
     // deserialize parent class
     ChLinkLock::ArchiveIN(marchive);

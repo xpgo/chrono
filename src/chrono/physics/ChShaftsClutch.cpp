@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,7 +19,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChShaftsClutch> a_registration_ChShaftClutch;
+CH_FACTORY_REGISTER(ChShaftsClutch)
 
 ChShaftsClutch::ChShaftsClutch() : maxT(1), minT(-1), modulation(1), torque_react(0) {}
 
@@ -173,7 +173,7 @@ void ChShaftsClutch::ConstraintsFetch_react(double factor) {
 
 void ChShaftsClutch::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChShaftsClutch>();
 
     // serialize parent class
     ChShaftsCouple::ArchiveOUT(marchive);
@@ -187,7 +187,7 @@ void ChShaftsClutch::ArchiveOUT(ChArchiveOut& marchive) {
 /// Method to allow de serialization of transient data from archives.
 void ChShaftsClutch::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChShaftsClutch>();
 
     // deserialize parent class:
     ChShaftsCouple::ArchiveIN(marchive);

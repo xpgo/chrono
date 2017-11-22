@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -23,7 +23,7 @@
 #include <string>
 
 #include "chrono/core/ChApiCE.h"
-#include "serialization/ChArchive.h"
+//#include "chrono/serialization/ChArchive.h"
 
 namespace chrono {
 
@@ -67,6 +67,6 @@ class ChApi ChCubicSpline {
     std::vector<double> m_ypp;
 };
 
-}  // end of namespace chrono
+}  // end namespace chrono
 
 #endif

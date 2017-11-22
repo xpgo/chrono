@@ -1,7 +1,7 @@
 #--------------------------------------------------------------
 # Additional include paths and settings
 
-INCLUDE_DIRECTORIES("${CH_CASCADEINC}")
+INCLUDE_DIRECTORIES("${CH_CASCADE_INCLUDES}")
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")	
     ADD_DEFINITIONS( "/DWNT" )
@@ -15,10 +15,10 @@ ENDIF()
 #--------------------------------------------------------------
 # List of all Cascade demos which also require Irrlicht support
 
-set(DEMOS_IRR
-	demo_converter
-	demo_stepfile
-	demo_robot
+set(DEMOS_CAS
+	demo_CAS_converter
+	demo_CAS_stepfile
+	demo_CAS_robot
 )
 
 message(STATUS "Demo programs for CASCADE module...")
@@ -30,7 +30,7 @@ if(ENABLE_MODULE_IRRLICHT)
 
    INCLUDE_DIRECTORIES("${CH_IRRLICHTINC}")
 
-   FOREACH(PROGRAM ${DEMOS_IRR})
+   FOREACH(PROGRAM ${DEMOS_CAS})
         MESSAGE(STATUS "...add ${PROGRAM}")
 
         ADD_EXECUTABLE(${PROGRAM} "${PROGRAM}.cpp")
@@ -41,7 +41,7 @@ if(ENABLE_MODULE_IRRLICHT)
             LINK_FLAGS "${CH_LINKERFLAG_EXE}")
         TARGET_LINK_LIBRARIES(${PROGRAM}
             ${CH_IRRLICHTLIB}
-            ${CH_CASCADELIBS}
+            ${CH_CASCADE_LIBS}
             ChronoEngine
             ChronoEngine_cascade
             ChronoEngine_irrlicht)

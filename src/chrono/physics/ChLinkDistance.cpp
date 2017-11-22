@@ -2,14 +2,14 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
 // http://projectchrono.org/license-chrono.txt.
 //
 // =============================================================================
-// Authors: Alesandro Tasora, Radu Serban
+// Authors: Alessandro Tasora, Radu Serban
 // =============================================================================
 
 #include "chrono/physics/ChLinkDistance.h"
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChLinkDistance> a_registration_ChLinkDistance;
+CH_FACTORY_REGISTER(ChLinkDistance)
 
 ChLinkDistance::ChLinkDistance() : pos1(VNULL), pos2(VNULL), distance(0), curr_dist(0) {}
 
@@ -74,9 +74,8 @@ ChCoordsys<> ChLinkDistance::GetLinkRelativeCoords() {
     ChVector<> D2temp = (Vnorm(Body1->TransformPointLocalToParent(pos1) - Body2->TransformPointLocalToParent(pos2)));
     ChVector<> D2rel = Body2->TransformDirectionParentToLocal(D2temp);
     ChVector<> Vx, Vy, Vz;
-    ChVector<> Vsingul(VECT_Y);
     ChMatrix33<> rel_matrix;
-    XdirToDxDyDz(&D2rel, &Vsingul, &Vx, &Vy, &Vz);
+    XdirToDxDyDz(D2rel, VECT_Y, Vx, Vy, Vz);
     rel_matrix.Set_A_axis(Vx, Vy, Vz);
 
     Quaternion Ql2 = rel_matrix.Get_A_quaternion();
@@ -85,7 +84,7 @@ ChCoordsys<> ChLinkDistance::GetLinkRelativeCoords() {
 
 void ChLinkDistance::Update(double mytime, bool update_assets) {
     // Inherit time changes of parent class (ChLink), basically doing nothing :)
-    ChLink::UpdateTime(mytime);
+    ChLink::Update(mytime, update_assets);
 
     // compute jacobians
     ChVector<> AbsDist = Body1->TransformPointLocalToParent(pos1) - Body2->TransformPointLocalToParent(pos2);
@@ -100,19 +99,19 @@ void ChLinkDistance::Update(double mytime, bool update_assets) {
     ChVector<> CqAr = -Vcross(D2relA, pos1);
     ChVector<> CqBr = Vcross(D2relB, pos2);
 
-    Cx.Get_Cq_a()->ElementN(0) = CqAx.x;
-    Cx.Get_Cq_a()->ElementN(1) = CqAx.y;
-    Cx.Get_Cq_a()->ElementN(2) = CqAx.z;
-    Cx.Get_Cq_a()->ElementN(3) = CqAr.x;
-    Cx.Get_Cq_a()->ElementN(4) = CqAr.y;
-    Cx.Get_Cq_a()->ElementN(5) = CqAr.z;
+    Cx.Get_Cq_a()->ElementN(0) = CqAx.x();
+    Cx.Get_Cq_a()->ElementN(1) = CqAx.y();
+    Cx.Get_Cq_a()->ElementN(2) = CqAx.z();
+    Cx.Get_Cq_a()->ElementN(3) = CqAr.x();
+    Cx.Get_Cq_a()->ElementN(4) = CqAr.y();
+    Cx.Get_Cq_a()->ElementN(5) = CqAr.z();
 
-    Cx.Get_Cq_b()->ElementN(0) = CqBx.x;
-    Cx.Get_Cq_b()->ElementN(1) = CqBx.y;
-    Cx.Get_Cq_b()->ElementN(2) = CqBx.z;
-    Cx.Get_Cq_b()->ElementN(3) = CqBr.x;
-    Cx.Get_Cq_b()->ElementN(4) = CqBr.y;
-    Cx.Get_Cq_b()->ElementN(5) = CqBr.z;
+    Cx.Get_Cq_b()->ElementN(0) = CqBx.x();
+    Cx.Get_Cq_b()->ElementN(1) = CqBx.y();
+    Cx.Get_Cq_b()->ElementN(2) = CqBx.z();
+    Cx.Get_Cq_b()->ElementN(3) = CqBr.x();
+    Cx.Get_Cq_b()->ElementN(4) = CqBr.y();
+    Cx.Get_Cq_b()->ElementN(5) = CqBr.z();
 
     //***TO DO***  C_dt? C_dtdt? (may be never used..)
 }
@@ -120,13 +119,13 @@ void ChLinkDistance::Update(double mytime, bool update_assets) {
 //// STATE BOOKKEEPING FUNCTIONS
 
 void ChLinkDistance::IntStateGatherReactions(const unsigned int off_L, ChVectorDynamic<>& L) {
-    L(off_L) = -react_force.x;
+    L(off_L) = -react_force.x();
 }
 
 void ChLinkDistance::IntStateScatterReactions(const unsigned int off_L, const ChVectorDynamic<>& L) {
-    react_force.x = -L(off_L);
-    react_force.y = 0;
-    react_force.z = 0;
+    react_force.x() = -L(off_L);
+    react_force.y() = 0;
+    react_force.z() = 0;
 
     react_torque = VNULL;
 }
@@ -157,10 +156,10 @@ void ChLinkDistance::IntLoadConstraint_C(const unsigned int off_L,  ///< offset 
         Qc(off_L) += c * (curr_dist - distance);
 }
 
-void ChLinkDistance::IntToDescriptor(const unsigned int off_v,  ///< offset in v, R
+void ChLinkDistance::IntToDescriptor(const unsigned int off_v,
                                      const ChStateDelta& v,
                                      const ChVectorDynamic<>& R,
-                                     const unsigned int off_L,  ///< offset in L, Qc
+                                     const unsigned int off_L,
                                      const ChVectorDynamic<>& L,
                                      const ChVectorDynamic<>& Qc) {
     if (!IsActive())
@@ -171,9 +170,9 @@ void ChLinkDistance::IntToDescriptor(const unsigned int off_v,  ///< offset in v
     Cx.Set_b_i(Qc(off_L));
 }
 
-void ChLinkDistance::IntFromDescriptor(const unsigned int off_v,  ///< offset in v
+void ChLinkDistance::IntFromDescriptor(const unsigned int off_v,
                                        ChStateDelta& v,
-                                       const unsigned int off_L,  ///< offset in L
+                                       const unsigned int off_L,
                                        ChVectorDynamic<>& L) {
     if (!IsActive())
         return;
@@ -210,16 +209,16 @@ void ChLinkDistance::ConstraintsLoadJacobians() {
 
 void ChLinkDistance::ConstraintsFetch_react(double factor) {
     // From constraints to react vector:
-    react_force.x = -Cx.Get_l_i() * factor;
-    react_force.y = 0;
-    react_force.z = 0;
+    react_force.x() = -Cx.Get_l_i() * factor;
+    react_force.y() = 0;
+    react_force.z() = 0;
 
     react_torque = VNULL;
 }
 
 void ChLinkDistance::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChLinkDistance>();
 
     // serialize parent class
     ChLink::ArchiveOUT(marchive);
@@ -233,7 +232,7 @@ void ChLinkDistance::ArchiveOUT(ChArchiveOut& marchive) {
 /// Method to allow de serialization of transient data from archives.
 void ChLinkDistance::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChLinkDistance>();
 
     // deserialize parent class
     ChLink::ArchiveIN(marchive);

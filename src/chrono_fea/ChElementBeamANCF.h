@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -43,18 +43,18 @@ class ChApiFea ChMaterialBeamANCF {
     ChMaterialBeamANCF(double rho,        ///< material density
                        double E,          ///< Young's modulus
                        double nu,         ///< Poisson ratio
-                       const double& k1,  // Shear correction factor along beam local y axis
-                       const double& k2   // Shear correction factor along beam local z axis
-                       );
+                       const double& k1,  ///< Shear correction factor along beam local y axis
+                       const double& k2   ///< Shear correction factor along beam local z axis
+    );
 
     /// Construct a (possibly) orthotropic material.
     ChMaterialBeamANCF(double rho,            ///< material density
                        const ChVector<>& E,   ///< elasticity moduli (E_x, E_y, E_z)
                        const ChVector<>& nu,  ///< Poisson ratios (nu_xy, nu_xz, nu_yz)
                        const ChVector<>& G,   ///< shear moduli (G_xy, G_xz, G_yz)
-                       const double& k1,      // Shear correction factor along beam local y axis
-                       const double& k2       // Shear correction factor along beam local z axis
-                       );
+                       const double& k1,      ///< Shear correction factor along beam local y axis
+                       const double& k2       ///< Shear correction factor along beam local z axis
+    );
 
     /// Return the material density.
     double Get_rho() const { return m_rho; }
@@ -241,7 +241,7 @@ class ChApiFea ChElementBeamANCF : public ChElementBeam, public ChLoadableU, pub
     // Interface to ChElementBeam base class
     // --------------------------------------
 
-    void EvaluateSectionPoint(const double u, const ChMatrix<>& displ, ChVector<>& point);
+    // void EvaluateSectionPoint(const double u, const ChMatrix<>& displ, ChVector<>& point); // Not needed?
 
     // Dummy method definitions.
     virtual void EvaluateSectionStrain(const double,
@@ -254,7 +254,7 @@ class ChApiFea ChElementBeamANCF : public ChElementBeam, public ChLoadableU, pub
                                             chrono::ChVector<double>&) override {}
 
     /// Gets the xyz displacement of a point on the beam line,
-    /// and the rotation RxRyRz of section plane, at abscyssa 'eta'.
+    /// and the rotation RxRyRz of section plane, at abscissa 'eta'.
     /// Note, eta=-1 at node1, eta=+1 at node2.
     /// Note, 'displ' is the displ.state of 2 nodes, ex. get it as GetStateBlock()
     /// Results are not corotated.
@@ -264,7 +264,7 @@ class ChApiFea ChElementBeamANCF : public ChElementBeam, public ChLoadableU, pub
                                              ChVector<>& u_rotaz) override {}
 
     /// Gets the absolute xyz position of a point on the beam line,
-    /// and the absolute rotation of section plane, at abscyssa 'eta'.
+    /// and the absolute rotation of section plane, at abscissa 'eta'.
     /// Note, eta=-1 at node1, eta=+1 at node2.
     /// Note, 'displ' is the displ.state of 2 nodes, ex. get it as GetStateBlock()
     /// Results are corotated (expressed in world reference)
@@ -278,7 +278,7 @@ class ChApiFea ChElementBeamANCF : public ChElementBeam, public ChLoadableU, pub
     /// Compute Jacobians of the internal forces.
     /// This function calculates a linear combination of the stiffness (K) and damping (R) matrices,
     ///     J = Kfactor * K + Rfactor * R
-    /// for given coeficients Kfactor and Rfactor.
+    /// for given coefficients Kfactor and Rfactor.
     /// This Jacobian will be further combined with the global mass matrix M and included in the global
     /// stiffness matrix H in the function ComputeKRMmatricesGlobal().
     void ComputeInternalJacobians(double Kfactor, double Rfactor);
@@ -322,29 +322,36 @@ class ChApiFea ChElementBeamANCF : public ChElementBeam, public ChLoadableU, pub
     // ----------------------------------
 
     /// Gets the number of DOFs affected by this element (position part).
-    virtual int LoadableGet_ndof_x() { return 3 * 9; }
+    virtual int LoadableGet_ndof_x() override { return 3 * 9; }
 
     /// Gets the number of DOFs affected by this element (velocity part).
-    virtual int LoadableGet_ndof_w() { return 3 * 9; }
+    virtual int LoadableGet_ndof_w() override { return 3 * 9; }
 
     /// Gets all the DOFs packed in a single vector (position part).
-    virtual void LoadableGetStateBlock_x(int block_offset, ChVectorDynamic<>& mD) override;
+    virtual void LoadableGetStateBlock_x(int block_offset, ChState& mD) override;
 
     /// Gets all the DOFs packed in a single vector (velocity part).
-    virtual void LoadableGetStateBlock_w(int block_offset, ChVectorDynamic<>& mD) override;
+    virtual void LoadableGetStateBlock_w(int block_offset, ChStateDelta& mD) override;
+
+    /// Increment all DOFs using a delta.
+    virtual void LoadableStateIncrement(const unsigned int off_x,
+                                        ChState& x_new,
+                                        const ChState& x,
+                                        const unsigned int off_v,
+                                        const ChStateDelta& Dv) override;
 
     /// Number of coordinates in the interpolated field, ex=3 for a
     /// tetrahedron finite element or a cable, = 1 for a thermal problem, etc.
-    virtual int Get_field_ncoords() { return 9; }
+    virtual int Get_field_ncoords() override { return 9; }
 
     /// Tell the number of DOFs blocks (ex. =1 for a body, =4 for a tetrahedron, etc.)
-    virtual int GetSubBlocks() { return 3; }
+    virtual int GetSubBlocks() override { return 3; }
 
     /// Get the offset of the i-th sub-block of DOFs in global vector.
-    virtual unsigned int GetSubBlockOffset(int nblock) { return m_nodes[nblock]->NodeGetOffset_w(); }
+    virtual unsigned int GetSubBlockOffset(int nblock) override { return m_nodes[nblock]->NodeGetOffset_w(); }
 
     /// Get the size of the i-th sub-block of DOFs in global vector.
-    virtual unsigned int GetSubBlockSize(int nblock) { return 9; }
+    virtual unsigned int GetSubBlockSize(int nblock) override { return 9; }
 
     void EvaluateSectionVelNorm(double U, ChVector<>& Result);
 
@@ -361,7 +368,7 @@ class ChApiFea ChElementBeamANCF : public ChElementBeam, public ChLoadableU, pub
                            const ChVectorDynamic<>& F,  ///< Input F vector, size is =n. field coords.
                            ChVectorDynamic<>* state_x,  ///< if != 0, update state (pos. part) to this, then evaluate
                            ChVectorDynamic<>* state_w   ///< if != 0, update state (speed part) to this, then evaluate
-                           ) override;
+    ) override;
 
     /// Evaluate N'*F , where N is some type of shape function
     /// evaluated at U,V,W coordinates of the volume, each ranging in -1..+1
@@ -375,7 +382,7 @@ class ChApiFea ChElementBeamANCF : public ChElementBeam, public ChLoadableU, pub
                            const ChVectorDynamic<>& F,  ///< Input F vector, size is = n.field coords.
                            ChVectorDynamic<>* state_x,  ///< if != 0, update state (pos. part) to this, then evaluate Q
                            ChVectorDynamic<>* state_w   ///< if != 0, update state (speed part) to this, then evaluate Q
-                           ) override;
+    ) override;
 
     /// This is needed so that it can be accessed by ChLoaderVolumeGravity.
     /// Density is mass per unit surface.

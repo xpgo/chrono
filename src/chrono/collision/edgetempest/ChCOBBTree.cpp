@@ -1,30 +1,22 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
 
-//////////////////////////////////////////////////
-//
-//   ChCOBBTree.cpp
-//
-// ------------------------------------------------
-//             http://www.projectchrono.org
-// ------------------------------------------------
-///////////////////////////////////////////////////
+#include <cstdio>
+#include <cstring>
 
-#include <stdio.h>
-#include <string.h>
-
-#include "ChCMatVec.h"
-#include "ChCGetTime.h"
-#include "ChCOBBTree.h"
-#include "core/ChTransform.h"
+#include "chrono/collision/edgetempest/ChCMatVec.h"
+#include "chrono/collision/edgetempest/ChCGetTime.h"
+#include "chrono/collision/edgetempest/ChCOBBTree.h"
+#include "chrono/core/ChTransform.h"
 
 namespace chrono {
 namespace collision {
@@ -144,9 +136,9 @@ void get_centroid_geometries(PQP_REAL c[3], std::vector<geometry::ChGeometry*>& 
 
         Vector baricenter = nit->Baricenter();
 
-        c[0] += baricenter.x;
-        c[1] += baricenter.y;
-        c[2] += baricenter.z;
+        c[0] += baricenter.x();
+        c[1] += baricenter.y();
+        c[2] += baricenter.z();
     }
 
     c[0] /= ngeos;
@@ -180,12 +172,12 @@ void get_covariance_geometries(PQP_REAL M[3][3], std::vector<geometry::ChGeometr
 
     // now get covariances
 
-    M[0][0] = S2(0, 0) - S1.x * S1.x / ngeos;
-    M[1][1] = S2(1, 1) - S1.y * S1.y / ngeos;
-    M[2][2] = S2(2, 2) - S1.z * S1.z / ngeos;
-    M[0][1] = S2(0, 1) - S1.x * S1.y / ngeos;
-    M[1][2] = S2(1, 2) - S1.y * S1.z / ngeos;
-    M[0][2] = S2(0, 2) - S1.x * S1.z / ngeos;
+    M[0][0] = S2(0, 0) - S1.x() * S1.x() / ngeos;
+    M[1][1] = S2(1, 1) - S1.y() * S1.y() / ngeos;
+    M[2][2] = S2(2, 2) - S1.z() * S1.z() / ngeos;
+    M[0][1] = S2(0, 1) - S1.x() * S1.y() / ngeos;
+    M[1][2] = S2(1, 2) - S1.y() * S1.z() / ngeos;
+    M[0][2] = S2(0, 2) - S1.x() * S1.z() / ngeos;
     M[1][0] = M[0][1];
     M[2][0] = M[0][2];
     M[2][1] = M[1][2];
@@ -207,9 +199,9 @@ int split_geometries(std::vector<geometry::ChGeometry*>& mgeos, int firstgeo, in
         //                   c1          i
         //
         Vector vg = mgeos[i]->Baricenter();
-        p[0] = vg.x;
-        p[1] = vg.y;
-        p[2] = vg.z;
+        p[0] = vg.x();
+        p[1] = vg.y();
+        p[2] = vg.z();
 
         x = VdotV(p, a);
 
@@ -362,5 +354,5 @@ int CHOBBTree::build_model(double envelope) {
     return ChC_OK;
 }
 
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace collision
+}  // end namespace chrono

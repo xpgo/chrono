@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -44,8 +44,16 @@ class CH_VEHICLE_API ChChassis : public ChPart {
     /// Get the chassis mass.
     virtual double GetMass() const = 0;
 
-    /// Get the moments of inertia of the chassis body.
-    virtual const ChVector<>& GetInertia() const = 0;
+    /// Get the inertia tensor of the chassis body.
+    /// The return 3x3 symmetric matrix contains the following values:
+    /// <pre>
+    ///  [ int{x^2+z^2}dm    -int{xy}dm    -int{xz}dm    ]
+    ///  [                  int{x^2+z^2}   -int{yz}dm    ]
+    ///  [                                int{x^2+y^2}dm ]
+    /// </pre>
+    /// and represents the inertia tensor with respect to a centroidal frame
+    /// aligned with the chassis reference frame.
+    virtual const ChMatrix33<>& GetInertia() const = 0;
 
     /// Get the location of the center of mass in the chassis frame.
     virtual const ChVector<>& GetLocalPosCOM() const = 0;
@@ -84,6 +92,16 @@ class CH_VEHICLE_API ChChassis : public ChPart {
     /// Return the speed measured at the chassis center of mass.
     double GetCOMSpeed() const { return m_body->GetPos_dt().Length(); }
 
+    /// Get the global position of the specified point.
+    /// The point is assumed to be given relative to the chassis reference frame.
+    /// The returned location is expressed in the global reference frame.
+    ChVector<> GetPointLocation(const ChVector<>& locpos) const;
+
+    /// Get the global velocity of the specified point.
+    /// The point is assumed to be given relative to the chassis reference frame.
+    /// The returned velocity is expressed in the global reference frame.
+    ChVector<> GetPointVelocity(const ChVector<>& locpos) const;
+
     /// Get the acceleration at the specified point.
     /// The point is assumed to be given relative to the chassis reference frame.
     /// The returned acceleration is expressed in the chassis reference frame.
@@ -92,8 +110,13 @@ class CH_VEHICLE_API ChChassis : public ChPart {
     /// Initialize the chassis at the specified global position and orientation.
     virtual void Initialize(ChSystem* system,                ///< [in] containing system
                             const ChCoordsys<>& chassisPos,  ///< [in] absolute chassis position
-                            double chassisFwdVel             ///< [in] initial chassis forward velocity
+                            double chassisFwdVel,            ///< [in] initial chassis forward velocity
+                            int collision_family = 0         ///< [in] chassis collision family
                             );
+
+    /// Enable/disable contact for the chassis. This function controls contact of
+    /// the chassis with all other collision shapes in the simulation.
+    virtual void SetCollide(bool state) = 0;
 
     /// Set the "fixed to ground" status of the chassis body.
     void SetFixed(bool val) { m_body->SetBodyFixed(val); }
@@ -101,15 +124,26 @@ class CH_VEHICLE_API ChChassis : public ChPart {
     /// Return true if the chassis body is fixed to ground.
     bool IsFixed() const { return m_body->GetBodyFixed(); }
 
-    /// Add visualization assets to this subsystem, for the specified visualization mode.
-    virtual void AddVisualizationAssets(VisualizationType vis) override;
+    /// Set parameters and enable aerodynamic drag force calculation.
+    /// By default, aerodynamic drag force calculation is disabled.
+    void SetAerodynamicDrag(double Cd,          ///< [in] drag coefficient
+                            double area,        ///< [in] reference area
+                            double air_density  ///< [in] air density
+                            );
 
-    /// Remove all visualization assets from this subsystem.
-    virtual void RemoveVisualizationAssets() override final;
+    /// Update the state of the chassis subsystem.
+    /// The base class implementation applies aerodynamic drag forces to the 
+    /// chassis body (if enabled).
+    virtual void Synchronize(double time);
 
   protected:
     std::shared_ptr<ChBodyAuxRef> m_body;  ///< handle to the chassis body
     bool m_fixed;                          ///< is the chassis body fixed to ground?
+
+    bool m_apply_drag;     ///< enable aerodynamic drag force?
+    double m_Cd;           ///< drag coefficient
+    double m_area;         ///< reference area (m2)
+    double m_air_density;  ///< air density (kg/m3)
 };
 
 /// @} vehicle

@@ -31,7 +31,7 @@ if(ENABLE_IRRKLANG)
 
   if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
       set(CH_IRRKLANG_SDKDIR ""  CACHE PATH   "Where is your IrrKlang SDK installed?")
-      set(CH_IRRKLANGLIB   "" CACHE FILEPATH "Where is your Irrklank library?")
+      set(CH_IRRKLANGLIB   "" CACHE FILEPATH "Where is your Irrklang library?")
   elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
       FIND_PATH(CH_IRRKLANG_SDKDIR NAMES irrlicht.h PATHS "/usr/include/irrklang" "/usr/local/include/irrklang")
       FIND_LIBRARY(CH_IRRKLANGLIB NAMES Irrklang PATHS "/usr/local/lib" ${CH_IRRKLANG_SDKDIR}/lib/Linux)
@@ -102,6 +102,9 @@ set(CV_BASE_FILES
 source_group("base" FILES ${CV_BASE_FILES})
 
 set(CV_CHASSIS_FILES
+	chassis/ChRigidChassis.h
+	chassis/ChRigidChassis.cpp
+
 	chassis/RigidChassis.h
 	chassis/RigidChassis.cpp
 )
@@ -130,6 +133,8 @@ set(CV_POVERTRAIN_FILES
     powertrain/ChSimplePowertrain.cpp
     powertrain/ChShaftsPowertrain.h
     powertrain/ChShaftsPowertrain.cpp
+    powertrain/ChSimpleMapPowertrain.h
+    powertrain/ChSimpleMapPowertrain.cpp
 
     powertrain/SimplePowertrain.h
     powertrain/SimplePowertrain.cpp
@@ -143,8 +148,10 @@ set(CV_TERRAIN_FILES
     terrain/FlatTerrain.cpp
     terrain/RigidTerrain.h
     terrain/RigidTerrain.cpp
-    terrain/DeformableTerrain.h
-    terrain/DeformableTerrain.cpp
+    terrain/SCMDeformableTerrain.h
+    terrain/SCMDeformableTerrain.cpp
+    terrain/GranularTerrain.h
+    terrain/GranularTerrain.cpp
 )
 
 if(ENABLE_MODULE_FEA)
@@ -164,6 +171,10 @@ set(CV_UTILS_FILES
     utils/ChSpeedController.cpp
     utils/ChAdaptiveSpeedController.h
     utils/ChAdaptiveSpeedController.cpp
+    utils/ChVehiclePath.h
+    utils/ChVehiclePath.cpp
+    utils/ChUtilsJSON.h
+    utils/ChUtilsJSON.cpp
 )
 if(ENABLE_MODULE_IRRLICHT)
     set(CVIRR_UTILS_FILES
@@ -258,6 +269,14 @@ set(CV_WV_SUSPENSION_FILES
     wheeled_vehicle/suspension/ChHendricksonPRIMAXX.cpp
     wheeled_vehicle/suspension/ChMacPhersonStrut.h
     wheeled_vehicle/suspension/ChMacPhersonStrut.cpp
+    wheeled_vehicle/suspension/ChSemiTrailingArm.h
+    wheeled_vehicle/suspension/ChSemiTrailingArm.cpp
+    wheeled_vehicle/suspension/ChThreeLinkIRS.h
+    wheeled_vehicle/suspension/ChThreeLinkIRS.cpp
+    wheeled_vehicle/suspension/ChRigidSuspension.h
+    wheeled_vehicle/suspension/ChRigidSuspension.cpp
+    wheeled_vehicle/suspension/ChRigidPinnedAxle.h
+    wheeled_vehicle/suspension/ChRigidPinnedAxle.cpp
 
     wheeled_vehicle/suspension/DoubleWishbone.h
     wheeled_vehicle/suspension/DoubleWishbone.cpp
@@ -271,18 +290,44 @@ set(CV_WV_SUSPENSION_FILES
     wheeled_vehicle/suspension/HendricksonPRIMAXX.cpp
     wheeled_vehicle/suspension/MacPhersonStrut.h
     wheeled_vehicle/suspension/MacPhersonStrut.cpp
+    wheeled_vehicle/suspension/SemiTrailingArm.h
+    wheeled_vehicle/suspension/SemiTrailingArm.cpp
+    wheeled_vehicle/suspension/ThreeLinkIRS.h
+    wheeled_vehicle/suspension/ThreeLinkIRS.cpp
 )
 source_group("wheeled_vehicle\\suspension" FILES ${CV_WV_SUSPENSION_FILES})
+
+set(CV_WV_TEST_RIG_FILES
+    wheeled_vehicle/test_rig/ChSuspensionTestRig.h
+    wheeled_vehicle/test_rig/ChSuspensionTestRig.cpp
+    wheeled_vehicle/test_rig/ChDriverSTR.h
+    wheeled_vehicle/test_rig/ChDriverSTR.cpp
+    wheeled_vehicle/test_rig/ChDataDriverSTR.h
+    wheeled_vehicle/test_rig/ChDataDriverSTR.cpp
+)
+if(ENABLE_MODULE_IRRLICHT)
+    set(CVIRR_WV_TEST_RIG_FILES
+        wheeled_vehicle/test_rig/ChIrrGuiDriverSTR.h
+        wheeled_vehicle/test_rig/ChIrrGuiDriverSTR.cpp    
+    )
+else()
+    set(CVIRR_WV_TEST_RIG_FILES "")
+endif()
+source_group("wheeled_vehicle\\test_rig" FILES ${CV_WV_TEST_RIG_FILES} ${CVIRR_WV_TEST_RIG_FILES})
 
 set(CV_WV_TIRE_FILES
     wheeled_vehicle/tire/ChRigidTire.h
     wheeled_vehicle/tire/ChRigidTire.cpp
     wheeled_vehicle/tire/ChPacejkaTire.h
     wheeled_vehicle/tire/ChPacejkaTire.cpp
+    wheeled_vehicle/tire/ChPac89Tire.h
+    wheeled_vehicle/tire/ChPac89Tire.cpp
     wheeled_vehicle/tire/ChLugreTire.h
     wheeled_vehicle/tire/ChLugreTire.cpp
     wheeled_vehicle/tire/ChFialaTire.h
     wheeled_vehicle/tire/ChFialaTire.cpp
+    wheeled_vehicle/tire/ChTMeasyTire.h
+    wheeled_vehicle/tire/ChTMeasyTire.cpp
 
     wheeled_vehicle/tire/RigidTire.h
     wheeled_vehicle/tire/RigidTire.cpp
@@ -307,6 +352,10 @@ if(ENABLE_MODULE_FEA)
         wheeled_vehicle/tire/ANCFTire.cpp
         wheeled_vehicle/tire/FEATire.h
         wheeled_vehicle/tire/FEATire.cpp
+        wheeled_vehicle/tire/ANCFToroidalTire.h
+        wheeled_vehicle/tire/ANCFToroidalTire.cpp
+        wheeled_vehicle/tire/ReissnerToroidalTire.h
+        wheeled_vehicle/tire/ReissnerToroidalTire.cpp
     )
 else()
     set(CV_WV_FEATIRE_FILES "")
@@ -316,15 +365,11 @@ source_group("wheeled_vehicle\\tire" FILES ${CV_WV_TIRE_FILES} ${CV_WV_FEATIRE_F
 set(CV_WV_UTILS_FILES
     wheeled_vehicle/utils/ChWheeledVehicleAssembly.h
     wheeled_vehicle/utils/ChWheeledVehicleAssembly.cpp
-    wheeled_vehicle/utils/ChSuspensionTestRig.h
-    wheeled_vehicle/utils/ChSuspensionTestRig.cpp
 )
 if(ENABLE_MODULE_IRRLICHT)
     set(CVIRR_WV_UTILS_FILES
         wheeled_vehicle/utils/ChWheeledVehicleIrrApp.h
         wheeled_vehicle/utils/ChWheeledVehicleIrrApp.cpp
-        wheeled_vehicle/utils/ChIrrGuiDriverSTR.h
-        wheeled_vehicle/utils/ChIrrGuiDriverSTR.cpp
     )
 else()
     set(CVIRR_WV_UTILS_FILES "")
@@ -459,9 +504,13 @@ source_group("tracked_vehicle\\sprocket" FILES ${CV_TV_SPROCKET_FILES})
 set(CV_TV_SUSPENSION_FILES
     tracked_vehicle/suspension/ChLinearDamperRWAssembly.h
     tracked_vehicle/suspension/ChLinearDamperRWAssembly.cpp
+    tracked_vehicle/suspension/ChRotationalDamperRWAssembly.h
+    tracked_vehicle/suspension/ChRotationalDamperRWAssembly.cpp
 
     tracked_vehicle/suspension/LinearDamperRWAssembly.h
     tracked_vehicle/suspension/LinearDamperRWAssembly.cpp
+    tracked_vehicle/suspension/RotationalDamperRWAssembly.h
+    tracked_vehicle/suspension/RotationalDamperRWAssembly.cpp
 )
 source_group("tracked_vehicle\\suspension" FILES ${CV_TV_SUSPENSION_FILES})
 
@@ -558,7 +607,7 @@ add_library(ChronoEngine_vehicle SHARED
     ${CVIRR_DRIVER_FILES}
     ${CV_POVERTRAIN_FILES}
     ${CV_TERRAIN_FILES}
-	${CV_FEATERRAIN_FILES}
+    ${CV_FEATERRAIN_FILES}
     ${CV_UTILS_FILES}
     ${CVIRR_UTILS_FILES}
 #
@@ -568,6 +617,8 @@ add_library(ChronoEngine_vehicle SHARED
     ${CV_WV_DRIVELINE_FILES}
     ${CV_WV_STEERING_FILES}
     ${CV_WV_SUSPENSION_FILES}
+    ${CV_WV_TEST_RIG_FILES}
+    ${CVIRR_WV_TEST_RIG_FILES}
     ${CV_WV_TIRE_FILES}
     ${CV_WV_FEATIRE_FILES}
     ${CV_WV_UTILS_FILES}

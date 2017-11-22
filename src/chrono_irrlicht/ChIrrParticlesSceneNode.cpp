@@ -1,12 +1,14 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
 
 #include "chrono_irrlicht/ChIrrParticlesSceneNode.h"
 
@@ -162,9 +164,9 @@ void ChIrrParticlesSceneNode::OnAnimate(u32 timeMs) {
                 irrMat[9] = (f32)chMat.GetElementN(5);
                 irrMat[10] = (f32)chMat.GetElementN(8);
 
-                irrMat[12] = (f32)(*particlep)->GetParticle(j).GetPos().x;
-                irrMat[13] = (f32)(*particlep)->GetParticle(j).GetPos().y;
-                irrMat[14] = (f32)(*particlep)->GetParticle(j).GetPos().z;
+                irrMat[12] = (f32)(*particlep)->GetParticle(j).GetPos().x();
+                irrMat[13] = (f32)(*particlep)->GetParticle(j).GetPos().y();
+                irrMat[14] = (f32)(*particlep)->GetParticle(j).GetPos().z();
 
                 // Clear the last column to 0 and set low-right corner to 1
                 // as in Denavitt-Hartemberg matrices, transposed.

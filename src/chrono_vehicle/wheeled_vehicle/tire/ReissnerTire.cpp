@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,9 +17,11 @@
 // =============================================================================
 
 #include "chrono/core/ChCubicSpline.h"
-#include "chrono_vehicle/wheeled_vehicle/tire/ReissnerTire.h"
 #include "chrono_fea/ChElementHexa_8.h"
 #include "chrono_fea/ChLinkPointTriface.h"
+
+#include "chrono_vehicle/wheeled_vehicle/tire/ReissnerTire.h"
+#include "chrono_vehicle/utils/ChUtilsJSON.h"
 
 #include "chrono_thirdparty/rapidjson/filereadstream.h"
 
@@ -28,22 +30,6 @@ using namespace rapidjson;
 
 namespace chrono {
 namespace vehicle {
-
-// -----------------------------------------------------------------------------
-// These utility functions return a ChVector and a ChQuaternion, respectively,
-// from the specified JSON array.
-// -----------------------------------------------------------------------------
-static ChVector<> loadVector(const Value& a) {
-    assert(a.IsArray());
-    assert(a.Size() == 3);
-    return ChVector<>(a[0u].GetDouble(), a[1u].GetDouble(), a[2u].GetDouble());
-}
-
-static ChQuaternion<> loadQuaternion(const Value& a) {
-    assert(a.IsArray());
-    assert(a.Size() == 4);
-    return ChQuaternion<>(a[0u].GetDouble(), a[1u].GetDouble(), a[2u].GetDouble(), a[3u].GetDouble());
-}
 
 // -----------------------------------------------------------------------------
 // Constructors for ReissnerTire
@@ -57,7 +43,7 @@ ReissnerTire::ReissnerTire(const std::string& filename) : ChReissnerTire("") {
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     ProcessJSON(d);
 
@@ -87,22 +73,22 @@ void ReissnerTire::ProcessJSON(const rapidjson::Document& d) {
     // Read contact material data
     assert(d.HasMember("Contact Material"));
 
-    float mu = d["Contact Material"]["Coefficient of Friction"].GetDouble();
-    float cr = d["Contact Material"]["Coefficient of Restitution"].GetDouble();
+    float mu = d["Contact Material"]["Coefficient of Friction"].GetFloat();
+    float cr = d["Contact Material"]["Coefficient of Restitution"].GetFloat();
 
     SetContactFrictionCoefficient(mu);
     SetContactRestitutionCoefficient(cr);
 
     if (d["Contact Material"].HasMember("Properties")) {
-        float ym = d["Contact Material"]["Properties"]["Young Modulus"].GetDouble();
-        float pr = d["Contact Material"]["Properties"]["Poisson Ratio"].GetDouble();
+        float ym = d["Contact Material"]["Properties"]["Young Modulus"].GetFloat();
+        float pr = d["Contact Material"]["Properties"]["Poisson Ratio"].GetFloat();
         SetContactMaterialProperties(ym, pr);
     }
     if (d["Contact Material"].HasMember("Coefficients")) {
-        float kn = d["Contact Material"]["Coefficients"]["Normal Stiffness"].GetDouble();
-        float gn = d["Contact Material"]["Coefficients"]["Normal Damping"].GetDouble();
-        float kt = d["Contact Material"]["Coefficients"]["Tangential Stiffness"].GetDouble();
-        float gt = d["Contact Material"]["Coefficients"]["Tangential Damping"].GetDouble();
+        float kn = d["Contact Material"]["Coefficients"]["Normal Stiffness"].GetFloat();
+        float gn = d["Contact Material"]["Coefficients"]["Normal Damping"].GetFloat();
+        float kt = d["Contact Material"]["Coefficients"]["Tangential Stiffness"].GetFloat();
+        float gt = d["Contact Material"]["Coefficients"]["Tangential Damping"].GetFloat();
         SetContactMaterialCoefficients(kn, gn, kt, gt);
     }
 

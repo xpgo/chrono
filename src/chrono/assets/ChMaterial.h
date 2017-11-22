@@ -1,22 +1,24 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2014 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+
 #ifndef CHMATERIAL_H
 #define CHMATERIAL_H
 
-///////////////////////////////////////////////////
-//
-//   ChMaterial.h
-//
-//   Class for storing a material
-//
-//   HEADER file for CHRONO,
-//   Multibody dynamics engine
-//
-///////////////////////////////////////////////////
-
-#include "assets/ChAsset.h"
-#include "assets/ChColor.h"
 #include <string>
 #include <vector>
-#include "serialization/ChArchive.h"
+
+#include "chrono/assets/ChAsset.h"
+#include "chrono/assets/ChColor.h"
+#include "chrono/serialization/ChArchive.h"
 
 namespace chrono {
 
@@ -41,7 +43,7 @@ struct material_option {
 
     virtual void ArchiveOUT(ChArchiveOut& marchive)
     {
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<material_option>();
         // serialize all member data:
         marchive << CHNVP(type);
         marchive << CHNVP(parameter);
@@ -51,13 +53,17 @@ struct material_option {
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) 
     {
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<material_option>();
         // deserialize all member data:
         marchive >> CHNVP(type);
         marchive >> CHNVP(parameter);
         marchive >> CHNVP(value);
     }
 };
+
+CH_CLASS_VERSION(ChMaterialOption,0)
+
+
 
 class ChApi ChMaterial {
   public:
@@ -107,7 +113,7 @@ class ChApi ChMaterial {
     virtual void ArchiveOUT(ChArchiveOut& marchive)
     {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChMaterial>();
 
         // serialize all member data:
         marchive << CHNVP(color);
@@ -122,7 +128,7 @@ class ChApi ChMaterial {
     virtual void ArchiveIN(ChArchiveIn& marchive) 
     {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChMaterial>();
 
         // stream in all member data:
         marchive >> CHNVP(color);
@@ -134,6 +140,9 @@ class ChApi ChMaterial {
     }
 
 };
-}
+
+CH_CLASS_VERSION(ChMaterial,0)
+
+}  // end namespace chrono
 
 #endif

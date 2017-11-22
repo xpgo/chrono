@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -12,7 +12,7 @@
 // Authors: Radu Serban
 // =============================================================================
 //
-// HMMWV wheel subsystem
+// HMMWV rigid tire subsystem
 //
 // =============================================================================
 
@@ -31,6 +31,9 @@ namespace hmmwv {
 
 const double HMMWV_RigidTire::m_radius = 0.4673;
 const double HMMWV_RigidTire::m_width = 0.254;
+
+const double HMMWV_RigidTire::m_mass = 37.6;
+const ChVector<> HMMWV_RigidTire::m_inertia(3.84, 6.69, 3.84);
 
 const std::string HMMWV_RigidTire::m_meshName = "hmmwv_tire_POV_geom";
 const std::string HMMWV_RigidTire::m_meshFile = "hmmwv/hmmwv_tire.obj";

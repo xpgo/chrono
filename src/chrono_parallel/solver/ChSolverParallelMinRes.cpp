@@ -1,13 +1,27 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar
+// =============================================================================
+
 #include "chrono_parallel/solver/ChSolverParallel.h"
 
 using namespace chrono;
 
 uint ChSolverParallelMinRes::Solve(ChShurProduct& ShurProduct,
-                           ChProjectConstraints& Project,
-                           const uint max_iter,
-                           const uint size,
-                           const DynamicVector<real>& mb,
-                           DynamicVector<real>& x) {
+                                   ChProjectConstraints& Project,
+                                   const uint max_iter,
+                                   const uint size,
+                                   const DynamicVector<real>& mb,
+                                   DynamicVector<real>& x) {
     if (size == 0) {
         return 0;
     }
@@ -15,7 +29,7 @@ uint ChSolverParallelMinRes::Solve(ChShurProduct& ShurProduct,
     real& residual = data_manager->measures.solver.residual;
     real& objective_value = data_manager->measures.solver.objective_value;
 
-    uint N = mb.size();
+    uint N = (uint)mb.size();
 
     v.resize(N);
     v_hat.resize(x.size());
@@ -39,7 +53,7 @@ uint ChSolverParallelMinRes::Solve(ChShurProduct& ShurProduct,
         return 0;
     }
 
-    for (current_iteration = 0; current_iteration < max_iter; current_iteration++) {
+    for (current_iteration = 0; current_iteration < (signed)max_iter; current_iteration++) {
         //// Lanczos
         v_old = v;
         v = 1.0 / beta * v_hat;

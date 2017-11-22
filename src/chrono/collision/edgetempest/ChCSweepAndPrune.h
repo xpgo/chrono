@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -28,8 +28,15 @@
 #endif
 
 #include "chrono/collision/edgetempest/ChCBroadPhaseCollider.h"
-#include "chrono/core/ChWrapHashmap.h"
 #include "chrono/geometry/ChGeometry.h"
+
+#ifdef COMPILER_GCC
+#include <ext/hash_map>
+namespace chronohash = ::__gnu_cxx;
+#else
+#include <hash_map>
+namespace chronohash = ::stdext;  // NOTE: in Visual C++ Toolkit 2003 is ::std;
+#endif
 
 namespace chrono {
 namespace collision {
@@ -220,7 +227,7 @@ class ChSweepAndPrune : public ChBroadPhaseCollider<model_type> {
             //--- Check if we encountered an element that was smaller
             //--- than its left neighbor
             if (isWrong(*left, *scan)) {
-                //--- If so we contineously swap the element to the left
+                //--- If so we continuously swap the element to the left
                 //--- in the list until its left neighbor is no longer
                 //--- bigger than itself
                 typename ChAxisOfCoordinates::iterator _right;
@@ -340,7 +347,7 @@ class ChSweepAndPrune : public ChBroadPhaseCollider<model_type> {
 
 };  // end of s&p class
 
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace collision
+}  // end namespace chrono
 
 #endif

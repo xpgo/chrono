@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -12,7 +12,8 @@
 // Authors: Alessandro Tasora, Radu Serban
 // =============================================================================
 
-#include <stdio.h>
+#include <cstdio>
+
 #include "chrono/parallel/ChThreadsSync.h"
 #include "chrono/solver/ChConstraintTwoTuplesFrictionT.h"
 #include "chrono/solver/ChConstraintTwoTuplesRollingN.h"
@@ -22,7 +23,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChSolverSORmultithread> a_registration_ChSolverSORmultithread;
+CH_FACTORY_REGISTER(ChSolverSORmultithread)
 
 // Each thread will own an instance of the following data:
 
@@ -109,7 +110,7 @@ void SolverThreadFunc(void* userPtr, void* lsMemory) {
 
         case thread_data::STAGE3_LOOPCONSTRAINTS: {
             //     For all items with variables, add the effect of initial (guessed)
-            //     lagrangian reactions of contraints, if a warm start is desired.
+            //     lagrangian reactions of constraints, if a warm start is desired.
             //     Otherwise, if no warm start, simply resets initial lagrangians to zero.
             //
             if (tdata->solver->GetWarmStart()) {
@@ -230,11 +231,11 @@ void SolverThreadFunc(void* userPtr, void* lsMemory) {
 
                 }  // end loop on constraints
 
-                // For recording into violaiton history, if debugging
+                // For recording into violation history, if debugging
                 // if (this->record_violation_history)
                 //	AtIterationEnd(maxviolation, maxdeltalambda, iter);  //***TO DO***
 
-                // Terminate the loop if violation in constraints has been succesfully limited.
+                // Terminate the loop if violation in constraints has been successfully limited.
                 if (maxviolation < tdata->solver->GetTolerance())
                     break;
 
@@ -250,7 +251,7 @@ void SolverThreadFunc(void* userPtr, void* lsMemory) {
 // When the solver object is created, threads are also
 // created and initialized, in 'wait' mode.
 
-ChSolverSORmultithread::ChSolverSORmultithread(char* uniquename,
+ChSolverSORmultithread::ChSolverSORmultithread(const char* uniquename,
                                                int nthreads,
                                                int mmax_iters,
                                                bool mwarm_start,

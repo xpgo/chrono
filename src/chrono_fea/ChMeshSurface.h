@@ -1,14 +1,16 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-// File authors: Alessandro Tasora
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHMESHSURFACE_H
 #define CHMESHSURFACE_H
@@ -23,18 +25,16 @@ namespace fea {
 class ChMesh;
 
 /// Class which defines a surface for a mesh FEA elements.
-/// The contact surface is a collection of pointers to  ChLoadableUV objects, those can 
+/// The contact surface is a collection of pointers to  ChLoadableUV objects, those can
 /// be shells in the mesh, or proxies to faces of solid elements such as ChFaceTetra_4.
 class ChApiFea ChMeshSurface {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI_ROOT(ChMeshSurface);
 
   public:
     ChMeshSurface(ChMesh* parentmesh = 0) { mmesh = parentmesh; }
 
     virtual ~ChMeshSurface() {}
 
-    // 
+    //
     // FUNCTIONS
     //
 
@@ -49,7 +49,7 @@ class ChApiFea ChMeshSurface {
 
     /// Add a single mesh face.
     /// Beware, it does not check for double insertion of the same face.
-    virtual void AddFace(std::shared_ptr<ChLoadableUV> mface) {faces.push_back(mface);}
+    virtual void AddFace(std::shared_ptr<ChLoadableUV> mface) { faces.push_back(mface); }
 
     /// Add multiple faces of FEM elements given a set of nodes at vertexes.
     /// It scans all the finite elements already added in the parent ChMesh, and
@@ -60,7 +60,7 @@ class ChApiFea ChMeshSurface {
     /// - Support for other elements of solid type will follow in future.
     virtual void AddFacesFromNodeSet(std::vector<std::shared_ptr<ChNodeFEAbase> >& node_set);
 
-    /// Given a solid mesh (ex a mesh of tetrahetrons) it finds the faces on the outer boundary.
+    /// Given a solid mesh (ex a mesh of tetrahedrons) it finds the faces on the outer boundary.
     /// That is, it scans all the finite elements already added in the parent ChMesh and adds the faces
     /// that are not shared (ie. the faces on the boundary 'skin').
     /// Supported solids that generate boundary skin:
@@ -71,12 +71,12 @@ class ChApiFea ChMeshSurface {
   private:
     std::vector<std::shared_ptr<ChLoadableUV> > faces;  // the faces
 
-    std::shared_ptr<ChMaterialSurfaceBase> matsurface;  // material for contacts
+    std::shared_ptr<ChMaterialSurface> matsurface;  // material for contacts
 
     ChMesh* mmesh;
 };
 
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace fea
+}  // end namespace chrono
 
 #endif

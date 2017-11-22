@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -33,13 +33,6 @@
 
 #include "chrono_vehicle/tracked_vehicle/ChRoadWheel.h"
 
-/**
-    @addtogroup vehicle_tracked
-    @{
-        @defgroup vehicle_tracked_suspension Suspension subsystem
-    @}
-*/
-
 namespace chrono {
 namespace vehicle {
 
@@ -63,11 +56,16 @@ class CH_VEHICLE_API ChRoadWheelAssembly : public ChPart {
     /// Return a handle to the carrier body.
     virtual std::shared_ptr<ChBody> GetCarrierBody() const = 0;
 
+    /// Return the current pitch angle of the carrier body.
+    /// This angle is measured in the x-z transversal plane, from the initial configuration,
+    /// and follows the right-hand rule.
+    virtual double GetCarrierAngle() const = 0;
+
     /// Get a handle to the road wheel body.
     std::shared_ptr<ChBody> GetWheelBody() const { return m_road_wheel->GetWheelBody(); }
 
-    /// Get a handle to the revolute joint.
-    std::shared_ptr<ChLinkLockRevolute> GetRevolute() const { return m_road_wheel->GetRevolute(); }
+    /// Get a handle to the revolute joint of the road-wheel.
+    std::shared_ptr<ChLinkLockRevolute> GetWheelRevolute() const { return m_road_wheel->GetRevolute(); }
 
     /// Get the radius of the road wheel.
     double GetWheelRadius() const { return m_road_wheel->GetWheelRadius(); }

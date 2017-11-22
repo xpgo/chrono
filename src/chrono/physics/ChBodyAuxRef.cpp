@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -20,7 +20,7 @@ using namespace collision;
 using namespace geometry;
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChBodyAuxRef> a_registration_ChBodyAuxRef;
+CH_FACTORY_REGISTER(ChBodyAuxRef)
 
 ChBodyAuxRef::ChBodyAuxRef(const ChBodyAuxRef& other) : ChBody(other) {
     auxref_to_cog = other.auxref_to_cog;
@@ -85,7 +85,7 @@ void ChBodyAuxRef::Update(bool update_assets) {
 
 void ChBodyAuxRef::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChBodyAuxRef>();
 
     // serialize parent class
     ChBody::ArchiveOUT(marchive);
@@ -98,7 +98,7 @@ void ChBodyAuxRef::ArchiveOUT(ChArchiveOut& marchive) {
 /// Method to allow de serialization of transient data from archives.
 void ChBodyAuxRef::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChBodyAuxRef>();
 
     // deserialize parent class
     ChBody::ArchiveIN(marchive);

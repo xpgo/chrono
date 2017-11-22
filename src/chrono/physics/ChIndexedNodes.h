@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -24,8 +24,6 @@ namespace chrono {
 /// Must be inherited by children classes.
 
 class ChApi ChIndexedNodes : public ChPhysicsItem {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChIndexedNodes, ChPhysicsItem);
 
   public:
     ChIndexedNodes() {}
@@ -63,6 +61,8 @@ class ChApi ChIndexedNodes : public ChPhysicsItem {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChIndexedNodes,0)
 
 }  // end namespace chrono
 

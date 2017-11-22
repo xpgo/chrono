@@ -13,20 +13,21 @@
 // =============================================================================
 // Header for OpenGL API export
 // =============================================================================
+
 #ifndef CHAPIGL_H
 #define CHAPIGL_H
 
+#include "chrono/ChVersion.h"
 #include "chrono/core/ChPlatform.h"
 
-/*
-    @defgroup opengl_module OPENGL module
+/**
+    @defgroup opengl_module OpenGL module
     @brief Runtime visualization with OpenGL
 
-    This module provides support for showing Chrono 
-    animations in a real time 3D window using OpenGL.
-    Differently from the IRRLICHT module, this system
-    provides a lower-level access to the rendering system,
-    when less features and faster display are needed.
+    This module provides support for run-time Chrono visualization using OpenGL.
+    Differently from the IRRLICHT module, this system provides a lower-level
+    access to the rendering system, when fewer features and faster rendering
+    are needed.
 
     For additional information, see:
     - the [installation guide](@ref module_opengl_installation)
@@ -44,5 +45,4 @@
 #define CH_OPENGL_API ChApiIMPORT
 #endif
 
-
-#endif  // END of header
+#endif

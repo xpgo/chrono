@@ -1,4 +1,19 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar
+// =============================================================================
+
 #include <algorithm>
+#include <climits>
 
 #include <chrono_parallel/collision/ChCollision.h>
 #include "chrono_parallel/collision/ChBroadphaseUtils.h"
@@ -25,25 +40,82 @@ namespace collision {
 
 // Determine the bounding box for the objects===============================================================
 
+// Inverted AABB (assumed associated with an active shape).
+auto inverted = thrust::make_tuple(real3(+C_LARGE_REAL, +C_LARGE_REAL, +C_LARGE_REAL),
+                                   real3(-C_LARGE_REAL, -C_LARGE_REAL, -C_LARGE_REAL),
+                                   0);
+
+// Invert an AABB associated with an inactive shape or a shape on a non-colliding body.
+struct BoxInvert {
+    BoxInvert(const custom_vector<char>* collide) : m_collide(collide) {}
+    thrust::tuple<real3, real3, uint> operator()(const thrust::tuple<real3, real3, uint>& lhs) {
+        uint lhs_id = thrust::get<2>(lhs);
+        if (lhs_id == UINT_MAX || (*m_collide)[lhs_id] == 0)
+            return inverted;
+        else
+            return lhs;
+    }
+    const custom_vector<char>* m_collide;
+};
+
+// AABB union reduction operator
+struct BoxReduce {
+    thrust::tuple<real3, real3, uint> operator()(const thrust::tuple<real3, real3, uint>& lhs,
+                                                 const thrust::tuple<real3, real3, uint>& rhs) {
+        real3 lhs_ll = thrust::get<0>(lhs);
+        real3 lhs_ur = thrust::get<1>(lhs);
+
+        real3 rhs_ll = thrust::get<0>(rhs);
+        real3 rhs_ur = thrust::get<1>(rhs);
+
+        real3 ll = real3(Min(lhs_ll.x, rhs_ll.x), Min(lhs_ll.y, rhs_ll.y), Min(lhs_ll.z, rhs_ll.z));
+        real3 ur = real3(Max(lhs_ur.x, rhs_ur.x), Max(lhs_ur.y, rhs_ur.y), Max(lhs_ur.z, rhs_ur.z));
+
+        return thrust::tuple<real3, real3, uint>(ll, ur, 0);
+    }
+};
+
+// Calculate AABB of all rigid shapes.
+// This function excludes inactive shapes (marked with ID = UINT_MAX) and shapes
+// associated with non-colliding bodies.
 void ChCBroadphase::RigidBoundingBox() {
-    custom_vector<real3>& aabb_min = data_manager->host_data.aabb_min;
-    custom_vector<real3>& aabb_max = data_manager->host_data.aabb_max;
-    if (aabb_min.size() == 0)
-        return;
+    // Vectors of length = number of collision shapes
+    const custom_vector<real3>& aabb_min = data_manager->host_data.aabb_min;
+    const custom_vector<real3>& aabb_max = data_manager->host_data.aabb_max;
+    const custom_vector<uint>& id_rigid = data_manager->shape_data.id_rigid;
+    // Vectors of length = number of rigid bodies
+    const custom_vector<char>& collide_rigid = data_manager->host_data.collide_rigid;
 
-    // determine the bounds on the total space and subdivide based on the bins per axis
-    bbox res(aabb_min[0], aabb_min[0]);
-    bbox_transformation unary_op;
-    bbox_reduction binary_op;
-    res = thrust::transform_reduce(aabb_min.begin(), aabb_min.end(), unary_op, res, binary_op);
-    res = thrust::transform_reduce(aabb_max.begin(), aabb_max.end(), unary_op, res, binary_op);
+    // Calculate union of all AABBs.  
+    // Excluded AABBs are inverted through the transform operation, prior to the reduction.
+    auto begin = thrust::make_zip_iterator(thrust::make_tuple(aabb_min.begin(), aabb_max.begin(), id_rigid.begin()));
+    auto end = thrust::make_zip_iterator(thrust::make_tuple(aabb_min.end(), aabb_max.end(), id_rigid.end()));
+    auto result = thrust::transform_reduce(THRUST_PAR begin, end, BoxInvert(&collide_rigid), inverted, BoxReduce());
 
-    real3& min_bounding_point = data_manager->measures.collision.rigid_min_bounding_point;
-    real3& max_bounding_point = data_manager->measures.collision.rigid_max_bounding_point;
-
-    min_bounding_point = res.first;
-    max_bounding_point = res.second;
+    data_manager->measures.collision.rigid_min_bounding_point = thrust::get<0>(result);
+    data_manager->measures.collision.rigid_max_bounding_point = thrust::get<1>(result);
 }
+
+// AABB as the pair of its min and max corners.
+typedef thrust::pair<real3, real3> bbox;
+
+// Reduce a pair of bounding boxes (a,b) to a bounding box containing a and b.
+struct bbox_reduction : public thrust::binary_function<bbox, bbox, bbox> {
+    bbox operator()(bbox a, bbox b) {
+        real3 ll = real3(Min(a.first.x, b.first.x), Min(a.first.y, b.first.y),
+            Min(a.first.z, b.first.z));  // lower left corner
+        real3 ur = real3(Max(a.second.x, b.second.x), Max(a.second.y, b.second.y),
+            Max(a.second.z, b.second.z));  // upper right corner
+        return bbox(ll, ur);
+    }
+};
+
+// Convert a point to a bbox containing that point, (point) -> (point, point).
+struct bbox_transformation : public thrust::unary_function<real3, bbox> {
+    bbox operator()(real3 point) { return bbox(point, point); }
+};
+
+// Calculate AABB of all fluid particles.
 void ChCBroadphase::FluidBoundingBox() {
     const custom_vector<real3>& pos_fluid = data_manager->host_data.pos_3dof;
     const real radius = data_manager->node_container->kernel_radius + data_manager->node_container->collision_envelope;
@@ -67,6 +139,8 @@ void ChCBroadphase::FluidBoundingBox() {
     max_bounding_point = res.second + radius * 6;
     min_bounding_point = res.first - radius * 6;
 }
+
+// Calculate AABB of all tetrahedral shapes.
 void ChCBroadphase::TetBoundingBox() {
     custom_vector<real3>& aabb_min_tet = data_manager->host_data.aabb_min_tet;
     custom_vector<real3>& aabb_max_tet = data_manager->host_data.aabb_max_tet;
@@ -92,11 +166,21 @@ void ChCBroadphase::DetermineBoundingBox() {
         min_point = Min(min_point, data_manager->measures.collision.ff_min_bounding_point);
         max_point = Max(max_point, data_manager->measures.collision.ff_max_bounding_point);
     }
+
     if (data_manager->num_fea_tets != 0) {
         TetBoundingBox();
         min_point = Min(min_point, data_manager->measures.collision.tet_min_bounding_point);
         max_point = Max(max_point, data_manager->measures.collision.tet_max_bounding_point);
     }
+
+    // Inflate the overall bounding box by a small percentage.
+    // This takes care of corner cases where a degenerate object bounding box is on the
+    // boundary of the overall bounding box.
+    real fraction = 1e-3;
+    real3 size = max_point - min_point;
+    min_point = min_point - fraction * size;
+    max_point = max_point + fraction * size;
+
     data_manager->measures.collision.min_bounding_point = min_point;
     data_manager->measures.collision.max_bounding_point = max_point;
     data_manager->measures.collision.global_origin = min_point;
@@ -108,7 +192,9 @@ void ChCBroadphase::DetermineBoundingBox() {
 void ChCBroadphase::OffsetAABB() {
     custom_vector<real3>& aabb_min = data_manager->host_data.aabb_min;
     custom_vector<real3>& aabb_max = data_manager->host_data.aabb_max;
+
     thrust::constant_iterator<real3> offset(data_manager->measures.collision.global_origin);
+
     thrust::transform(aabb_min.begin(), aabb_min.end(), offset, aabb_min.begin(), thrust::minus<real3>());
     thrust::transform(aabb_max.begin(), aabb_max.end(), offset, aabb_max.begin(), thrust::minus<real3>());
     // Offset tet aabb
@@ -166,6 +252,7 @@ void ChCBroadphase::OneLevelBroadphase() {
     const custom_vector<real3>& aabb_max = data_manager->host_data.aabb_max;
     const custom_vector<short2>& fam_data = data_manager->shape_data.fam_rigid;
     const custom_vector<char>& obj_active = data_manager->host_data.active_rigid;
+    const custom_vector<char>& obj_collide = data_manager->host_data.collide_rigid;
     const custom_vector<uint>& obj_data_id = data_manager->shape_data.id_rigid;
     custom_vector<long long>& contact_pairs = data_manager->host_data.contact_pairs;
 
@@ -189,6 +276,10 @@ void ChCBroadphase::OneLevelBroadphase() {
 
 #pragma omp parallel for
     for (int i = 0; i < num_shapes; i++) {
+        if (obj_data_id[i] == UINT_MAX) {
+            bin_intersections[i] = 0;
+            continue;
+        }
         f_Count_AABB_BIN_Intersection(i, inv_bin_size, aabb_min, aabb_max, bin_intersections);
     }
 
@@ -204,12 +295,14 @@ void ChCBroadphase::OneLevelBroadphase() {
 
 #pragma omp parallel for
     for (int i = 0; i < num_shapes; i++) {
+        if (obj_data_id[i] == UINT_MAX)
+            continue;
         f_Store_AABB_BIN_Intersection(i, bins_per_axis, inv_bin_size, aabb_min, aabb_max, bin_intersections, bin_number,
                                       bin_aabb_number);
     }
 
     Thrust_Sort_By_Key(bin_number, bin_aabb_number);
-    number_of_bins_active = Run_Length_Encode(bin_number, bin_number_out, bin_start_index);
+    number_of_bins_active = (int)(Run_Length_Encode(bin_number, bin_number_out, bin_start_index));
 
     if (number_of_bins_active <= 0) {
         number_of_contacts_possible = 0;
@@ -226,9 +319,9 @@ void ChCBroadphase::OneLevelBroadphase() {
     bin_num_contact[number_of_bins_active] = 0;
 
 #pragma omp parallel for
-    for (int i = 0; i < number_of_bins_active; i++) {
+    for (int i = 0; i < (signed)number_of_bins_active; i++) {
         f_Count_AABB_AABB_Intersection(i, inv_bin_size, bins_per_axis, aabb_min, aabb_max, bin_number_out,
-                                       bin_aabb_number, bin_start_index, fam_data, obj_active, obj_data_id,
+                                       bin_aabb_number, bin_start_index, fam_data, obj_active, obj_collide, obj_data_id,
                                        bin_num_contact);
     }
 
@@ -238,14 +331,15 @@ void ChCBroadphase::OneLevelBroadphase() {
     LOG(TRACE) << "Number of possible collisions: " << number_of_contacts_possible;
 
 #pragma omp parallel for
-    for (int index = 0; index < number_of_bins_active; index++) {
+    for (int index = 0; index < (signed)number_of_bins_active; index++) {
         f_Store_AABB_AABB_Intersection(index, inv_bin_size, bins_per_axis, aabb_min, aabb_max, bin_number_out,
                                        bin_aabb_number, bin_start_index, bin_num_contact, fam_data, obj_active,
-                                       obj_data_id, contact_pairs);
+                                       obj_collide, obj_data_id, contact_pairs);
     }
+
     contact_pairs.resize(number_of_contacts_possible);
     LOG(TRACE) << "Number of unique collisions: " << number_of_contacts_possible;
 }
-//======
-}
-}
+
+} // end namespace collision
+} // end namespace chrono

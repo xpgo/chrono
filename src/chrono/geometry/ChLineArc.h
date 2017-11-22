@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,7 +15,7 @@
 #ifndef CHC_LINEARC_H
 #define CHC_LINEARC_H
 
-#include <math.h>
+#include <cmath>
 
 #include "chrono/geometry/ChLine.h"
 
@@ -26,8 +26,6 @@ namespace geometry {
 /// By default it is evaluated clockwise from angle1 to angle2.
 
 class ChApi ChLineArc : public ChLine {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChLineArc, ChLine);
 
   public:
     ChCoordsys<> origin;    ///< center position and plane of the arc: xy used for plane, z for axis.
@@ -54,9 +52,7 @@ class ChApi ChLineArc : public ChLine {
 
     /// Curve evaluation (only parU is used, in 0..1 range)
     virtual void Evaluate(ChVector<>& pos,
-                          const double parU,
-                          const double parV = 0.,
-                          const double parW = 0.) const override;
+                          const double parU) const override;
 
     /// Returns curve length. sampling does not matter
     double Length(int sampling) const override { return fabs(radius * (angle1 - angle2)); }
@@ -72,7 +68,7 @@ class ChApi ChLineArc : public ChLine {
 
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChLineArc>();
         // serialize parent class
         ChLine::ArchiveOUT(marchive);
         // serialize all member data:
@@ -86,7 +82,7 @@ class ChApi ChLineArc : public ChLine {
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChLineArc>();
         // deserialize parent class
         ChLine::ArchiveIN(marchive);
         // stream in all member data:
@@ -99,6 +95,9 @@ class ChApi ChLineArc : public ChLine {
 };
 
 }  // end namespace geometry
+
+CH_CLASS_VERSION(geometry::ChLineArc,0)
+
 }  // end namespace chrono
 
 #endif

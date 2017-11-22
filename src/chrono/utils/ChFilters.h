@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -44,9 +44,13 @@ class ChApi ChRunningAverage {
     /// Insert the specified value and return the current moving average.
     double Add(double val);
 
+    /// Return the standard deviation of data in current filter span.
+    double GetStdDev() const { return m_std; }
+
   private:
     int m_n;
     int m_index;
+    double m_std;
     std::valarray<double> m_data;
 };
 

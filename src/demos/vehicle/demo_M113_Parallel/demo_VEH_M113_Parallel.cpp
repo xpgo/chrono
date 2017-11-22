@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -36,10 +36,10 @@
 #endif
 
 // Chrono utility header files
-#include "utils/ChUtilsGeometry.h"
-#include "utils/ChUtilsCreators.h"
-#include "utils/ChUtilsGenerators.h"
-#include "utils/ChUtilsInputOutput.h"
+#include "chrono/utils/ChUtilsGeometry.h"
+#include "chrono/utils/ChUtilsCreators.h"
+#include "chrono/utils/ChUtilsGenerators.h"
+#include "chrono/utils/ChUtilsInputOutput.h"
 
 // Chrono vehicle header files
 #include "chrono_vehicle/ChVehicleModelData.h"
@@ -64,8 +64,8 @@ using std::endl;
 // Comment the following line to use Chrono::Parallel
 //#define USE_SEQ
 
-// Comment the following line to use DVI contact
-//#define USE_DEM
+// Comment the following line to use NSC contact
+//#define USE_SMC
 
 // -----------------------------------------------------------------------------
 // Specification of the terrain
@@ -144,7 +144,7 @@ int bilateral_frame_interval = 100;
 // Output directories
 bool povray_output = false;
 
-const std::string out_dir = "../M113_PARALLEL";
+const std::string out_dir = GetChronoOutputPath() + "M113_PARALLEL";
 const std::string pov_dir = out_dir + "/POVRAY";
 
 int out_fps = 60;
@@ -153,13 +153,13 @@ int out_fps = 60;
 
 double CreateParticles(ChSystem* system) {
     // Create a material
-#ifdef USE_DEM
-    auto mat_g = std::make_shared<ChMaterialSurfaceDEM>();
+#ifdef USE_SMC
+    auto mat_g = std::make_shared<ChMaterialSurfaceSMC>();
     mat_g->SetYoungModulus(1e8f);
     mat_g->SetFriction(mu_g);
     mat_g->SetRestitution(0.4f);
 #else
-    auto mat_g = std::make_shared<ChMaterialSurface>();
+    auto mat_g = std::make_shared<ChMaterialSurfaceNSC>();
     mat_g->SetFriction(mu_g);
 #endif
 
@@ -180,12 +180,12 @@ double CreateParticles(ChSystem* system) {
 
     while (gen.getTotalNumBodies() < num_particles) {
         gen.createObjectsBox(utils::POISSON_DISK, 2 * r, center, hdims);
-        center.z += 2 * r;
+        center.z() += 2 * r;
     }
 
     std::cout << "Created " << gen.getTotalNumBodies() << " particles." << std::endl;
 
-    return center.z;
+    return center.z();
 }
 
 // =============================================================================
@@ -210,6 +210,8 @@ void progressbar(unsigned int x, unsigned int n, unsigned int w = 50) {
 
 // =============================================================================
 int main(int argc, char* argv[]) {
+    GetLog() << "Copyright (c) 2017 projectchrono.org\nChrono version: " << CHRONO_VERSION << "\n\n";
+
     // -----------------
     // Initialize output
     // -----------------
@@ -232,22 +234,22 @@ int main(int argc, char* argv[]) {
 
 #ifdef USE_SEQ
     // ----  Sequential
-#ifdef USE_DEM
-    std::cout << "Create DEM system" << std::endl;
-    ChSystemDEM* system = new ChSystemDEM();
+#ifdef USE_SMC
+    std::cout << "Create SMC system" << std::endl;
+    ChSystemSMC* system = new ChSystemSMC();
 #else
-    std::cout << "Create DVI system" << std::endl;
-    ChSystem* system = new ChSystem();
+    std::cout << "Create NSC system" << std::endl;
+    ChSystemNSC* system = new ChSystemNSC();
 #endif
 
 #else
     // ----  Parallel
-#ifdef USE_DEM
-    std::cout << "Create Parallel DEM system" << std::endl;
-    ChSystemParallelDEM* system = new ChSystemParallelDEM();
+#ifdef USE_SMC
+    std::cout << "Create Parallel SMC system" << std::endl;
+    ChSystemParallelSMC* system = new ChSystemParallelSMC();
 #else
-    std::cout << "Create Parallel DVI system" << std::endl;
-    ChSystemParallelDVI* system = new ChSystemParallelDVI();
+    std::cout << "Create Parallel NSC system" << std::endl;
+    ChSystemParallelNSC* system = new ChSystemParallelNSC();
 #endif
 
 #endif
@@ -261,7 +263,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef USE_SEQ
 
-    ////system->SetSolverType(ChSystem::SOLVER_MINRES);
+    ////system->SetSolverType(ChSolver::Type::MINRES);
     system->SetMaxItersSolverSpeed(50);
     system->SetMaxItersSolverStab(50);
     ////system->SetTol(0);
@@ -287,17 +289,17 @@ int main(int argc, char* argv[]) {
     system->GetSettings()->solver.use_full_inertia_tensor = false;
     system->GetSettings()->solver.tolerance = tolerance;
 
-#ifndef USE_DEM
-    system->GetSettings()->solver.solver_mode = SLIDING;
+#ifndef USE_SMC
+    system->GetSettings()->solver.solver_mode = SolverMode::SLIDING;
     system->GetSettings()->solver.max_iteration_normal = max_iteration_normal;
     system->GetSettings()->solver.max_iteration_sliding = max_iteration_sliding;
     system->GetSettings()->solver.max_iteration_spinning = max_iteration_spinning;
     system->GetSettings()->solver.alpha = 0;
     system->GetSettings()->solver.contact_recovery_speed = contact_recovery_speed;
-    system->ChangeSolverType(APGD);
+    system->ChangeSolverType(SolverType::APGD);
     system->GetSettings()->collision.collision_envelope = 0.1 * r_g;
 #else
-    system->GetSettings()->solver.contact_force_model = ChSystemDEM::PlainCoulomb;
+    system->GetSettings()->solver.contact_force_model = ChSystemSMC::PlainCoulomb;
 #endif
 
     system->GetSettings()->collision.bins_per_axis = vec3(10, 10, 10);
@@ -309,13 +311,13 @@ int main(int argc, char* argv[]) {
     // -------------------
 
     // Contact material
-#ifdef USE_DEM
-    auto mat_g = std::make_shared<ChMaterialSurfaceDEM>();
+#ifdef USE_SMC
+    auto mat_g = std::make_shared<ChMaterialSurfaceSMC>();
     mat_g->SetYoungModulus(1e8f);
     mat_g->SetFriction(mu_g);
     mat_g->SetRestitution(0.4f);
 #else
-    auto mat_g = std::make_shared<ChMaterialSurface>();
+    auto mat_g = std::make_shared<ChMaterialSurfaceNSC>();
     mat_g->SetFriction(mu_g);
 #endif
 
@@ -373,7 +375,8 @@ int main(int argc, char* argv[]) {
     vehicle.SetChassisVisualizationType(VisualizationType::NONE);
     vehicle.SetSprocketVisualizationType(VisualizationType::MESH);
     vehicle.SetIdlerVisualizationType(VisualizationType::MESH);
-    vehicle.SetRoadWheelAssemblyVisualizationType(VisualizationType::MESH);
+    vehicle.SetRoadWheelAssemblyVisualizationType(VisualizationType::PRIMITIVES);
+    vehicle.SetRoadWheelVisualizationType(VisualizationType::MESH);
     vehicle.SetTrackShoeVisualizationType(VisualizationType::MESH);
 
     ////vehicle.SetCollide(TrackCollide::NONE);
@@ -414,8 +417,8 @@ int main(int argc, char* argv[]) {
     // Inter-module communication data
     BodyStates shoe_states_left(vehicle.GetNumTrackShoes(LEFT));
     BodyStates shoe_states_right(vehicle.GetNumTrackShoes(RIGHT));
-    TrackShoeForces shoe_forces_left(vehicle.GetNumTrackShoes(LEFT));
-    TrackShoeForces shoe_forces_right(vehicle.GetNumTrackShoes(RIGHT));
+    TerrainForces shoe_forces_left(vehicle.GetNumTrackShoes(LEFT));
+    TerrainForces shoe_forces_right(vehicle.GetNumTrackShoes(RIGHT));
 
     while (time < time_end) {
         // Collect output data from modules

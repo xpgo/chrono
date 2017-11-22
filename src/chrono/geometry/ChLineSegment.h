@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,7 +15,7 @@
 #ifndef CHC_LINESEGMENT_H
 #define CHC_LINESEGMENT_H
 
-#include <math.h>
+#include <cmath>
 
 #include "chrono/geometry/ChLine.h"
 
@@ -25,8 +25,6 @@ namespace geometry {
 /// Geometric object representing a segment in 3D space with two end points.
 
 class ChApi ChLineSegment : public ChLine {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChLineSegment, ChLine);
 
   public:
     ChVector<> pA;  ///< first segment endpoint
@@ -46,16 +44,14 @@ class ChApi ChLineSegment : public ChLine {
 
     /// Curve evaluation (only parU is used, in 0..1 range)
     virtual void Evaluate(ChVector<>& pos,
-                          const double parU,
-                          const double parV = 0,
-                          const double parW = 0) const override;
+                          const double parU) const override;
 
     /// Returns curve length. sampling does not matter
     virtual double Length(int sampling) const override { return (pA - pB).Length(); }
 
     virtual void ArchiveOUT(ChArchiveOut& marchive) override {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChLineSegment>();
         // serialize parent class
         ChLine::ArchiveOUT(marchive);
         // serialize all member data:
@@ -66,7 +62,7 @@ class ChApi ChLineSegment : public ChLine {
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChLineSegment>();
         // deserialize parent class
         ChLine::ArchiveIN(marchive);
         // stream in all member data:
@@ -76,6 +72,9 @@ class ChApi ChLineSegment : public ChLine {
 };
 
 }  // end namespace geometry
+
+CH_CLASS_VERSION(geometry::ChLineSegment,0)
+
 }  // end namespace chrono
 
 #endif

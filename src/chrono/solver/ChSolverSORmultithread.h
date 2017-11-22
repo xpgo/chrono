@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,24 +19,29 @@
 #include "chrono/parallel/ChThreads.h"
 
 namespace chrono {
+/// An iterative solver based on projective fixed point method, with overrelaxation
+/// and immediate variable update as in SOR methods. Multi-threaded.\n
+/// See ChSystemDescriptor for more information about the problem formulation and the data structures
+/// passed to the solver.
 
 class ChApi ChSolverSORmultithread : public ChIterativeSolver {
-    // Chrono RTTI, needed for serialization
-    CH_RTTI(ChSolverSORmultithread, ChIterativeSolver);
 
   protected:
     ChThreads* solver_threads;
 
   public:
-    ChSolverSORmultithread(char* uniquename = (char*)"solver",  ///< this name must be unique.
-                           int nthreads = 2,                    ///< number of threads
-                           int mmax_iters = 50,                 ///< max.number of iterations
-                           bool mwarm_start = false,            ///< uses warm start?
-                           double mtolerance = 0.0,             ///< tolerance for termination criterion
-                           double momega = 1.0                  ///< overrelaxation criterion
+    ChSolverSORmultithread(const char* uniquename = "solver",  ///< this name must be unique.
+                           int nthreads = 2,                   ///< number of threads
+                           int mmax_iters = 50,                ///< max.number of iterations
+                           bool mwarm_start = false,           ///< uses warm start?
+                           double mtolerance = 0.0,            ///< tolerance for termination criterion
+                           double momega = 1.0                 ///< overrelaxation criterion
                            );
 
     virtual ~ChSolverSORmultithread();
+
+    /// Return type of the solver.
+    virtual Type GetType() const override { return Type::SOR_MULTITHREAD; }
 
     /// Performs the solution of the problem.
     /// \return  the maximum constraint violation after termination.

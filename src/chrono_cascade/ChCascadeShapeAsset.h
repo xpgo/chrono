@@ -1,14 +1,16 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-// Author: A.Tasora
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHLINESHAPE_H
 #define CHLINESHAPE_H
@@ -30,8 +32,6 @@ namespace cascade {
 /// In this way one can attach a 3D cad shape to a physics item.
 
 class ChApiCASCADE ChCascadeShapeAsset : public chrono::ChAsset {
-    // Chrono RTTI, needed for serialization
-    CH_RTTI(ChCascadeShapeAsset, ChAsset);
 
   protected:
     //
@@ -66,7 +66,7 @@ class ChApiCASCADE ChCascadeShapeAsset : public chrono::ChAsset {
     virtual void ArchiveOUT(ChArchiveOut& marchive)
     {
         // version number
-        marchive.VersionWrite(1);
+        marchive.VersionWrite<ChCascadeShapeAsset>();
         // serialize parent class
         ChAsset::ArchiveOUT(marchive);
         // serialize all member data:
@@ -77,7 +77,7 @@ class ChApiCASCADE ChCascadeShapeAsset : public chrono::ChAsset {
     virtual void ArchiveIN(ChArchiveIn& marchive) 
     {
         // version number
-        int version = marchive.VersionRead();
+        int version = marchive.VersionRead<ChCascadeShapeAsset>();
         // deserialize parent class
         ChAsset::ArchiveIN(marchive);
         // stream in all member data:

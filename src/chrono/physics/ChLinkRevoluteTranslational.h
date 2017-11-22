@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -26,7 +26,6 @@ namespace chrono {
 /// orthogonal directions on the second body (the translational side),
 /// and a distance.
 class ChApi ChLinkRevoluteTranslational : public ChLink {
-    CH_RTTI(ChLinkRevoluteTranslational, ChLink);
 
   public:
     ChLinkRevoluteTranslational();
@@ -35,9 +34,6 @@ class ChApi ChLinkRevoluteTranslational : public ChLink {
 
     /// "Virtual" copy constructor (covariant return type).
     virtual ChLinkRevoluteTranslational* Clone() const override { return new ChLinkRevoluteTranslational(*this); }
-
-    /// Get the type of this joint.
-    virtual int GetType() const override { return LNK_REVOLUTETRANSLATIONAL; }
 
     /// Get the number of (bilateral) constraints introduced by this joint.
     virtual int GetDOC_c() override { return 4; }
@@ -76,7 +72,7 @@ class ChApi ChLinkRevoluteTranslational : public ChLink {
     /// Get the link coordinate system, expressed relative to Body2 (translational side).
     /// This represents the 'main' reference of the link: reaction forces
     /// and reaction torques are reported in this coordinate system.
-    virtual ChCoordsys<> GetLinkRelativeCoords();
+    virtual ChCoordsys<> GetLinkRelativeCoords() override;
 
     /// Get the joint violation (residuals of the constraint equations)
     ChMatrix<>* GetC() { return m_C; }
@@ -200,6 +196,8 @@ class ChApi ChLinkRevoluteTranslational : public ChLink {
     // order of the constraints: par1, par2, dot, dist.
     double m_multipliers[4];  ///< Lagrange multipliers
 };
+
+CH_CLASS_VERSION(ChLinkRevoluteTranslational,0)
 
 }  // end namespace chrono
 

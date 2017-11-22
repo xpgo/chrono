@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -36,7 +36,6 @@ class ChSystem;
 /// _nothing_ unless it is specialized by some child class).
 
 class ChApi ChLink : public ChLinkBase {
-    CH_RTTI(ChLink, ChLinkBase);
 
   protected:
     ChBodyFrame* Body1;       ///< first connected body
@@ -51,9 +50,6 @@ class ChApi ChLink : public ChLinkBase {
 
     /// "Virtual" copy constructor (covariant return type).
     virtual ChLink* Clone() const override { return new ChLink(*this); }
-
-    /// Get the type identifier of this link. Use if you don't want to use RTTI for performance.
-    virtual int GetType() const override { return LNK_BASE; }
 
     /// Get the number of free degrees of freedom left by this link, between two bodies.
     int GetLeftDOF() { return 6 - GetDOC(); }
@@ -122,6 +118,8 @@ class ChApi ChLink : public ChLinkBase {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLink,0)
 
 }  // end namespace chrono
 

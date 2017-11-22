@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -32,9 +32,8 @@ namespace fea {
 /// That is, the two nodes will be joined, as overlapping.
 /// Nodes are 3-DOF points that are used in point-based
 /// primitives, such as ChMatterSPH or finite elements.
+
 class ChApiFea ChLinkPointPoint : public ChLinkBase {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI(ChLinkPointPoint, ChLinkBase);
 
   private:
     ChVector<> react;

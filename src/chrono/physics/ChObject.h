@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -15,9 +15,9 @@
 #ifndef CHOBJECT_H
 #define CHOBJECT_H
 
-#include <float.h>
-#include <math.h>
-#include <stdlib.h>
+#include <cfloat>
+#include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -38,8 +38,6 @@ class ChTag;
 
 /// Base class for items which can be named, deleted, copied. etc. as in the editor of a 3d modeler.
 class ChApi ChObj {
-    // Chrono simulation of RTTI, needed for serialization
-    CH_RTTI_ROOT(ChObj);
 
   private:
     std::string name;  ///< name of object
@@ -93,7 +91,13 @@ class ChApi ChObj {
 
     /// Method to allow de serialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive);
+
+    // Method to allow mnemonic names in (de)serialization of containers (std::vector, arrays, etc.) 
+    virtual std::string& ArchiveContainerName() {return name;}
 };
+
+CH_CLASS_VERSION(ChObj,0)
+
 
 // Functions to manipulate STL containers of ChObj objects
 

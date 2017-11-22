@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -96,33 +96,33 @@ ChBezierCurve::ChBezierCurve(const std::vector<ChVector<> >& points) : m_points(
 
     // X coordinates.
     for (size_t i = 1; i < n - 1; ++i)
-        rhs[i] = 4 * points[i].x + 2 * points[i + 1].x;
-    rhs[0] = points[0].x + 2 * points[1].x;
-    rhs[n - 1] = (8 * points[n - 1].x + points[n].x) / 2;
+        rhs[i] = 4 * points[i].x() + 2 * points[i + 1].x();
+    rhs[0] = points[0].x() + 2 * points[1].x();
+    rhs[n - 1] = (8 * points[n - 1].x() + points[n].x()) / 2;
     solveTriDiag(n, rhs, x);
 
     // Y coordinates.
     for (size_t i = 1; i < n - 1; ++i)
-        rhs[i] = 4 * points[i].y + 2 * points[i + 1].y;
-    rhs[0] = points[0].y + 2 * points[1].y;
-    rhs[n - 1] = (8 * points[n - 1].y + points[n].y) / 2;
+        rhs[i] = 4 * points[i].y() + 2 * points[i + 1].y();
+    rhs[0] = points[0].y() + 2 * points[1].y();
+    rhs[n - 1] = (8 * points[n - 1].y() + points[n].y()) / 2;
     solveTriDiag(n, rhs, y);
 
     // Z coordinates.
     for (size_t i = 1; i < n - 1; ++i)
-        rhs[i] = 4 * points[i].z + 2 * points[i + 1].z;
-    rhs[0] = points[0].z + 2 * points[1].z;
-    rhs[n - 1] = (8 * points[n - 1].z + points[n].z) / 2;
+        rhs[i] = 4 * points[i].z() + 2 * points[i + 1].z();
+    rhs[0] = points[0].z() + 2 * points[1].z();
+    rhs[n - 1] = (8 * points[n - 1].z() + points[n].z()) / 2;
     solveTriDiag(n, rhs, z);
 
     // Set control points outCV and inCV.
     for (size_t i = 0; i < n - 1; i++) {
         m_outCV[i] = ChVector<>(x[i], y[i], z[i]);
         m_inCV[i + 1] =
-            ChVector<>(2 * points[i + 1].x - x[i + 1], 2 * points[i + 1].y - y[i + 1], 2 * points[i + 1].z - z[i + 1]);
+            ChVector<>(2 * points[i + 1].x() - x[i + 1], 2 * points[i + 1].y() - y[i + 1], 2 * points[i + 1].z() - z[i + 1]);
     }
     m_outCV[n - 1] = ChVector<>(x[n - 1], y[n - 1], z[n - 1]);
-    m_inCV[n] = ChVector<>((points[n].x + x[n - 1]) / 2, (points[n].y + y[n - 1]) / 2, (points[n].z + z[n - 1]) / 2);
+    m_inCV[n] = ChVector<>((points[n].x() + x[n - 1]) / 2, (points[n].y() + y[n - 1]) / 2, (points[n].z() + z[n - 1]) / 2);
 
     // Cleanup.
     delete[] rhs;
@@ -180,7 +180,7 @@ void ChBezierCurve::solveTriDiag(size_t n, double* rhs, double* x) {
 // returned curve is a general Bezier curve using the specified knots and
 // control polygons.
 // -----------------------------------------------------------------------------
-ChBezierCurve* ChBezierCurve::read(const std::string& filename) {
+std::shared_ptr<ChBezierCurve> ChBezierCurve::read(const std::string& filename) {
     // Open input file stream
     std::ifstream ifile;
     std::string line;
@@ -214,7 +214,7 @@ ChBezierCurve* ChBezierCurve::read(const std::string& filename) {
         }
 
         ifile.close();
-        return new ChBezierCurve(points);
+        return std::shared_ptr<ChBezierCurve>(new ChBezierCurve(points));
     }
 
     if (numCols == 9) {
@@ -238,7 +238,7 @@ ChBezierCurve* ChBezierCurve::read(const std::string& filename) {
         }
 
         ifile.close();
-        return new ChBezierCurve(points, inCV, outCV);
+        return std::shared_ptr<ChBezierCurve>(new ChBezierCurve(points, inCV, outCV));
     }
 
     // Not the expected number of columns.  Close the file and throw an exception.
@@ -261,11 +261,11 @@ void ChBezierCurve::write(const std::string& filename) {
     size_t numPoints = m_points.size();
     ofile << numPoints << "  9\n";
 
-    // Write points and control polygone vertices
+    // Write points and control polygon vertices
     for (size_t i = 0; i < numPoints; i++) {
-        ofile << m_points[i].x << "  " << m_points[i].y << "  " << m_points[i].z << "     ";
-        ofile << m_inCV[i].x << "  " << m_inCV[i].y << "  " << m_inCV[i].z << "     ";
-        ofile << m_outCV[i].x << "  " << m_outCV[i].y << "  " << m_outCV[i].z << "\n";
+        ofile << m_points[i].x() << "  " << m_points[i].y() << "  " << m_points[i].z() << "     ";
+        ofile << m_inCV[i].x() << "  " << m_inCV[i].y() << "  " << m_inCV[i].z() << "     ";
+        ofile << m_outCV[i].x() << "  " << m_outCV[i].y() << "  " << m_outCV[i].z() << "\n";
     }
 
     ofile.close();
@@ -323,6 +323,23 @@ ChVector<> ChBezierCurve::evalDD(size_t i, double t) const {
     double B3 = 6 * t;
 
     return B0 * m_points[i] + B1 * m_outCV[i] + B2 * m_inCV[i + 1] + B3 * m_points[i + 1];
+}
+
+// -----------------------------------------------------------------------------
+// ChBezierCurve::eval()
+//
+// This function evaluates the value of this Bezier curve at the specified value.
+// A value t=0 returns the first point of the Bezier curve.
+// A value t=1 returns the last point of the Bezier curve.
+// -----------------------------------------------------------------------------
+ChVector<> ChBezierCurve::eval(double t) const {
+    double par = ChClamp(t, 0.0, 1.0);
+    size_t numIntervals = getNumPoints() - 1;
+    double epar = par * numIntervals;
+    size_t i = static_cast<size_t>(std::floor(par * numIntervals));
+    ChClampValue(i, size_t(0), numIntervals - 1);
+
+    return eval(i, epar - (double)i);
 }
 
 // -----------------------------------------------------------------------------

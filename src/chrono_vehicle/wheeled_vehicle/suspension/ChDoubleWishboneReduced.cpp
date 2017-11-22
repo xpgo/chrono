@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -20,12 +20,13 @@
 // the vehicle.  When attached to a chassis, only an offset is provided.
 //
 // All point locations are assumed to be given for the left half of the
-// supspension and will be mirrored (reflecting the y coordinates) to construct
+// suspension and will be mirrored (reflecting the y coordinates) to construct
 // the right side.
 //
 // =============================================================================
 
 #include "chrono/assets/ChCylinderShape.h"
+#include "chrono/assets/ChPointPointDrawing.h"
 #include "chrono/assets/ChColorAsset.h"
 
 #include "chrono_vehicle/wheeled_vehicle/suspension/ChDoubleWishboneReduced.h"
@@ -43,8 +44,12 @@ ChDoubleWishboneReduced::ChDoubleWishboneReduced(const std::string& name) : ChSu
 void ChDoubleWishboneReduced::Initialize(std::shared_ptr<ChBodyAuxRef> chassis,
                                          const ChVector<>& location,
                                          std::shared_ptr<ChBody> tierod_body,
+                                         int steering_index,
                                          double left_ang_vel,
                                          double right_ang_vel) {
+    m_location = location;
+    m_steering_index = steering_index;
+
     // Express the suspension reference frame in the absolute coordinate system.
     ChFrame<> suspension_to_abs(location);
     suspension_to_abs.ConcatenatePreTransformation(chassis->GetFrame_REF_to_abs());
@@ -55,7 +60,7 @@ void ChDoubleWishboneReduced::Initialize(std::shared_ptr<ChBodyAuxRef> chassis,
     for (int i = 0; i < NUM_POINTS; i++) {
         ChVector<> rel_pos = getLocation(static_cast<PointId>(i));
         m_pointsL[i] = suspension_to_abs.TransformLocalToParent(rel_pos);
-        rel_pos.y = -rel_pos.y;
+        rel_pos.y() = -rel_pos.y();
         m_pointsR[i] = suspension_to_abs.TransformLocalToParent(rel_pos);
     }
 
@@ -130,8 +135,8 @@ void ChDoubleWishboneReduced::InitializeSide(VehicleSide side,
     m_shock[side] = std::make_shared<ChLinkSpringCB>();
     m_shock[side]->SetNameString(m_name + "_shock" + suffix);
     m_shock[side]->Initialize(chassis, m_upright[side], false, points[SHOCK_C], points[SHOCK_U]);
-    m_shock[side]->Set_SpringRestLength(getSpringRestLength());
-    m_shock[side]->Set_SpringCallback(getShockForceCallback());
+    m_shock[side]->SetSpringRestLength(getSpringRestLength());
+    m_shock[side]->RegisterForceFunctor(getShockForceFunctor());
     chassis->GetSystem()->AddLink(m_shock[side]);
 
     // Create and initialize the axle shaft and its connection to the spindle.
@@ -156,6 +161,21 @@ double ChDoubleWishboneReduced::GetMass() const {
 }
 
 // -----------------------------------------------------------------------------
+// Get the current COM location of the suspension subsystem.
+// -----------------------------------------------------------------------------
+ChVector<> ChDoubleWishboneReduced::GetCOMPos() const {
+    ChVector<> com(0, 0, 0);
+
+    com += getSpindleMass() * m_spindle[LEFT]->GetPos();
+    com += getSpindleMass() * m_spindle[RIGHT]->GetPos();
+
+    com += getUprightMass() * m_upright[LEFT]->GetPos();
+    com += getUprightMass() * m_upright[RIGHT]->GetPos();
+
+    return com / GetMass();
+}
+
+// -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 void ChDoubleWishboneReduced::AddVisualizationAssets(VisualizationType vis) {
     ChSuspension::AddVisualizationAssets(vis);
@@ -168,6 +188,40 @@ void ChDoubleWishboneReduced::AddVisualizationAssets(VisualizationType vis) {
                             m_pointsL[LCA_U], m_pointsL[TIEROD_U], getUprightRadius());
     AddVisualizationUpright(m_upright[RIGHT], 0.5 * (m_pointsR[SPINDLE] + m_pointsR[UPRIGHT]), m_pointsR[UCA_U],
                             m_pointsR[LCA_U], m_pointsR[TIEROD_U], getUprightRadius());
+
+    // Add visualization for the spring-dampers
+    m_shock[LEFT]->AddAsset(std::make_shared<ChPointPointSpring>(0.06, 150, 15));
+    m_shock[RIGHT]->AddAsset(std::make_shared<ChPointPointSpring>(0.06, 150, 15));
+
+    // Add visualization for the arm and tie-rod distance constraints
+    ChColor col_tierod(0.8f, 0.3f, 0.3f);
+    ChColor col_upperarm(0.1f, 0.4f, 0.1f);
+    ChColor col_lowerarm(0.1f, 0.1f, 0.4f);
+
+    m_distTierod[LEFT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distTierod[RIGHT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distTierod[LEFT]->AddAsset(std::make_shared<ChColorAsset>(col_tierod));
+    m_distTierod[RIGHT]->AddAsset(std::make_shared<ChColorAsset>(col_tierod));
+
+    m_distUCA_F[LEFT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distUCA_F[RIGHT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distUCA_F[LEFT]->AddAsset(std::make_shared<ChColorAsset>(col_upperarm));
+    m_distUCA_F[RIGHT]->AddAsset(std::make_shared<ChColorAsset>(col_upperarm));
+
+    m_distUCA_B[LEFT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distUCA_B[RIGHT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distUCA_B[LEFT]->AddAsset(std::make_shared<ChColorAsset>(col_upperarm));
+    m_distUCA_B[RIGHT]->AddAsset(std::make_shared<ChColorAsset>(col_upperarm));
+
+    m_distLCA_F[LEFT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distLCA_F[RIGHT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distLCA_F[LEFT]->AddAsset(std::make_shared<ChColorAsset>(col_lowerarm));
+    m_distLCA_F[RIGHT]->AddAsset(std::make_shared<ChColorAsset>(col_lowerarm));
+
+    m_distLCA_B[LEFT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distLCA_B[RIGHT]->AddAsset(std::make_shared<ChPointPointSegment>());
+    m_distLCA_B[LEFT]->AddAsset(std::make_shared<ChColorAsset>(col_lowerarm));
+    m_distLCA_B[RIGHT]->AddAsset(std::make_shared<ChColorAsset>(col_lowerarm));
 }
 
 void ChDoubleWishboneReduced::RemoveVisualizationAssets() {
@@ -175,6 +229,22 @@ void ChDoubleWishboneReduced::RemoveVisualizationAssets() {
 
     m_upright[LEFT]->GetAssets().clear();
     m_upright[RIGHT]->GetAssets().clear();
+
+    m_shock[LEFT]->GetAssets().clear();
+    m_shock[RIGHT]->GetAssets().clear();
+
+    m_distTierod[LEFT]->GetAssets().clear();
+    m_distTierod[RIGHT]->GetAssets().clear();
+
+    m_distUCA_F[LEFT]->GetAssets().clear();
+    m_distUCA_F[RIGHT]->GetAssets().clear();
+    m_distUCA_B[LEFT]->GetAssets().clear();
+    m_distUCA_B[RIGHT]->GetAssets().clear();
+
+    m_distLCA_F[LEFT]->GetAssets().clear();
+    m_distLCA_F[RIGHT]->GetAssets().clear();
+    m_distLCA_B[LEFT]->GetAssets().clear();
+    m_distLCA_B[RIGHT]->GetAssets().clear();
 }
 
 // -----------------------------------------------------------------------------

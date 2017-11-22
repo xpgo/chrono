@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2016 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,11 +19,14 @@
 
 #include "chrono_parallel/ChCudaDefines.h"
 #include <iostream>
+
 //#include "chrono_parallel/math/float.h"
 namespace chrono {
 
+#if !defined(_WIN32)
 #define FLT_EPSILON 1.19209290E-07F
 #define FLT_MAX 3.40282347E+38F
+#endif
 
 #define OPERATOR_EQUALSALT(op, tin, tout)                           \
     static inline tout& operator op##=(tout& a, const tin& scale) { \

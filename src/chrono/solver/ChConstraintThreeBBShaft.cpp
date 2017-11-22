@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChConstraintThreeBBShaft> a_registration_ChConstraintThreeBBShaft;
+CH_FACTORY_REGISTER(ChConstraintThreeBBShaft)
 
 ChConstraintThreeBBShaft::ChConstraintThreeBBShaft(ChVariablesBody* mvariables_a,
                                                    ChVariablesBody* mvariables_b,
@@ -172,30 +172,30 @@ void ChConstraintThreeBBShaft::MultiplyTandAdd(ChMatrix<double>& result, double 
 
 void ChConstraintThreeBBShaft::Build_Cq(ChSparseMatrix& storage, int insrow) {
     if (variables_a->IsActive())
-        storage.PasteMatrix(&Cq_a, insrow, variables_a->GetOffset());
+        storage.PasteMatrix(Cq_a, insrow, variables_a->GetOffset());
     if (variables_b->IsActive())
-        storage.PasteMatrix(&Cq_b, insrow, variables_b->GetOffset());
+        storage.PasteMatrix(Cq_b, insrow, variables_b->GetOffset());
     if (variables_c->IsActive())
-        storage.PasteMatrix(&Cq_c, insrow, variables_c->GetOffset());
+        storage.PasteMatrix(Cq_c, insrow, variables_c->GetOffset());
 }
 
 void ChConstraintThreeBBShaft::Build_CqT(ChSparseMatrix& storage, int inscol) {
     if (variables_a->IsActive())
-        storage.PasteTranspMatrix(&Cq_a, variables_a->GetOffset(), inscol);
+        storage.PasteTranspMatrix(Cq_a, variables_a->GetOffset(), inscol);
     if (variables_b->IsActive())
-        storage.PasteTranspMatrix(&Cq_b, variables_b->GetOffset(), inscol);
+        storage.PasteTranspMatrix(Cq_b, variables_b->GetOffset(), inscol);
     if (variables_c->IsActive())
-        storage.PasteTranspMatrix(&Cq_c, variables_c->GetOffset(), inscol);
+        storage.PasteTranspMatrix(Cq_c, variables_c->GetOffset(), inscol);
 }
 
-void ChConstraintThreeBBShaft::StreamOUT(ChStreamOutBinary& mstream) {
-    // class version number
-    mstream.VersionWrite(1);
+void ChConstraintThreeBBShaft::ArchiveOUT(ChArchiveOut& marchive) {
+    // version number
+    marchive.VersionWrite<ChConstraintThreeBBShaft>();
 
-    // serialize parent class too
-    ChConstraintThree::StreamOUT(mstream);
+    // serialize the parent class data too
+    ChConstraintThree::ArchiveOUT(marchive);
 
-    // stream out all member data
+    // serialize all member data:
     // NOTHING INTERESTING TO SERIALIZE (the Cq jacobians are not so
     // important to waste disk space.. they may be recomputed run-time,
     // and pointers to variables must be rebound in run-time.)
@@ -203,19 +203,21 @@ void ChConstraintThreeBBShaft::StreamOUT(ChStreamOutBinary& mstream) {
     // mstream << Cq_b;
 }
 
-void ChConstraintThreeBBShaft::StreamIN(ChStreamInBinary& mstream) {
-    // class version number
-    int version = mstream.VersionRead();
+void ChConstraintThreeBBShaft::ArchiveIN(ChArchiveIn& marchive) {
+    // version number
+    int version = marchive.VersionRead<ChConstraintThreeBBShaft>();
 
-    // deserialize parent class too
-    ChConstraintThree::StreamIN(mstream);
+    // deserialize the parent class data too
+    ChConstraintThree::ArchiveIN(marchive);
 
-    // stream in all member data
-    // NOTHING INTERESTING TO DESERIALIZE (the Cq jacobians are not so
+    // deserialize all member data:
+    // NOTHING INTERESTING TO SERIALIZE (the Cq jacobians are not so
     // important to waste disk space.. they may be recomputed run-time,
     // and pointers to variables must be rebound in run-time.)
-    // mstream >> Cq_a;
-    // mstream >> Cq_b;
+    // mstream << Cq_a;
+    // mstream << Cq_b;
 }
+
+
 
 }  // end namespace chrono

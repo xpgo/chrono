@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -20,6 +20,7 @@
 #include "chrono_vehicle/tracked_vehicle/suspension/LinearDamperRWAssembly.h"
 #include "chrono_vehicle/tracked_vehicle/road_wheel/SingleRoadWheel.h"
 #include "chrono_vehicle/tracked_vehicle/road_wheel/DoubleRoadWheel.h"
+#include "chrono_vehicle/utils/ChUtilsJSON.h"
 
 #include "chrono_vehicle/ChVehicleModelData.h"
 
@@ -32,16 +33,6 @@ namespace chrono {
 namespace vehicle {
 
 // -----------------------------------------------------------------------------
-// This utility function returns a ChVector from the specified JSON array
-// -----------------------------------------------------------------------------
-static ChVector<> loadVector(const Value& a) {
-    assert(a.IsArray());
-    assert(a.Size() == 3);
-
-    return ChVector<>(a[0u].GetDouble(), a[1u].GetDouble(), a[2u].GetDouble());
-}
-
-// -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 void LinearDamperRWAssembly::LoadRoadWheel(const std::string& filename) {
     FILE* fp = fopen(filename.c_str(), "r");
@@ -52,7 +43,7 @@ void LinearDamperRWAssembly::LoadRoadWheel(const std::string& filename) {
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Check that the given file is a road-wheel specification file.
     assert(d.HasMember("Type"));
@@ -76,7 +67,7 @@ void LinearDamperRWAssembly::LoadRoadWheel(const std::string& filename) {
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 LinearDamperRWAssembly::LinearDamperRWAssembly(const std::string& filename, bool has_shock)
-    : ChLinearDamperRWAssembly("", has_shock) {
+    : ChLinearDamperRWAssembly("", has_shock), m_spring_torqueCB(nullptr), m_shock_forceCB(nullptr) {
     FILE* fp = fopen(filename.c_str(), "r");
 
     char readBuffer[65536];
@@ -85,7 +76,7 @@ LinearDamperRWAssembly::LinearDamperRWAssembly(const std::string& filename, bool
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     Create(d);
 
@@ -93,8 +84,13 @@ LinearDamperRWAssembly::LinearDamperRWAssembly(const std::string& filename, bool
 }
 
 LinearDamperRWAssembly::LinearDamperRWAssembly(const rapidjson::Document& d, bool has_shock)
-    : ChLinearDamperRWAssembly("", has_shock) {
+    : ChLinearDamperRWAssembly("", has_shock), m_spring_torqueCB(nullptr), m_shock_forceCB(nullptr) {
     Create(d);
+}
+
+LinearDamperRWAssembly::~LinearDamperRWAssembly() {
+    delete m_shock_forceCB;
+    delete m_spring_torqueCB;
 }
 
 void LinearDamperRWAssembly::Create(const rapidjson::Document& d) {
@@ -110,31 +106,26 @@ void LinearDamperRWAssembly::Create(const rapidjson::Document& d) {
     assert(d["Suspension Arm"].IsObject());
 
     m_arm_mass = d["Suspension Arm"]["Mass"].GetDouble();
-    m_points[ARM] = loadVector(d["Suspension Arm"]["COM"]);
-    m_arm_inertia = loadVector(d["Suspension Arm"]["Inertia"]);
-    m_points[ARM_CHASSIS] = loadVector(d["Suspension Arm"]["Location Chassis"]);
-    m_points[ARM_WHEEL] = loadVector(d["Suspension Arm"]["Location Wheel"]);
+    m_points[ARM] = LoadVectorJSON(d["Suspension Arm"]["COM"]);
+    m_arm_inertia = LoadVectorJSON(d["Suspension Arm"]["Inertia"]);
+    m_points[ARM_CHASSIS] = LoadVectorJSON(d["Suspension Arm"]["Location Chassis"]);
+    m_points[ARM_WHEEL] = LoadVectorJSON(d["Suspension Arm"]["Location Wheel"]);
     m_arm_radius = d["Suspension Arm"]["Radius"].GetDouble();
 
     // Read data for torsional spring
     assert(d.HasMember("Torsional Spring"));
     assert(d["Torsional Spring"].IsObject());
 
-    ////double torsion_a0 = d["Torsional Spring"]["Free Angle"].GetDouble();
     double torsion_k = d["Torsional Spring"]["Spring Constant"].GetDouble();
     double torsion_c = d["Torsional Spring"]["Damping Coefficient"].GetDouble();
     double torsion_t = d["Torsional Spring"]["Preload"].GetDouble();
-    m_torsion_force = new ChLinkForce;
-    m_torsion_force->Set_active(1);
-    m_torsion_force->Set_K(torsion_k);
-    m_torsion_force->Set_R(torsion_c);
-    m_torsion_force->Set_iforce(torsion_t);
+    m_spring_torqueCB = new LinearSpringDamperActuatorTorque(torsion_k, torsion_c, torsion_t);
 
     // Read linear shock data
     assert(d.HasMember("Damper"));
 
-    m_points[SHOCK_C] = loadVector(d["Damper"]["Location Chassis"]);
-    m_points[SHOCK_A] = loadVector(d["Damper"]["Location Arm"]);
+    m_points[SHOCK_C] = LoadVectorJSON(d["Damper"]["Location Chassis"]);
+    m_points[SHOCK_A] = LoadVectorJSON(d["Damper"]["Location Arm"]);
     double shock_c = d["Damper"]["Damping Coefficient"].GetDouble();
     m_shock_forceCB = new LinearDamperForce(shock_c);
 

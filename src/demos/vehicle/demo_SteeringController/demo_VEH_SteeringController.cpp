@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -27,6 +27,7 @@
 #include "chrono_vehicle/terrain/RigidTerrain.h"
 #include "chrono_vehicle/driver/ChIrrGuiDriver.h"
 #include "chrono_vehicle/driver/ChPathFollowerDriver.h"
+#include "chrono_vehicle/utils/ChVehiclePath.h"
 #include "chrono_vehicle/wheeled_vehicle/utils/ChWheeledVehicleIrrApp.h"
 
 #include "chrono_models/vehicle/hmmwv/HMMWV.h"
@@ -40,13 +41,10 @@ using namespace chrono::vehicle::hmmwv;
 // Problem parameters
 
 // Contact method type
-ChMaterialSurfaceBase::ContactMethod contact_method = ChMaterialSurfaceBase::DEM;
+ChMaterialSurface::ContactMethod contact_method = ChMaterialSurface::SMC;
 
-// Type of tire model (RIGID, LUGRE, FIALA, or PACEJKA)
+// Type of tire model (RIGID, LUGRE, FIALA, PACEJKA, or TMEASY)
 TireModelType tire_model = TireModelType::RIGID;
-
-// Input file name for PACEJKA tires if they are selected
-std::string pacejka_tire_file("hmmwv/tire/HMMWV_pacejka.tir");
 
 // Type of powertrain model (SHAFTS or SIMPLE)
 PowertrainModelType powertrain_model = PowertrainModelType::SHAFTS;
@@ -64,9 +62,9 @@ VisualizationType tire_vis_type = VisualizationType::PRIMITIVES;
 // Input file names for the path-follower driver model
 std::string steering_controller_file("generic/driver/SteeringController.json");
 std::string speed_controller_file("generic/driver/SpeedController.json");
-// std::string path_file("paths/straight.txt");
-// std::string path_file("paths/curve.txt");
-// std::string path_file("paths/NATO_double_lane_change.txt");
+////std::string path_file("paths/straight.txt");
+////std::string path_file("paths/curve.txt");
+////std::string path_file("paths/NATO_double_lane_change.txt");
 std::string path_file("paths/ISO_double_lane_change.txt");
 
 // Initial vehicle location and orientation
@@ -99,7 +97,7 @@ bool debug_output = false;
 double debug_fps = 10;
 
 // Output directories
-const std::string out_dir = "../STEERING_CONTROLLER";
+const std::string out_dir = GetChronoOutputPath() + "STEERING_CONTROLLER";
 const std::string pov_dir = out_dir + "/POVRAY";
 
 // POV-Ray output
@@ -169,6 +167,8 @@ class ChDriverSelector : public irr::IEventReceiver {
                     m_driver_follower->GetSteeringController().WriteOutputFile(std::string(filename));
                 }
                 return true;
+            default:
+                break;
         }
 
         return false;
@@ -185,6 +185,8 @@ class ChDriverSelector : public irr::IEventReceiver {
 // =============================================================================
 
 int main(int argc, char* argv[]) {
+    GetLog() << "Copyright (c) 2017 projectchrono.org\nChrono version: " << CHRONO_VERSION << "\n\n";
+
     // ------------------------------
     // Create the vehicle and terrain
     // ------------------------------
@@ -198,7 +200,6 @@ int main(int argc, char* argv[]) {
     my_hmmwv.SetDriveType(drive_type);
     my_hmmwv.SetTireType(tire_model);
     my_hmmwv.SetTireStepSize(tire_step_size);
-    my_hmmwv.SetPacejkaParamfile(pacejka_tire_file);
     my_hmmwv.Initialize();
 
     my_hmmwv.SetChassisVisualizationType(chassis_vis_type);
@@ -209,7 +210,7 @@ int main(int argc, char* argv[]) {
 
     // Create the terrain
     RigidTerrain terrain(my_hmmwv.GetSystem());
-    terrain.SetContactFrictionCoefficient(0.9f);
+    terrain.SetContactFrictionCoefficient(0.8f);
     terrain.SetContactRestitutionCoefficient(0.01f);
     terrain.SetContactMaterialProperties(2e7f, 0.3f);
     terrain.SetColor(ChColor(1, 1, 1));
@@ -220,7 +221,15 @@ int main(int argc, char* argv[]) {
     // Create the Bezier path
     // ----------------------
 
-    ChBezierCurve* path = ChBezierCurve::read(vehicle::GetDataFile(path_file));
+    // From data file
+    auto path = ChBezierCurve::read(vehicle::GetDataFile(path_file));
+
+    // Parameterized ISO double lane change (to left)
+    ////auto path = DoubleLaneChangePath(ChVector<>(-125, -125, 0.1), 13.5, 4.0, 11.0, 50.0, true);
+
+    // Parameterized NATO double lane change (to right)
+    ////auto path = DoubleLaneChangePath(ChVector<>(-125, -125, 0.1), 28.93, 3.6105, 25.0, 50.0, false);
+ 
     ////path->write("my_path.txt");
 
     // ---------------------------------------
@@ -329,10 +338,10 @@ int main(int argc, char* argv[]) {
         double time = my_hmmwv.GetSystem()->GetChTime();
         ChVector<> acc_CG = my_hmmwv.GetVehicle().GetChassisBody()->GetPos_dtdt();
         ChVector<> acc_driver = my_hmmwv.GetVehicle().GetVehicleAcceleration(driver_pos);
-        double fwd_acc_CG = fwd_acc_GC_filter.Add(acc_CG.x);
-        double lat_acc_CG = lat_acc_GC_filter.Add(acc_CG.y);
-        double fwd_acc_driver = fwd_acc_driver_filter.Add(acc_driver.x);
-        double lat_acc_driver = lat_acc_driver_filter.Add(acc_driver.y);
+        double fwd_acc_CG = fwd_acc_GC_filter.Add(acc_CG.x());
+        double lat_acc_CG = lat_acc_GC_filter.Add(acc_CG.y());
+        double fwd_acc_driver = fwd_acc_driver_filter.Add(acc_driver.x());
+        double lat_acc_driver = lat_acc_driver_filter.Add(acc_driver.y());
 
         // End simulation
         if (time >= t_end)
@@ -361,8 +370,8 @@ int main(int argc, char* argv[]) {
         // Note that we do this whether or not we are currently using the path-follower driver.
         const ChVector<>& pS = driver_follower.GetSteeringController().GetSentinelLocation();
         const ChVector<>& pT = driver_follower.GetSteeringController().GetTargetLocation();
-        ballS->setPosition(irr::core::vector3df((irr::f32)pS.x, (irr::f32)pS.y, (irr::f32)pS.z));
-        ballT->setPosition(irr::core::vector3df((irr::f32)pT.x, (irr::f32)pT.y, (irr::f32)pT.z));
+        ballS->setPosition(irr::core::vector3df((irr::f32)pS.x(), (irr::f32)pS.y(), (irr::f32)pS.z()));
+        ballT->setPosition(irr::core::vector3df((irr::f32)pT.x(), (irr::f32)pT.y(), (irr::f32)pT.z()));
 
         // Render scene and output POV-Ray data
         if (sim_frame % render_steps == 0) {
@@ -379,8 +388,8 @@ int main(int argc, char* argv[]) {
             if (state_output) {
                 csv << time << steering_input << throttle_input << braking_input;
                 csv << my_hmmwv.GetVehicle().GetVehicleSpeed();
-                csv << acc_CG.x << fwd_acc_CG << acc_CG.y << lat_acc_CG;
-                csv << acc_driver.x << fwd_acc_driver << acc_driver.y << lat_acc_driver;
+                csv << acc_CG.x() << fwd_acc_CG << acc_CG.y() << lat_acc_CG;
+                csv << acc_driver.x() << fwd_acc_driver << acc_driver.y() << lat_acc_driver;
                 csv << std::endl;
             }
 
@@ -389,9 +398,9 @@ int main(int argc, char* argv[]) {
 
         // Debug logging
         if (debug_output && sim_frame % debug_steps == 0) {
-            GetLog() << "driver acceleration:  " << acc_driver.x << "  " << acc_driver.y << "  " << acc_driver.z
+            GetLog() << "driver acceleration:  " << acc_driver.x() << "  " << acc_driver.y() << "  " << acc_driver.z()
                      << "\n";
-            GetLog() << "CG acceleration:      " << acc_CG.x << "  " << acc_CG.y << "  " << acc_CG.z << "\n";
+            GetLog() << "CG acceleration:      " << acc_CG.x() << "  " << acc_CG.y() << "  " << acc_CG.z() << "\n";
             GetLog() << "\n";
         }
 

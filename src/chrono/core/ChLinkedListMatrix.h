@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -108,9 +108,9 @@ class ChApi ChLinkedListMatrix : public ChSparseMatrix {
 
     // Customized functions, speed-optimized for sparse matrices:
 
-    virtual void PasteMatrix(ChMatrix<>* matra, int insrow, int inscol, bool overwrite, bool transp) override;
-    virtual void PasteTranspMatrix(ChMatrix<>* matra, int insrow, int inscol) override;
-    virtual void PasteClippedMatrix(ChMatrix<>* matra,
+    virtual void PasteMatrix(const ChMatrix<>& matra, int insrow, int inscol, bool overwrite, bool transp) override;
+    virtual void PasteTranspMatrix(const ChMatrix<>& matra, int insrow, int inscol) override;
+    virtual void PasteClippedMatrix(const ChMatrix<>& matra,
                                     int cliprow,
                                     int clipcol,
                                     int nrows,
@@ -118,20 +118,20 @@ class ChApi ChLinkedListMatrix : public ChSparseMatrix {
                                     int insrow,
                                     int inscol,
                                     bool overwrite) override;
-    virtual void PasteSumClippedMatrix(ChMatrix<>* matra,
+    virtual void PasteSumClippedMatrix(const ChMatrix<>& matra,
                                        int cliprow,
                                        int clipcol,
                                        int nrows,
                                        int ncolumns,
                                        int insrow,
                                        int inscol) override;
-    virtual void PasteSumMatrix(ChMatrix<>* matra, int insrow, int inscol) override;
-    virtual void PasteSumTranspMatrix(ChMatrix<>* matra, int insrow, int inscol) override;
+    virtual void PasteSumMatrix(const ChMatrix<>& matra, int insrow, int inscol) override;
+    virtual void PasteSumTranspMatrix(const ChMatrix<>& matra, int insrow, int inscol) override;
 
     // Specialized functions
 
-    void PasteMatrix(ChLinkedListMatrix* matra, int insrow, int inscol);
-    void PasteTranspMatrix(ChLinkedListMatrix* matra, int insrow, int inscol);
+    void PasteMatrix(const ChLinkedListMatrix& matra, int insrow, int inscol);
+    void PasteTranspMatrix(const ChLinkedListMatrix& matra, int insrow, int inscol);
 
     // Matrix operations
 
@@ -164,7 +164,7 @@ class ChApi ChLinkedListMatrix : public ChSparseMatrix {
     /// Note that the matrix is modified in-place to contain the LU factors.
     int SolveSymmetric(const ChMatrix<>& b, ChMatrix<>& x);
 
-    /// Get the pivot indices after the last factorization.
+    /// Get the pivot indexes after the last factorization.
     const std::vector<int>& GetPivots() const { return m_pindices; }
 
     /// Get matrix determinant.
@@ -182,16 +182,16 @@ class ChApi ChLinkedListMatrix : public ChSparseMatrix {
     /// Method to allow serializing transient data into in ASCII format.
     void StreamOUT(ChStreamOutAscii& mstream);
 
-    // Functions used to convert to CSR3 format (ChEigenMatrix)
+    // Functions used to convert to CSR3 format (ChCSMatrix)
 
-    /// Used to convert to CSR3 format (ChEigenMatrix).
+    /// Used to convert to CSR3 format (ChCSMatrix).
     /// Returns the array to 1st column elements.
     ChMelement* GetElarrayDereferenced() { return *elarray; }  // used to scan the matrix faster than GetElement
 
-    /// Used to convert to CSR3 format (ChEigenMatrix).
-    /// Returns a pointer to an array/vector of type \areserveSizeType.
+    /// Used to convert to CSR3 format (ChCSMatrix).
+    /// Returns a pointer to an array/vector of type \a reserveSizeType.
     /// reserveSizeType[i] gives the number of non-zero elements in the i-th row;
-    /// \areserveSize must have the same row-dimension as ChLinkedListMatrix instance.
+    /// \a reserveSize must have the same row-dimension as ChLinkedListMatrix instance.
     template <typename reserveSizeType>
     void CountNonZeros(reserveSizeType& reserveSize, int offset = 0) {
         ChMelement* el_temp;

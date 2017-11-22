@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -26,8 +26,8 @@ namespace generic {
 // Static variables
 // -----------------------------------------------------------------------------
 
-const double Generic_Wheel::m_mass = 25.0;
-const ChVector<> Generic_Wheel::m_inertia(0.800, 1.000, 0.800);
+const double Generic_Wheel::m_mass = 18.0;
+const ChVector<> Generic_Wheel::m_inertia(0.100, 0.100, 0.100);
 
 const double Generic_Wheel::m_radius = 0.3099;
 const double Generic_Wheel::m_width = 0.235;

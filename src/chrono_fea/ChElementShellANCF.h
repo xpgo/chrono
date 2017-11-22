@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -235,7 +235,7 @@ class ChApiFea ChElementShellANCF : public ChElementShell, public ChLoadableUV, 
     static const double m_toleranceEAS;   ///< tolerance for nonlinear EAS solver (on residual)
     static const int m_maxIterationsEAS;  ///< maximum number of nonlinear EAS iterations
 
-public:
+  public:
     // Interface to ChElementBase base class
     // -------------------------------------
 
@@ -298,7 +298,7 @@ public:
     /// Compute Jacobians of the internal forces.
     /// This function calculates a linear combination of the stiffness (K) and damping (R) matrices,
     ///     J = Kfactor * K + Rfactor * R
-    /// for given coeficients Kfactor and Rfactor.
+    /// for given coefficients Kfactor and Rfactor.
     /// This Jacobian will be further combined with the global mass matrix M and included in the global
     /// stiffness matrix H in the function ComputeKRMmatricesGlobal().
     void ComputeInternalJacobians(double Kfactor, double Rfactor);
@@ -344,7 +344,7 @@ public:
     // Helper functions
     // ----------------
 
-    /// Numerial inverse for a 5x5 matrix.
+    /// Numerical inverse for a 5x5 matrix.
     static void Inverse55_Numerical(ChMatrixNM<double, 5, 5>& a, int n);
 
     /// Analytical inverse for a 5x5 matrix.
@@ -354,29 +354,32 @@ public:
     // ----------------------------------
 
     /// Gets the number of DOFs affected by this element (position part).
-    virtual int LoadableGet_ndof_x() { return 4 * 6; }
+    virtual int LoadableGet_ndof_x() override { return 4 * 6; }
 
     /// Gets the number of DOFs affected by this element (velocity part).
-    virtual int LoadableGet_ndof_w() { return 4 * 6; }
+    virtual int LoadableGet_ndof_w() override { return 4 * 6; }
 
     /// Gets all the DOFs packed in a single vector (position part).
-    virtual void LoadableGetStateBlock_x(int block_offset, ChVectorDynamic<>& mD) override;
+    virtual void LoadableGetStateBlock_x(int block_offset, ChState& mD) override;
 
     /// Gets all the DOFs packed in a single vector (velocity part).
-    virtual void LoadableGetStateBlock_w(int block_offset, ChVectorDynamic<>& mD) override;
+    virtual void LoadableGetStateBlock_w(int block_offset, ChStateDelta& mD) override;
+
+    /// Increment all DOFs using a delta.
+    virtual void LoadableStateIncrement(const unsigned int off_x, ChState& x_new, const ChState& x, const unsigned int off_v, const ChStateDelta& Dv) override;
 
     /// Number of coordinates in the interpolated field, ex=3 for a
     /// tetrahedron finite element or a cable, = 1 for a thermal problem, etc.
-    virtual int Get_field_ncoords() { return 6; }
+    virtual int Get_field_ncoords() override { return 6; }
 
     /// Tell the number of DOFs blocks (ex. =1 for a body, =4 for a tetrahedron, etc.)
-    virtual int GetSubBlocks() { return 4; }
+    virtual int GetSubBlocks() override { return 4; }
 
     /// Get the offset of the i-th sub-block of DOFs in global vector.
-    virtual unsigned int GetSubBlockOffset(int nblock) { return m_nodes[nblock]->NodeGetOffset_w(); }
+    virtual unsigned int GetSubBlockOffset(int nblock) override { return m_nodes[nblock]->NodeGetOffset_w(); }
 
     /// Get the size of the i-th sub-block of DOFs in global vector.
-    virtual unsigned int GetSubBlockSize(int nblock) { return 6; }
+    virtual unsigned int GetSubBlockSize(int nblock) override { return 6; }
 
     virtual void EvaluateSectionVelNorm(double U, double V, ChVector<>& Result) override;
 

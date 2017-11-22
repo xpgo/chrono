@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -26,9 +26,10 @@ namespace chrono {
 /// Note that the engine can be in 'impose relative rotation' mode,
 /// as well as in 'impose speed' etc. It can also be used to represent
 /// an engine with a torque/speed custom curve. etc.
+/// **NOTE! THIS IS OBSOLETE**. Prefer using the new classes 
+/// inherited from chrono::ChLinkMotor.
 
 class ChApi ChLinkEngine : public ChLinkLock {
-    CH_RTTI(ChLinkEngine, ChLinkLock);
 
   public:
     enum eCh_eng_mode {
@@ -258,6 +259,8 @@ class ChApi ChLinkEngine : public ChLinkLock {
     /// Method to allow deserialization of transient data from archives.
     virtual void ArchiveIN(ChArchiveIn& marchive) override;
 };
+
+CH_CLASS_VERSION(ChLinkEngine,0)
 
 }  // end namespace chrono
 

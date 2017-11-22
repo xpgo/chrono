@@ -1,18 +1,19 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2010 Alessandro Tasora
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
 
 #ifndef CHGENERICCONSTRAINT_H
 #define CHGENERICCONSTRAINT_H
 
-#include <math.h>
+#include <cmath>
 
 #include "chrono/core/ChApiCE.h"
 #include "chrono/physics/ChRef.h"
@@ -20,11 +21,11 @@
 namespace chrono {
 
 /// Class for basic algebraic constraints (not to be confused with
-/// ChLink objects, which are complex kinematical constraints between rigid
+/// ChLink objects, which are complex kinematic constraints between rigid
 /// bodies in 3D, containing ChConstraint objects)
 ///
 /// This is the base data for algebraic constraints.
-/// The base implemetation is basically _useless_ unless it has some
+/// The base implementation is basically _useless_ unless it has some
 /// inherited implementation (see other classes below)
 ///
 /// Child classes should implement at least Update() RestoreReferences() Get_Cn().
@@ -39,7 +40,7 @@ class ChApi ChGenericConstraint {
 
   public:
     ChGenericConstraint();
-    ~ChGenericConstraint();
+    virtual ~ChGenericConstraint();
 
     /// Tells if the constraint data is currently valid.
     /// Instead of implementing it, child classes may simply

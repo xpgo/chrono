@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChSolverMatlab> a_registration_ChSolverMatlab;
+CH_FACTORY_REGISTER(ChSolverMatlab)
 
 ChSolverMatlab::ChSolverMatlab(ChMatlabEngine& me) {
     mengine = &me;
@@ -64,7 +64,7 @@ double ChSolverMatlab::Solve(ChSystemDescriptor& sysd) {
 
 void ChSolverMatlab::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChSolverMatlab>();
     // serialize parent class
     ChSolver::ArchiveOUT(marchive);
     // serialize all member data:
@@ -73,7 +73,7 @@ void ChSolverMatlab::ArchiveOUT(ChArchiveOut& marchive) {
 
 void ChSolverMatlab::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChSolverMatlab>();
     // deserialize parent class
     ChSolver::ArchiveIN(marchive);
     // stream in all member data:

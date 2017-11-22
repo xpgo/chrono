@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -38,14 +38,14 @@ ChNodeBase& ChNodeBase::operator=(const ChNodeBase& other) {
 
 void ChNodeBase::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChNodeBase>();
     // serialize all member data:
 }
 
 /// Method to allow de serialization of transient data from archives.
 void ChNodeBase::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChNodeBase>();
     // deserialize all member data:
 }
 

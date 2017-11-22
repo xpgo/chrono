@@ -1,3 +1,21 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar, Radu Serban
+// =============================================================================
+//
+// Handling of bilateral constraints for the system and Jacobian calculation
+//
+// =============================================================================
+
 #include <algorithm>
 
 #include "chrono_parallel/constraints/ChConstraintBilateral.h"
@@ -13,11 +31,10 @@
 using namespace chrono;
 
 void ChConstraintBilateral::Build_b() {
-
     std::vector<ChConstraint*>& mconstraints = data_manager->system_descriptor->GetConstraintsList();
 
 #pragma omp parallel for
-    for (int index = 0; index < data_manager->num_bilaterals; index++) {
+    for (int index = 0; index < (signed)data_manager->num_bilaterals; index++) {
         int cntr = data_manager->host_data.bilateral_mapping[index];
         ChConstraintTwoBodies* mbilateral = (ChConstraintTwoBodies*)(mconstraints[cntr]);
         data_manager->host_data.b[index + data_manager->num_unilaterals] = mbilateral->Get_b_i();
@@ -26,7 +43,7 @@ void ChConstraintBilateral::Build_b() {
 
 void ChConstraintBilateral::Build_E() {
 #pragma omp parallel for
-    for (int index = 0; index < data_manager->num_bilaterals; index++) {
+    for (int index = 0; index < (signed)data_manager->num_bilaterals; index++) {
         data_manager->host_data.E[index + data_manager->num_unilaterals] = 0;
     }
 }
@@ -44,13 +61,13 @@ void ChConstraintBilateral::Build_D() {
     const CompressedMatrix<real>& M_inv = data_manager->host_data.M_inv;
 
     //#pragma omp parallel for
-    for (int index = 0; index < data_manager->num_bilaterals; index++) {
+    for (int index = 0; index < (signed)data_manager->num_bilaterals; index++) {
         int cntr = data_manager->host_data.bilateral_mapping[index];
         int type = data_manager->host_data.bilateral_type[cntr];
         int row = index;
 
         switch (type) {
-            case BODY_BODY: {
+            case BilateralType::BODY_BODY: {
                 ChConstraintTwoBodies* mbilateral = (ChConstraintTwoBodies*)(mconstraints[cntr]);
 
                 int idA = ((ChBody*)((ChVariablesBody*)(mbilateral->GetVariables_a()))->GetUserData())->GetId();
@@ -75,8 +92,7 @@ void ChConstraintBilateral::Build_D() {
                 D_b_T(row, colB + 5) = mbilateral->Get_Cq_b()->GetElementN(5);
             } break;
 
-            case SHAFT_SHAFT: {
-
+            case BilateralType::SHAFT_SHAFT: {
                 ChConstraintTwoGeneric* mbilateral = (ChConstraintTwoGeneric*)(mconstraints[cntr]);
 
                 int idA = ((ChVariablesShaft*)(mbilateral->GetVariables_a()))->GetShaft()->GetId();
@@ -89,8 +105,7 @@ void ChConstraintBilateral::Build_D() {
                 D_b_T(row, colB) = mbilateral->Get_Cq_b()->GetElementN(0);
             } break;
 
-            case SHAFT_BODY: {
-
+            case BilateralType::SHAFT_BODY: {
                 ChConstraintTwoGeneric* mbilateral = (ChConstraintTwoGeneric*)(mconstraints[cntr]);
 
                 int idA = ((ChVariablesShaft*)(mbilateral->GetVariables_a()))->GetShaft()->GetId();
@@ -110,8 +125,7 @@ void ChConstraintBilateral::Build_D() {
                 D_b_T(row, colB + 5) = mbilateral->Get_Cq_b()->GetElementN(5);
             } break;
 
-            case SHAFT_SHAFT_SHAFT: {
-
+            case BilateralType::SHAFT_SHAFT_SHAFT: {
                 ChConstraintThreeGeneric* mbilateral = (ChConstraintThreeGeneric*)(mconstraints[cntr]);
                 int idA = ((ChVariablesShaft*)(mbilateral->GetVariables_a()))->GetShaft()->GetId();
                 int idB = ((ChVariablesShaft*)(mbilateral->GetVariables_b()))->GetShaft()->GetId();
@@ -126,7 +140,7 @@ void ChConstraintBilateral::Build_D() {
                 D_b_T(row, colC) = mbilateral->Get_Cq_c()->GetElementN(0);
             } break;
 
-            case SHAFT_SHAFT_BODY: {
+            case BilateralType::SHAFT_SHAFT_BODY: {
                 ChConstraintThreeGeneric* mbilateral = (ChConstraintThreeGeneric*)(mconstraints[cntr]);
                 int idA = ((ChVariablesShaft*)(mbilateral->GetVariables_a()))->GetShaft()->GetId();
                 int idB = ((ChVariablesShaft*)(mbilateral->GetVariables_b()))->GetShaft()->GetId();
@@ -166,7 +180,7 @@ void ChConstraintBilateral::GenerateSparsity() {
 
     CompressedMatrix<real>& D_b_T = data_manager->host_data.D_T;
     int off = data_manager->num_unilaterals;
-    for (int index = 0; index < data_manager->num_bilaterals; index++) {
+    for (int index = 0; index < (signed)data_manager->num_bilaterals; index++) {
         int cntr = data_manager->host_data.bilateral_mapping[index];
         int type = data_manager->host_data.bilateral_type[cntr];
         int row = off + index;
@@ -176,8 +190,7 @@ void ChConstraintBilateral::GenerateSparsity() {
         int col3;
 
         switch (type) {
-            case BODY_BODY: {
-
+            case BilateralType::BODY_BODY: {
                 ChConstraintTwoBodies* mbilateral = (ChConstraintTwoBodies*)(mconstraints[cntr]);
 
                 int idA = ((ChBody*)((ChVariablesBody*)(mbilateral->GetVariables_a()))->GetUserData())->GetId();
@@ -206,8 +219,7 @@ void ChConstraintBilateral::GenerateSparsity() {
                 D_b_T.append(row, col2 + 5, 1);
             } break;
 
-            case SHAFT_SHAFT: {
-
+            case BilateralType::SHAFT_SHAFT: {
                 ChConstraintTwoGeneric* mbilateral = (ChConstraintTwoGeneric*)(mconstraints[cntr]);
 
                 int idA = ((ChVariablesShaft*)(mbilateral->GetVariables_a()))->GetShaft()->GetId();
@@ -225,8 +237,7 @@ void ChConstraintBilateral::GenerateSparsity() {
                 D_b_T.append(row, col2, 1);
             } break;
 
-            case SHAFT_BODY: {
-
+            case BilateralType::SHAFT_BODY: {
                 ChConstraintTwoGeneric* mbilateral = (ChConstraintTwoGeneric*)(mconstraints[cntr]);
 
                 int idA = ((ChVariablesShaft*)(mbilateral->GetVariables_a()))->GetShaft()->GetId();
@@ -245,8 +256,7 @@ void ChConstraintBilateral::GenerateSparsity() {
                 D_b_T.append(row, col2, 1);
             } break;
 
-            case SHAFT_SHAFT_SHAFT: {
-
+            case BilateralType::SHAFT_SHAFT_SHAFT: {
                 ChConstraintThreeGeneric* mbilateral = (ChConstraintThreeGeneric*)(mconstraints[cntr]);
                 std::vector<int> ids(3);
                 ids[0] = ((ChVariablesShaft*)(mbilateral->GetVariables_a()))->GetShaft()->GetId();
@@ -263,8 +273,7 @@ void ChConstraintBilateral::GenerateSparsity() {
                 D_b_T.append(row, col3, 1);
             } break;
 
-            case SHAFT_SHAFT_BODY: {
-
+            case BilateralType::SHAFT_SHAFT_BODY: {
                 ChConstraintThreeGeneric* mbilateral = (ChConstraintThreeGeneric*)(mconstraints[cntr]);
                 int idA = ((ChVariablesShaft*)(mbilateral->GetVariables_a()))->GetShaft()->GetId();
                 int idB = ((ChVariablesShaft*)(mbilateral->GetVariables_b()))->GetShaft()->GetId();

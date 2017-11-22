@@ -8,10 +8,32 @@ option(ENABLE_MODULE_OPENGL "Enable the Chrono OpenGL module" OFF)
 # Return now if this module is not enabled
 
 if(NOT ENABLE_MODULE_OPENGL)
+  # Hide Chrono::OpenGL specific variables
+  mark_as_advanced(FORCE GLEW_INCLUDE_DIR)
+  mark_as_advanced(FORCE GLEW_LIBRARY)
+  mark_as_advanced(FORCE GLFW_INCLUDE_DIR)
+  mark_as_advanced(FORCE GLFW_LIBRARY)
+  mark_as_advanced(FORCE GLM_INCLUDE_DIR)
+  if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    mark_as_advanced(FORCE GLEW_DLL)
+    mark_as_advanced(FORCE GLFW_DLL)
+  endif()
+
   return()
 endif()
 
 message(STATUS "==== Chrono OpenGL module ====")
+
+# Show Chrono::OpenGL specific variables
+mark_as_advanced(CLEAR GLEW_INCLUDE_DIR)
+mark_as_advanced(CLEAR GLEW_LIBRARY)
+mark_as_advanced(CLEAR GLFW_INCLUDE_DIR)
+mark_as_advanced(CLEAR GLFW_LIBRARY)
+mark_as_advanced(CLEAR GLM_INCLUDE_DIR)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  mark_as_advanced(CLEAR GLEW_DLL)
+  mark_as_advanced(CLEAR GLFW_DLL)
+endif()
 
 # ------------------------------------------------------------------------------
 # Dependencies for OpenGL module
@@ -54,10 +76,7 @@ SET(CH_OPENGL_INCLUDES
 INCLUDE_DIRECTORIES(${CH_OPENGL_INCLUDES})
 
 IF(ENABLE_MODULE_PARALLEL)
-INCLUDE_DIRECTORIES(
-	${BLAZE_DIR}     
-	${BOOST_DIR}
-    ${THRUST_INCLUDE_DIR})
+    INCLUDE_DIRECTORIES(${CH_PARALLEL_INCLUDES})
 ENDIF()
 
 # ------------------------------------------------------------------------------
@@ -175,6 +194,7 @@ SET(CE_OpenGL_SHAPES_FILES
   shapes/ChOpenGLBars.cpp
   shapes/ChOpenGLOBJ.cpp
   shapes/obj/ChOpenGLOBJLoader.cpp
+  shapes/ChOpenGLMesh.h
   shapes/ChOpenGLCloud.h
   shapes/ChOpenGLWires.h
   shapes/ChOpenGLText.h

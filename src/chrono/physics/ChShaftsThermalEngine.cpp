@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -19,7 +19,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChShaftsThermalEngine> a_registration_ChShaftsThermalEngine;
+CH_FACTORY_REGISTER(ChShaftsThermalEngine)
 
 ChShaftsThermalEngine::ChShaftsThermalEngine() : throttle(1), error_backward(false) {
     // default torque curve= constant zero. User will provide better fx.
@@ -52,7 +52,7 @@ double ChShaftsThermalEngine::ComputeTorque() {
 
 void ChShaftsThermalEngine::ArchiveOUT(ChArchiveOut& marchive) {
     // version number
-    marchive.VersionWrite(1);
+    marchive.VersionWrite<ChShaftsThermalEngine>();
 
     // serialize parent class
     ChShaftsTorqueBase::ArchiveOUT(marchive);
@@ -65,7 +65,7 @@ void ChShaftsThermalEngine::ArchiveOUT(ChArchiveOut& marchive) {
 /// Method to allow de serialization of transient data from archives.
 void ChShaftsThermalEngine::ArchiveIN(ChArchiveIn& marchive) {
     // version number
-    int version = marchive.VersionRead();
+    int version = marchive.VersionRead<ChShaftsThermalEngine>();
 
     // deserialize parent class:
     ChShaftsTorqueBase::ArchiveIN(marchive);

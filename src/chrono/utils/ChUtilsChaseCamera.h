@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -30,8 +30,8 @@
 #ifndef CH_UTILS_CHASECAMERA_H
 #define CH_UTILS_CHASECAMERA_H
 
-#include "core/ChApiCE.h"
-#include "physics/ChBody.h"
+#include "chrono/core/ChApiCE.h"
+#include "chrono/physics/ChBody.h"
 
 namespace chrono {
 namespace utils {

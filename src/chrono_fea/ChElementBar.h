@@ -1,14 +1,16 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
-// File author: Alessandro Tasora
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHELEMENTBAR_H
 #define CHELEMENTBAR_H
@@ -63,7 +65,7 @@ class ChApiFea ChElementBar : public ChElementGeneric {
     /// Fills the D vector (column matrix) with the current
     /// field values at the nodes of the element, with proper ordering.
     /// If the D vector has not the size of this->GetNdofs(), it will be resized.
-    virtual void GetStateBlock(ChMatrixDynamic<>& mD) {
+    virtual void GetStateBlock(ChMatrixDynamic<>& mD) override {
         mD.Reset(this->GetNdofs(), 1);
         mD.PasteVector(this->nodes[0]->GetPos(), 0, 0);
         mD.PasteVector(this->nodes[1]->GetPos(), 3, 0);
@@ -72,7 +74,7 @@ class ChApiFea ChElementBar : public ChElementGeneric {
     /// Sets H as the global stiffness matrix K, scaled  by Kfactor. Optionally, also
     /// superimposes global damping matrix R, scaled by Rfactor, and global mass matrix M multiplied by Mfactor.
     /// (For the spring matrix there is no need to corotate local matrices: we already know a closed form expression.)
-    virtual void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor = 0, double Mfactor = 0) {
+    virtual void ComputeKRMmatricesGlobal(ChMatrix<>& H, double Kfactor, double Rfactor = 0, double Mfactor = 0) override {
         assert((H.GetRows() == 6) && (H.GetColumns() == 6));
 
         // For K stiffness matrix and R damping matrix:
@@ -92,11 +94,11 @@ class ChApiFea ChElementBar : public ChElementGeneric {
         // note that stiffness and damping matrices are the same, so join stuff here
         double commonfactor = Kstiffness * Kfactor + Rdamping * Rfactor;
         submatr.MatrScale(commonfactor);
-        H.PasteMatrix(&submatr, 0, 0);
-        H.PasteMatrix(&submatr, 3, 3);
+        H.PasteMatrix(submatr, 0, 0);
+        H.PasteMatrix(submatr, 3, 3);
         submatr.MatrNeg();
-        H.PasteMatrix(&submatr, 0, 3);
-        H.PasteMatrix(&submatr, 3, 0);
+        H.PasteMatrix(submatr, 0, 3);
+        H.PasteMatrix(submatr, 3, 0);
 
         // For M mass matrix, do mass lumping:
         H(0, 0) += Mfactor * mass * 0.5;  // node A x,y,z
@@ -118,7 +120,7 @@ class ChApiFea ChElementBar : public ChElementGeneric {
     /// Computes the internal forces (ex. the actual position of
     /// nodes is not in relaxed reference position) and set values
     /// in the Fi vector.
-    virtual void ComputeInternalForces(ChMatrixDynamic<>& Fi) {
+    virtual void ComputeInternalForces(ChMatrixDynamic<>& Fi) override {
         assert((Fi.GetRows() == 6) && (Fi.GetColumns() == 1));
 
         ChVector<> dir = (nodes[1]->GetPos() - nodes[0]->GetPos()).GetNormalized();
@@ -152,7 +154,7 @@ class ChApiFea ChElementBar : public ChElementGeneric {
     void SetBarYoungModulus(double mE) { this->E = mE; }
     double GetBarYoungModulus() { return this->E; }
 
-    /// Set the Raleygh damping ratio r (as in: R = r * K )
+    /// Set the Rayleigh damping ratio r (as in: R = r * K )
     void SetBarRaleyghDamping(double mr) { this->rdamping = mr; }
     double GetBarRaleyghDamping() { return this->rdamping; }
 
@@ -178,7 +180,7 @@ class ChApiFea ChElementBar : public ChElementGeneric {
 
 /// @} fea_elements
 
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace fea
+}  // end namespace chrono
 
 #endif

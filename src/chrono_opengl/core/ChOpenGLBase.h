@@ -27,7 +27,7 @@
 #define GLM_FORCE_RADIANS
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <string>
 //#include <string>
@@ -44,13 +44,14 @@
 namespace chrono {
 namespace opengl {
 
-/// @addtogroup opengl
+/// @addtogroup opengl_module
 /// @{
 
 #ifndef BAD_GL_VALUE
 #define BAD_GL_VALUE GLuint(-1)
 #endif
 
+/// Convert error enum to error string.
 static std::string GetErrorString(GLenum error) {
     std::string ret_val;
     switch (error) {
@@ -113,8 +114,9 @@ class CH_OPENGL_API ChOpenGLBase {
     }
 };
 
-/// @} opengl
+/// @} opengl_module
+
 }
 }
 
-#endif  // END of CHOPENGLBASE_H
+#endif

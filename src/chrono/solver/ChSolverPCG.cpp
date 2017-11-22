@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -17,7 +17,7 @@
 namespace chrono {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChSolverPCG> a_registration_ChSolverPCG;
+CH_FACTORY_REGISTER(ChSolverPCG)
 
 double ChSolverPCG::Solve(ChSystemDescriptor& sysd  ///< system description with constraints and variables
                           ) {
@@ -109,12 +109,12 @@ double ChSolverPCG::Solve(ChSystemDescriptor& sysd  ///< system description with
     for (int iter = 0; iter < max_iterations; iter++) {
         // alpha =  u'*p / p'*N*p
         sysd.ShurComplementProduct(mNp, &mp, &en_l);  // 1)  Np = N*p ...    #### MATR.MULTIPLICATION!!!###
-        double pNp = mp.MatrDot(&mp, &mNp);           // 2)  pNp = p'*N*p
-        double up = mu.MatrDot(&mu, &mp);             // 3)  up = u'*p
+        double pNp = mp.MatrDot(mp, mNp);           // 2)  pNp = p'*N*p
+        double up = mu.MatrDot(mu, mp);             // 3)  up = u'*p
         double alpha = up / pNp;                      // 4)  alpha =  u'*p / p'*N*p
 
         if (fabs(pNp) < 10e-10)
-            GetLog() << "Rayleygh quotient pNp breakdown \n";
+            GetLog() << "Rayleigh quotient pNp breakdown \n";
 
         // l = l + alpha * p;
         mtmp.CopyFromMatrix(mp);
@@ -148,7 +148,7 @@ double ChSolverPCG::Solve(ChSystemDescriptor& sysd  ///< system description with
         mz.MatrScale(1.0 / graddiff);  // 12) z = (P(l+lambda*u)-l)/lambda ...
 
         // beta = w'*Np / pNp;
-        double wNp = mw.MatrDot(&mw, &mNp);
+        double wNp = mw.MatrDot(mw, mNp);
         double beta = wNp / pNp;
 
         // p = w + beta * z;

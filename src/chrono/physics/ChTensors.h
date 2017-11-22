@@ -1,35 +1,25 @@
-//
+// =============================================================================
 // PROJECT CHRONO - http://projectchrono.org
 //
-// Copyright (c) 2013 Project Chrono
+// Copyright (c) 2014 projectchrono.org
 // All rights reserved.
 //
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file at the top level of the distribution
-// and at http://projectchrono.org/license-chrono.txt.
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
 //
+// =============================================================================
+// Authors: Alessandro Tasora
+// =============================================================================
 
 #ifndef CHTENSORS_H
 #define CHTENSORS_H
 
-//////////////////////////////////////////////////
-//
-//   ChTensors.h
-//
-//   Class for stress & strain tensors
-//
-//   HEADER file for CHRONO,
-//	 Multibody dynamics engine
-//
-// ------------------------------------------------
-//             http://www.projectchrono.org
-// ------------------------------------------------
-///////////////////////////////////////////////////
+#include <cstdlib>
 
-#include <stdlib.h>
-#include "core/ChApiCE.h"
-#include "core/ChMath.h"
-#include "core/ChLinearAlgebra.h"
+#include "chrono/core/ChApiCE.h"
+#include "chrono/core/ChMath.h"
+#include "chrono/core/ChLinearAlgebra.h"
 
 namespace chrono {
 namespace fea {
@@ -143,7 +133,7 @@ class ChVoightTensor : public ChMatrixNM<Real, 6, 1> {
         this->ConvertToMatrix(T);
         temp.MatrMultiplyT(T, Rot);
         T.MatrMultiply(Rot, temp);
-        this->ConvertFromMatrix(T);  // to do, more efficient: unroll matrix multiplications and exploit T simmetry
+        this->ConvertFromMatrix(T);  // to do, more efficient: unroll matrix multiplications and exploit T symmetry
     }
 
     /// Compute the eigenvalues (closed form method)
@@ -252,6 +242,7 @@ class ChStrainTensor : public ChVoightTensor<Real> {
     }
 };
 
-}  // END_OF_NAMESPACE____
-}  // END_OF_NAMESPACE____
+}  // end namespace fea
+}  // end namespace chrono
+
 #endif

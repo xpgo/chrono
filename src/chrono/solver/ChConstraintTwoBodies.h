@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -25,7 +25,6 @@ namespace chrono {
 /// a couple of two objects of type ChVariablesBody().
 
 class ChApi ChConstraintTwoBodies : public ChConstraintTwo {
-    CH_RTTI(ChConstraintTwoBodies, ChConstraintTwo)
 
   protected:
     ChMatrixNM<double, 1, 6> Cq_a;  ///< The [Cq_a] jacobian of the constraint
@@ -55,19 +54,19 @@ class ChApi ChConstraintTwoBodies : public ChConstraintTwo {
     ChConstraintTwoBodies& operator=(const ChConstraintTwoBodies& other);
 
     /// Access jacobian matrix
-    virtual ChMatrix<double>* Get_Cq_a() { return &Cq_a; }
+    virtual ChMatrix<double>* Get_Cq_a() override { return &Cq_a; }
     /// Access jacobian matrix
-    virtual ChMatrix<double>* Get_Cq_b() { return &Cq_b; }
+    virtual ChMatrix<double>* Get_Cq_b() override { return &Cq_b; }
 
     /// Access auxiliary matrix (ex: used by iterative solvers)
-    virtual ChMatrix<double>* Get_Eq_a() { return &Eq_a; }
+    virtual ChMatrix<double>* Get_Eq_a() override { return &Eq_a; }
     /// Access auxiliary matrix (ex: used by iterative solvers)
-    virtual ChMatrix<double>* Get_Eq_b() { return &Eq_b; }
+    virtual ChMatrix<double>* Get_Eq_b() override { return &Eq_b; }
 
     /// Set references to the constrained objects, each of ChVariablesBody type,
     /// automatically creating/resizing jacobians if needed.
     /// If variables aren't from ChVariablesBody class, an assert failure happens.
-    void SetVariables(ChVariables* mvariables_a, ChVariables* mvariables_b);
+    void SetVariables(ChVariables* mvariables_a, ChVariables* mvariables_b) override;
 
     /// This function updates the following auxiliary data:
     ///  - the Eq_a and Eq_b matrices
@@ -112,13 +111,11 @@ class ChApi ChConstraintTwoBodies : public ChConstraintTwo {
     virtual void Build_Cq(ChSparseMatrix& storage, int insrow) override;
     virtual void Build_CqT(ChSparseMatrix& storage, int inscol) override;
 
-    /// Method to allow deserializing a persistent binary archive (ex: a file)
-    /// into transient data.
-    virtual void StreamIN(ChStreamInBinary& mstream);
+    /// Method to allow serialization of transient data to archives.
+    virtual void ArchiveOUT(ChArchiveOut& marchive);
 
-    /// Method to allow serializing transient data into a persistent
-    /// binary archive (ex: a file).
-    virtual void StreamOUT(ChStreamOutBinary& mstream);
+    /// Method to allow de serialization of transient data from archives.
+    virtual void ArchiveIN(ChArchiveIn& marchive);
 };
 
 }  // end namespace chrono

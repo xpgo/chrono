@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -31,6 +31,7 @@
 #include "chrono_vehicle/tracked_vehicle/roller/DoubleRoller.h"
 
 #include "chrono_vehicle/ChVehicleModelData.h"
+#include "chrono_vehicle/utils/ChUtilsJSON.h"
 
 #include "chrono_thirdparty/rapidjson/document.h"
 #include "chrono_thirdparty/rapidjson/filereadstream.h"
@@ -39,16 +40,6 @@ using namespace rapidjson;
 
 namespace chrono {
 namespace vehicle {
-
-// -----------------------------------------------------------------------------
-// This utility function returns a ChVector from the specified JSON array
-// -----------------------------------------------------------------------------
-static ChVector<> loadVector(const Value& a) {
-    assert(a.IsArray());
-    assert(a.Size() == 3);
-
-    return ChVector<>(a[0u].GetDouble(), a[1u].GetDouble(), a[2u].GetDouble());
-}
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
@@ -61,7 +52,7 @@ void TrackAssemblyDoublePin::LoadSprocket(const std::string& filename) {
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Check that the given file is a sprocket specification file.
     assert(d.HasMember("Type"));
@@ -90,7 +81,7 @@ void TrackAssemblyDoublePin::LoadBrake(const std::string& filename) {
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Check that the given file is a brake specification file.
     assert(d.HasMember("Type"));
@@ -120,7 +111,7 @@ void TrackAssemblyDoublePin::LoadIdler(const std::string& filename) {
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Check that the given file is an idler specification file.
     assert(d.HasMember("Type"));
@@ -152,14 +143,14 @@ void TrackAssemblyDoublePin::LoadSuspension(const std::string& filename, int whi
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Check that the given file is a road-wheel assembly specification file.
     assert(d.HasMember("Type"));
     std::string type = d["Type"].GetString();
     assert(type.compare("RoadWheelAssembly") == 0);
 
-    // Extract road-wheeel assembly type.
+    // Extract road-wheel assembly type.
     assert(d.HasMember("Template"));
     std::string subtype = d["Template"].GetString();
 
@@ -182,7 +173,7 @@ void TrackAssemblyDoublePin::LoadRoller(const std::string& filename, int which) 
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Check that the given file is a roller specification file.
     assert(d.HasMember("Type"));
@@ -212,7 +203,7 @@ void TrackAssemblyDoublePin::LoadTrackShoes(const std::string& filename, int num
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     // Check that the given file is a track shoe specification file.
     assert(d.HasMember("Type"));
@@ -243,7 +234,7 @@ TrackAssemblyDoublePin::TrackAssemblyDoublePin(const std::string& filename) : Ch
     fclose(fp);
 
     Document d;
-    d.ParseStream(is);
+    d.ParseStream<ParseFlag::kParseCommentsFlag>(is);
 
     Create(d);
 
@@ -266,7 +257,7 @@ void TrackAssemblyDoublePin::Create(const rapidjson::Document& d) {
     {
         assert(d.HasMember("Sprocket"));
         std::string file_name = d["Sprocket"]["Input File"].GetString();
-        m_sprocket_loc = loadVector(d["Sprocket"]["Location"]);
+        m_sprocket_loc = LoadVectorJSON(d["Sprocket"]["Location"]);
         LoadSprocket(vehicle::GetDataFile(file_name));
     }
 
@@ -281,7 +272,7 @@ void TrackAssemblyDoublePin::Create(const rapidjson::Document& d) {
     {
         assert(d.HasMember("Idler"));
         std::string file_name = d["Idler"]["Input File"].GetString();
-        m_idler_loc = loadVector(d["Idler"]["Location"]);
+        m_idler_loc = LoadVectorJSON(d["Idler"]["Location"]);
         LoadIdler(vehicle::GetDataFile(file_name));
     }
 
@@ -294,7 +285,7 @@ void TrackAssemblyDoublePin::Create(const rapidjson::Document& d) {
     for (int i = 0; i < m_num_susp; i++) {
         std::string file_name = d["Suspension Subsystems"][i]["Input File"].GetString();
         bool has_shock = d["Suspension Subsystems"][i]["Has Shock"].GetBool();
-        m_susp_locs[i] = loadVector(d["Suspension Subsystems"][i]["Location"]);
+        m_susp_locs[i] = LoadVectorJSON(d["Suspension Subsystems"][i]["Location"]);
         LoadSuspension(vehicle::GetDataFile(file_name), i, has_shock);
     }
 
@@ -307,7 +298,7 @@ void TrackAssemblyDoublePin::Create(const rapidjson::Document& d) {
         m_roller_locs.resize(m_num_rollers);
         for (int i = 0; i < m_num_rollers; i++) {
             std::string file_name = d["Rollers"][i]["Input File"].GetString();
-            m_susp_locs[i] = loadVector(d["Rollers"][i]["Location"]);
+            m_susp_locs[i] = LoadVectorJSON(d["Rollers"][i]["Location"]);
             LoadRoller(vehicle::GetDataFile(file_name), i);
         }
     }

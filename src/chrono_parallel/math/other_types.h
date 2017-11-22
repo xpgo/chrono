@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2016 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -16,8 +16,10 @@
 // =============================================================================
 
 #pragma once
+
 #include "chrono_parallel/ChCudaDefines.h"
 #include "chrono_parallel/math/real3.h"  // for real3
+
 #include <iostream>
 
 #if !defined(__CUDACC__)
@@ -42,23 +44,23 @@ struct short2 {
     short x, y;
 };
 
-class vec2 {
+class CH_PARALLEL_API vec2 {
   public:
     inline vec2() : x(0), y(0) {}
     inline vec2(int a) : x(a), y(a) {}
     inline vec2(int a, int b) : x(a), y(b) {}
     inline vec2(const vec2& v) : x(v.x), y(v.y) {}
-    inline vec2(const real2& v) : x(v.x), y(v.y) {}
+    inline vec2(const real2& v) : x(int(v.x)), y(int(v.y)) {}
     inline int operator[](unsigned int i) const { return array[i]; }
     inline int& operator[](unsigned int i) { return array[i]; }
     inline vec2& operator=(const vec2& rhs) {
-        x = rhs.x;
-        y = rhs.y;
+        x = int(rhs.x);
+        y = int(rhs.y);
         return *this;
     }
     inline vec2& operator=(const real2& rhs) {
-        x = rhs.x;
-        y = rhs.y;
+        x = int(rhs.x);
+        y = int(rhs.y);
         return *this;
     }
     union {
@@ -69,16 +71,16 @@ class vec2 {
     };
 };
 
-class vec3 {
+class CH_PARALLEL_API vec3 {
   public:
     CUDA_HOST_DEVICE inline vec3() : x(0), y(0), z(0), w(0) {}
     CUDA_HOST_DEVICE inline vec3(int a) : x(a), y(a), z(a), w(0) {}
     CUDA_HOST_DEVICE inline vec3(int a, int b, int c) : x(a), y(b), z(c), w(0) {}
     CUDA_HOST_DEVICE inline vec3(const vec3& v) : x(v.x), y(v.y), z(v.z), w(0) {}
-    CUDA_HOST_DEVICE inline vec3(const real3& v) : x(v.x), y(v.y), z(v.z), w(0) {}
+    CUDA_HOST_DEVICE inline vec3(const real3& v) : x(int(v.x)), y(int(v.y)), z(int(v.z)), w(0) {}
     CUDA_HOST_DEVICE inline int operator[](unsigned int i) const { return array[i]; }
     CUDA_HOST_DEVICE inline int& operator[](unsigned int i) { return array[i]; }
-#if defined(USE_SSE) ||defined(USE_AVX)
+#if defined(USE_SSE) || defined(USE_AVX)
     inline vec3(__m128i m) { _mm_storeu_si128((__m128i*)&array[0], m); }
     inline operator __m128i() const { return _mm_loadu_si128((__m128i*)&array[0]); }
     inline vec3& operator=(const __m128i& rhs) {
@@ -87,15 +89,15 @@ class vec3 {
     }
 #endif
     CUDA_HOST_DEVICE inline vec3& operator=(const vec3& rhs) {
-        x = rhs.x;
-        y = rhs.y;
-        z = rhs.z;
+        x = int(rhs.x);
+        y = int(rhs.y);
+        z = int(rhs.z);
         return *this;
     }
     CUDA_HOST_DEVICE inline vec3& operator=(const real3& rhs) {
-        x = rhs.x;
-        y = rhs.y;
-        z = rhs.z;
+        x = int(rhs.x);
+        y = int(rhs.y);
+        z = int(rhs.z);
         return *this;
     }
     union {
@@ -113,11 +115,11 @@ struct vec4 {
 struct uvec4 {
     unsigned int x, y, z, w;
 };
-CUDA_HOST_DEVICE vec3 operator-(const vec3& a, const vec3& b);
-CUDA_HOST_DEVICE vec3 operator-(const vec3& a, const int& b);
-CUDA_HOST_DEVICE vec3 operator+(const vec3& a, const vec3& b);
-CUDA_HOST_DEVICE vec3 operator+(const vec3& a, const int& b);
-CUDA_HOST_DEVICE vec3 Clamp(const vec3& a, const vec3& clamp_min, const vec3& clamp_max);
+CUDA_HOST_DEVICE CH_PARALLEL_API vec3 operator-(const vec3& a, const vec3& b);
+CUDA_HOST_DEVICE CH_PARALLEL_API vec3 operator-(const vec3& a, const int& b);
+CUDA_HOST_DEVICE CH_PARALLEL_API vec3 operator+(const vec3& a, const vec3& b);
+CUDA_HOST_DEVICE CH_PARALLEL_API vec3 operator+(const vec3& a, const int& b);
+CUDA_HOST_DEVICE CH_PARALLEL_API vec3 Clamp(const vec3& a, const vec3& clamp_min, const vec3& clamp_max);
 
 struct uvec3 {
     unsigned int x, y, z;

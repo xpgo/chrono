@@ -1,3 +1,17 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar, Radu Serban
+// =============================================================================
+
 #pragma once
 
 #include <thrust/count.h>
@@ -10,12 +24,16 @@
 
 namespace chrono {
 
+/// @addtogroup parallel_solver
+/// @{
+
+/// System descriptor for Chrono::Parallel.
 class CH_PARALLEL_API ChSystemDescriptorParallel : public ChSystemDescriptor {
   public:
     ChSystemDescriptorParallel(ChParallelDataManager* dc) : data_manager(dc) {}
     ~ChSystemDescriptorParallel() {}
 
-    //void ConvertToMatrixForm(ChSparseMatrix* Cq,
+    // void ConvertToMatrixForm(ChSparseMatrix* Cq,
     //                         ChSparseMatrix* M,
     //                         ChSparseMatrix* E,
     //                         ChMatrix<>* Fvector,
@@ -48,7 +66,7 @@ class CH_PARALLEL_API ChSystemDescriptorParallel : public ChSystemDescriptor {
     //            if (M)
     //                mvariables[iv]->Build_M(*M, s_q, s_q, this->c_a);
     //            if (Fvector)
-    //                Fvector->PasteMatrix(&vvariables[iv]->Get_fb(), s_q, 0);
+    //                Fvector->PasteMatrix(vvariables[iv]->Get_fb(), s_q, 0);
 
     //            s_q += mvariables[iv]->Get_ndof();
     //        }
@@ -56,7 +74,9 @@ class CH_PARALLEL_API ChSystemDescriptorParallel : public ChSystemDescriptor {
     //}
 
   private:
-    ChParallelDataManager* data_manager;
+    ChParallelDataManager* data_manager;  ///< Pointer to the system's data manager
 };
 
-}  // end namespace chrono
+/// @} parallel_solver
+
+} // end namespace chrono

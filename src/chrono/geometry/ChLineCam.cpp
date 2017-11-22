@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -18,11 +18,11 @@ namespace chrono {
 namespace geometry {
 
 // Register into the object factory, to enable run-time dynamic creation and persistence
-ChClassRegister<ChLineCam> a_registration_ChLineCam;
+CH_FACTORY_REGISTER(ChLineCam)
 
 ChLineCam::ChLineCam() {
     Set_complexity(10);
-    this->closed = TRUE;
+    this->closed = true;
     type = CAM_TYPE_SLIDEFOLLOWER;
     Rb = 1.0;
     Rr = 0.0;
@@ -33,8 +33,8 @@ ChLineCam::ChLineCam() {
     e = 0;
     s = Rb;
     law = std::make_shared<ChFunction_Const>(0);  // default law = no follower motion
-    negative = FALSE;
-    internal = FALSE;
+    negative = false;
+    internal = false;
 }
 
 ChLineCam::ChLineCam(const ChLineCam& source) : ChLine(source) {
@@ -167,12 +167,12 @@ void ChLineCam::EvaluateCamPoint(double par, ChVector<>& res, double& g, double&
         }
     }
 
-    res.z = 0;
-    res.x = this->center.x + r * cos(f + phase);
-    res.y = this->center.y + r * sin(f + phase);
+    res.z() = 0;
+    res.x() = this->center.x() + r * cos(f + phase);
+    res.y() = this->center.y() + r * sin(f + phase);
 }
 
-void ChLineCam::Evaluate(ChVector<>& pos, const double parU, const double parV, const double parW) const {
+void ChLineCam::Evaluate(ChVector<>& pos, const double parU) const {
     double qtmp, gtmp;
     EvaluateCamPoint(parU, pos, gtmp, qtmp);
 }

@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -54,10 +54,12 @@ double render_step_size = 1.0 / 50;
 // Output (screenshot captures)
 bool img_output = false;
 
-const std::string out_dir = "../TRACK_TESTRIG";
+const std::string out_dir = GetChronoOutputPath() + "TRACK_TEST_RIG";
 
 // =============================================================================
 int main(int argc, char* argv[]) {
+    GetLog() << "Copyright (c) 2017 projectchrono.org\nChrono version: " << CHRONO_VERSION << "\n\n";
+
     ChTrackTestRig* rig = nullptr;
     ChVector<> attach_loc(0, 1, 0);
 
@@ -81,11 +83,11 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        rig = new ChTrackTestRig(track_assembly, attach_loc, ChMaterialSurfaceBase::DVI);
+        rig = new ChTrackTestRig(track_assembly, attach_loc, ChMaterialSurface::NSC);
     }
 
     //rig->GetSystem()->Set_G_acc(ChVector<>(0, 0, 0));
-    rig->GetSystem()->SetSolverType(ChSystem::SOLVER_SOR);
+    rig->GetSystem()->SetSolverType(ChSolver::Type::SOR);
     rig->GetSystem()->SetMaxItersSolverSpeed(50);
     rig->GetSystem()->SetMaxItersSolverStab(50);
     rig->GetSystem()->SetTol(0);
@@ -103,10 +105,11 @@ int main(int argc, char* argv[]) {
     rig->GetTrackAssembly()->SetSprocketVisualizationType(VisualizationType::PRIMITIVES);
     rig->GetTrackAssembly()->SetIdlerVisualizationType(VisualizationType::PRIMITIVES);
     rig->GetTrackAssembly()->SetRoadWheelAssemblyVisualizationType(VisualizationType::PRIMITIVES);
+    rig->GetTrackAssembly()->SetRoadWheelVisualizationType(VisualizationType::PRIMITIVES);
     rig->GetTrackAssembly()->SetTrackShoeVisualizationType(VisualizationType::PRIMITIVES);
 
-    ////rig->SetCollide(TrackCollide::NONE);
-    ////rig->SetCollide(TrackCollide::SPROCKET_LEFT | TrackCollide::SHOES_LEFT);
+    ////rig->SetCollide(TrackedCollisionFlag::NONE);
+    ////rig->SetCollide(TrackedCollisionFlag::SPROCKET_LEFT | TrackedCollisionFlag::SHOES_LEFT);
     ////rig->GetTrackAssembly()->GetSprocket()->GetGearBody()->SetCollide(false);
 
     // Create the vehicle Irrlicht application.
@@ -143,13 +146,10 @@ int main(int argc, char* argv[]) {
     // ---------------
 
     // Inter-module communication data
-    TireForces tire_forces(2);
-    WheelStates wheel_states(2);
+    TerrainForces shoe_forces(1);
 
     // Number of simulation steps between two 3D view render frames
     int render_steps = (int)std::ceil(render_step_size / step_size);
-
-    TrackShoeForces shoe_forces(1);
 
     // Initialize simulation frame counter
     int step_number = 0;

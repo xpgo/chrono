@@ -2,7 +2,7 @@
 // PROJECT CHRONO - http://projectchrono.org
 //
 // Copyright (c) 2014 projectchrono.org
-// All right reserved.
+// All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file at the top level of the distribution and at
@@ -18,7 +18,7 @@
 // The global reference frame has Z up.
 // =============================================================================
 
-#include "chrono/physics/ChSystem.h"
+#include "chrono/physics/ChSystemNSC.h"
 #include "chrono/utils/ChUtilsCreators.h"
 
 #include "chrono_opengl/ChOpenGLWindow.h"
@@ -29,7 +29,7 @@ using namespace geometry;
 // -----------------------------------------------------------------------------
 // Create a collection of geometric shapes
 // -----------------------------------------------------------------------------
-void AddShapes(ChSystem* sys) {
+void AddShapes(ChSystemNSC* sys) {
     auto bin = std::make_shared<ChBody>();
     utils::AddSphereGeometry(bin.get(), 1, ChVector<>(0, 0, 0));
     utils::AddEllipsoidGeometry(bin.get(), ChVector<>(.5, 1, 1), ChVector<>(3, 0, 0));
@@ -43,7 +43,9 @@ void AddShapes(ChSystem* sys) {
 // Create the system
 // -----------------------------------------------------------------------------
 int main(int argc, char* argv[]) {
-    ChSystem msystem;
+    GetLog() << "Copyright (c) 2017 projectchrono.org\nChrono version: " << CHRONO_VERSION << "\n\n";
+
+    ChSystemNSC msystem;
 
     AddShapes(&msystem);
 
@@ -51,6 +53,8 @@ int main(int argc, char* argv[]) {
     opengl::ChOpenGLWindow& gl_window = opengl::ChOpenGLWindow::getInstance();
     gl_window.Initialize(1280, 720, "OpenGL Shapes", &msystem);
     gl_window.SetCamera(ChVector<>(6, -10, 0), ChVector<>(6, 0, 0), ChVector<>(0, 0, 1));
+    gl_window.SetRenderMode(opengl::WIREFRAME);
+
     while (gl_window.Active()) {
         gl_window.Render();
     }

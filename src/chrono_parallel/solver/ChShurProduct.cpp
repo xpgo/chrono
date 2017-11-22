@@ -1,6 +1,21 @@
+// =============================================================================
+// PROJECT CHRONO - http://projectchrono.org
+//
+// Copyright (c) 2016 projectchrono.org
+// All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file at the top level of the distribution and at
+// http://projectchrono.org/license-chrono.txt.
+//
+// =============================================================================
+// Authors: Hammad Mazhar
+// =============================================================================
+
 #include "chrono_parallel/solver/ChSolverParallel.h"
 
 using namespace chrono;
+
 ChShurProduct::ChShurProduct() {
     data_manager = 0;
 }
@@ -40,17 +55,17 @@ void ChShurProduct::operator()(const DynamicVector<real>& x, DynamicVector<real>
         ConstSubVectorType E_n = subvector(E, 0, num_rigid_contacts);
 
         switch (data_manager->settings.solver.local_solver_mode) {
-            case BILATERAL: {
+            case SolverMode::BILATERAL: {
                 o_b = D_b_T * (M_invD_b * x_b) + E_b * x_b;
             } break;
 
-            case NORMAL: {
+            case SolverMode::NORMAL: {
                 blaze::DynamicVector<real> tmp = M_invD_b * x_b + M_invD_n * x_n;
                 o_b = D_b_T * tmp + E_b * x_b;
                 o_n = D_n_T * tmp + E_n * x_n;
             } break;
 
-            case SLIDING: {
+            case SolverMode::SLIDING: {
                 const SubMatrixType& D_t_T = _DTT_;
                 const SubMatrixType& M_invD_t = _MINVDT_;
                 SubVectorType o_t = subvector(output, num_rigid_contacts, num_rigid_contacts * 2);
@@ -64,7 +79,7 @@ void ChShurProduct::operator()(const DynamicVector<real>& x, DynamicVector<real>
 
             } break;
 
-            case SPINNING: {
+            case SolverMode::SPINNING: {
                 const SubMatrixType& D_t_T = _DTT_;
                 const SubMatrixType& D_s_T = _DST_;
                 const SubMatrixType& M_invD_t = _MINVDT_;
@@ -103,21 +118,21 @@ void ChShurProductBilateral::operator()(const DynamicVector<real>& x, DynamicVec
 
 void ChShurProductFEM::Setup(ChParallelDataManager* data_container_) {
     ChShurProduct::Setup(data_container_);
-//    if (data_manager->num_fea_tets == 0) {
-//        return;
-//    }
-//    // start row, start column
-//    // num rows, num columns
-//
-//    uint num_3dof_3dof = data_manager->node_container->GetNumConstraints();
-//    uint start_tet = data_manager->num_unilaterals + data_manager->num_bilaterals + num_3dof_3dof;
-//    int num_constraints = data_manager->num_fea_tets * (6 + 1);
-//    uint start_nodes =
-//        data_manager->num_rigid_bodies * 6 + data_manager->num_shafts + data_manager->num_fluid_bodies * 3;
-//    NshurB = submatrix(data_manager->host_data.D_T, start_tet, start_nodes, num_constraints,
-//                       data_manager->num_fea_nodes * 3) *
-//             submatrix(data_manager->host_data.M_invD, start_nodes, start_tet, data_manager->num_fea_nodes * 3,
-//                       num_constraints);
+    //    if (data_manager->num_fea_tets == 0) {
+    //        return;
+    //    }
+    //    // start row, start column
+    //    // num rows, num columns
+    //
+    //    uint num_3dof_3dof = data_manager->node_container->GetNumConstraints();
+    //    uint start_tet = data_manager->num_unilaterals + data_manager->num_bilaterals + num_3dof_3dof;
+    //    int num_constraints = data_manager->num_fea_tets * (6 + 1);
+    //    uint start_nodes =
+    //        data_manager->num_rigid_bodies * 6 + data_manager->num_shafts + data_manager->num_fluid_bodies * 3;
+    //    NshurB = submatrix(data_manager->host_data.D_T, start_tet, start_nodes, num_constraints,
+    //                       data_manager->num_fea_nodes * 3) *
+    //             submatrix(data_manager->host_data.M_invD, start_nodes, start_tet, data_manager->num_fea_nodes * 3,
+    //                       num_constraints);
 }
 
 void ChShurProductFEM::operator()(const DynamicVector<real>& x, DynamicVector<real>& output) {
